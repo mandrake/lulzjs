@@ -352,3 +352,4 @@ INSTALL := install -g 0 -o root
 install:
 	$(INSTALL) -m 755 $(SHARED_LIBRARY) $(DESTDIR)$(MY_LIBDIR)
 	$(INSTALL) -m 644 $(HFILES) $(DESTDIR)$(INCLUDEDIR)
+

@@ -21,11 +21,16 @@
 
 #include "lulzjs.h"
 #include "jsdbgapi.h"
+#include "jsscript.h"
+#include "jsatom.h"
 
 // Not cross platform
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 #include <libgen.h>
 #include <dlfcn.h>
-#include <unistd.h>
 
 #include "Misc.h"
 
@@ -70,6 +75,8 @@ char*       __Core_getRootPath (JSContext* cx, const char* fileName);
 char*       __Core_getPath (JSContext* cx, const char* fileName);
 JSBool      __Core_include (JSContext* cx, const char* path);
 JSBool      __Core_isIncluded (const char* path);
+JSScript*   __Core_loadCache (JSContext* cx, const char* path);
+void        __Core_saveCache (JSContext* cx, JSScript* script, const char* path);
 
 static JSFunctionSpec Core_methods[] = {
     {"include", Core_include, 0, 0, 0},

@@ -376,19 +376,50 @@ __Core_include (JSContext* cx, const char* path)
         printf("(javascript) path: %s\n", path);
         #endif
 
-        if (!fileExists(path)) {
+        struct stat pathStat;
+
+        if (stat(path, &pathStat) == -1) {
             #ifdef DEBUG
             printf("(javascript) %s not found.\n", path);
             #endif
             return JS_FALSE;
         }
+        
+        size_t length = strlen(path);
+
+        #ifdef WORKING
+        char* cachePath = JS_malloc(cx, (length+2)*sizeof(char));
+        memset(cachePath, 0, length+2); strcpy(cachePath, path);
+        cachePath[length] = 'c';
+
+        struct stat cacheStat;
+        if (!stat(cachePath, &cacheStat)) {
+            if (cacheStat.st_mtime >= pathStat.st_mtime) {
+                jsval ret;
+                JSScript* script = __Core_loadCache(cx, cachePath);
+
+                if (script) {
+                    JSBool result = JS_ExecuteScript(cx, JS_GetGlobalObject(cx), script, &ret);
+                    JS_free(cx, script->code);
+                    JS_free(cx, script);
+                    goto exceptions;
+                }
+            }
+        }
+        #endif
 
         jsval rval;
-        char* sources = stripRemainder(cx, readFile(cx, path));
-
-        JSBool result = (short) JS_EvaluateScript(cx, JS_GetGlobalObject(cx), sources, strlen(sources), path, 1, &rval);
+        char* sources    = stripRemainder(cx, readFile(cx, path));
+        JSScript* script = JS_CompileScript(cx, JS_GetGlobalObject(cx), sources, strlen(sources), path, 1);
         JS_free(cx, sources);
 
+        if (JS_ExecuteScript(cx, JS_GetGlobalObject(cx), script, &rval)) {
+            #ifdef WORKING
+            __Core_saveCache(cx, script, cachePath);
+            #endif
+        }
+
+        exceptions:
         while (JS_IsExceptionPending(cx)) {
             JS_ReportPendingException(cx);
 
@@ -455,5 +486,134 @@ __Core_isIncluded (const char* path)
     }
 
     return JS_FALSE;
+}
+
+/* Caching content:
+ *
+ * (script->length>              Bytecode length
+ * <script->code>                Bytecode array
+ * <script->main - script->code> Offset from the beginning of script->code of the main. 
+ * <script->version>             JS version
+ * <script->numGlobalVars>       Number of the global vars
+ * <script->atomMap.length>      The length of the atomMap vector
+ * <script->atomMap.vector>      The atomMap vector
+ * <strlen(script->filename)>    The length of the filename string
+ * <script->filename>            The filename string
+ * <script->lineno>              The starting line number
+ * <script->depth>               The maximum stack depth
+ */
+
+JSScript*
+__Core_loadCache (JSContext* cx, const char* path)
+{
+    FILE* cache;
+    
+    if (!(cache = fopen(path, "rb"))) {
+        return NULL;
+    }
+    
+    uint32 codeLength;
+    fread(&codeLength, sizeof(uint32), 1, cache);
+
+    jsbytecode* code = JS_malloc(cx, codeLength*sizeof(jsbytecode));
+    fread(code, sizeof(jsbytecode), codeLength, cache);
+
+    uint32 mainOffset;
+    fread(&mainOffset, sizeof(uint32), 1, cache);
+
+    uint16 version;
+    fread(&version, sizeof(uint16), 1, cache);
+
+    uint16 numGlobalVars;
+    fread(&numGlobalVars, sizeof(uint16), 1, cache);
+
+    jsatomid atomLength;
+    fread(&atomLength, sizeof(jsatomid), 1, cache);
+
+    JSAtom** atomVector = JS_malloc(cx, atomLength*sizeof(JSAtom*));;
+    jsatomid i;
+    for (i = 0; i < atomLength; i++) {
+        atomVector[i] = JS_malloc(cx, sizeof(JSAtom));
+        fread(&atomVector[i], sizeof(JSAtom), 1, cache);
+    }
+
+    uint16 filenameLength;
+    fread(&filenameLength, sizeof(uint16), 1, cache);
+
+    char* filename = JS_malloc(cx, (filenameLength+1)*sizeof(char));
+    fread(filename, sizeof(char), filenameLength, cache);
+    filename[filenameLength] = '\0';
+
+    uintN lineno;
+    fread(&lineno, sizeof(uintN), 1, cache);
+
+    uintN depth;
+    fread(&depth, sizeof(uintN), 1, cache);
+
+    JSScript* script = JS_malloc(cx,
+          sizeof(JSScript)
+        + codeLength*sizeof(jsbytecode)
+    );
+
+    script->length         = codeLength;
+    script->code           = code;
+    script->main           = script->code + mainOffset;
+    script->version        = version;
+    script->numGlobalVars  = numGlobalVars;
+    script->atomMap.length = atomLength;
+    script->atomMap.vector = atomVector;
+    script->filename       = filename;
+    script->lineno         = lineno;
+    script->depth          = depth;
+    script->trynotes       = NULL;
+    script->principals     = NULL;
+    script->object         = NULL;
+
+    fclose(cache);   
+
+    return script;
+}
+
+void
+__Core_saveCache (JSContext* cx, JSScript* script, const char* path)
+{
+    uint32        codeLength     = script->length;
+    jsbytecode*   code           = script->code;
+    uint32        mainOffset     = script->main - script->code;
+    uint16        version        = script->version;
+    uint16        numGlobalVars  = script->numGlobalVars;
+    jsatomid      atomLength     = script->atomMap.length;
+    JSAtom**      atomVector     = script->atomMap.vector;
+    uint16        filenameLength = strlen(script->filename);
+    const char*   filename       = script->filename;
+    uintN         lineno         = script->lineno;
+    uintN         depth          = script->depth;
+    JSTryNote*    trynotes       = script->trynotes;
+    JSPrincipals* principals     = script->principals;
+
+    FILE* cache;
+    
+    if (!(cache = fopen(path, "wb"))) {
+        return;
+    }
+
+    fwrite(&codeLength,     sizeof(uint32),     1,              cache);
+    fwrite(code,            sizeof(jsbytecode), codeLength,     cache);
+    fwrite(&mainOffset,     sizeof(uint32),     1,              cache);
+    fwrite(&version,        sizeof(uint16),     1,              cache);
+    fwrite(&numGlobalVars,  sizeof(uint16),     1,              cache);
+    fwrite(&atomLength,     sizeof(jsatomid),   1,              cache);
+
+    jsatomid i;
+    for (i = 0; i < atomLength; i++) {
+        fwrite(&atomVector[i], sizeof(JSAtom), atomLength, cache);
+    }
+
+    fwrite(&filenameLength, sizeof(uint16),     1,              cache);
+    fwrite(filename,        sizeof(char),       filenameLength, cache);
+    fwrite(&lineno,         sizeof(uintN),      1,              cache);
+    fwrite(&depth,          sizeof(uintN),      1,              cache);
+
+    fclose(cache);
 }
 
