@@ -10,3 +10,5 @@ sudo ./compile.sh
 cd ..
 make
 sudo make install
+
+Going to include openssl eventual support, so the make will have a param like USE_SSL
