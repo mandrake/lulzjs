@@ -372,10 +372,6 @@ __Core_include (JSContext* cx, const char* path)
     }
 
     if (strstr(path, ".js") == &path[strlen(path)-3]) {
-        #ifdef DEBUG
-        printf("(javascript) path: %s\n", path);
-        #endif
-
         struct stat pathStat;
 
         if (stat(path, &pathStat) == -1) {
@@ -400,10 +396,19 @@ __Core_include (JSContext* cx, const char* path)
                 if (script) {
                     JSBool result = JS_ExecuteScript(cx, JS_GetGlobalObject(cx), script, &ret);
                     JS_DestroyScript(cx, script);
+
+                    #ifdef DEBUG
+                    printf("(cached) path: %sc\n", path);
+                    #endif
+
                     goto exceptions;
                 }
             }
         }
+
+        #ifdef DEBUG
+        printf("(javascript) path: %s\n", path);
+        #endif
 
         jsval rval;
         char* sources    = stripRemainder(cx, readFile(cx, path));
@@ -494,14 +499,25 @@ __Core_loadCache (JSContext* cx, const char* path)
     char* buffer;
     struct stat cacheStat;
 
-    if (!fopen(path, "rb")) {
+    if (!(cache = fopen(path, "rb"))) {
         return NULL;
     }
     stat(path, &cacheStat);
 
     buffer = JS_malloc(cx, (cacheStat.st_size+1)*sizeof(char));
-    
-    if (cacheStat.st_size > 3 && *((unsigned long*) buffer) == JSXDR_MAGIC_SCRIPT_CURRENT) {
+
+    uint32 readd = 0;
+    while (readd < cacheStat.st_size) {
+        readd += fread((buffer+readd), sizeof(char), cacheStat.st_size, cache);
+    }
+    buffer[cacheStat.st_size] = '\0';
+
+    char magic[9];
+    char magicCheck[9] = {0};
+    sprintf(magic,      "%x", JSXDR_MAGIC_SCRIPT_CURRENT);
+    sprintf(magicCheck, "%x", (*(unsigned long*) buffer));
+
+    if (cacheStat.st_size > 3 && strcmp(magic, magicCheck) == 0) {
         JSXDRState* xdr = JS_XDRNewMem(cx, JSXDR_DECODE);
         JS_XDRMemSetData(xdr, buffer, cacheStat.st_size);
 
@@ -535,11 +551,14 @@ __Core_saveCache (JSContext* cx, JSScript* script, const char* path)
 
         char* bytes = (char*) JS_XDRMemGetData(xdr, &length);
 
-        if (!fopen(path, "wb")) {
+        if (!(cache = fopen(path, "wb"))) {
             return;
         }
 
-        fwrite(bytes, sizeof(char), length, cache);
+        uint32 written = 0;
+        while (written < length) {
+            written += fwrite((bytes+written), sizeof(char), length, cache);
+        }
     }
     JS_XDRDestroy(xdr);
 }
