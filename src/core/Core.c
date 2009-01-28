@@ -520,7 +520,7 @@ __Core_loadCache (JSContext* cx, const char* path)
     }
     buffer[cacheStat.st_size] = '\0';
 
-    char magic[9];
+    char magic[9]      = {0};
     char magicCheck[9] = {0};
     sprintf(magic,      "%x", JSXDR_MAGIC_SCRIPT_CURRENT);
     sprintf(magicCheck, "%x", (*(unsigned long*) buffer));
