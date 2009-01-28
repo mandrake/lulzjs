@@ -37,13 +37,7 @@ static JSClass SHA1_class = {
 
 #include "private.h"
 
-void __SHA1_transform (uint32_t state[5], uint8_t buffer[64]);
-void __SHA1_init (SHA1_ctx *ctx);
-void __SHA1_update (SHA1_ctx *ctx, uint8_t *data, const unsigned int len);
-void __SHA1_final (SHA1_ctx *ctx);
-
 extern JSBool SHA1_toString (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-void __SHA1_toString (SHA1_ctx *ctx, char out[41]);
 
 static JSFunctionSpec SHA1_methods[] = {
     {"toString", SHA1_toString, 0, 0, 0},

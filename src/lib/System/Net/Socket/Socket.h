@@ -55,10 +55,8 @@ extern JSBool Socket_sendBytes (JSContext* cx, JSObject* object, uintN argc, jsv
 extern JSBool Socket_receiveBytes (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
 extern JSBool Socket_static_getHostByName (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-const char* __Socket_getHostByName (JSContext* cx, const char* host);
 
 extern JSBool Socket_static_isIPv4 (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-JSBool __Socket_isIPv4 (const char* host);
 
 static JSFunctionSpec Socket_methods[] = {
     {"connect", Socket_connect, 0, 0, 0},

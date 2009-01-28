@@ -18,6 +18,8 @@
 
 #include "Thread.h"
 
+void* __Thread_start (void* arg);
+
 JSBool exec (JSContext* cx) { return Thread_initialize(cx); }
 
 void

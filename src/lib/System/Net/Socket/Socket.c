@@ -18,6 +18,9 @@
 
 #include "Socket.h"
 
+const char* __Socket_getHostByName (JSContext* cx, const char* host);
+JSBool __Socket_isIPv4 (const char* host);
+
 JSBool exec (JSContext* cx) { return Socket_initialize(cx); }
 
 JSBool

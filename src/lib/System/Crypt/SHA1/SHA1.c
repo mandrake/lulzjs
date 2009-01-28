@@ -19,6 +19,12 @@
 
 #include "SHA1.h"
 
+void __SHA1_transform (uint32_t state[5], uint8_t buffer[64]);
+void __SHA1_init (SHA1_ctx *ctx);
+void __SHA1_update (SHA1_ctx *ctx, uint8_t *data, const unsigned int len);
+void __SHA1_final (SHA1_ctx *ctx);
+void __SHA1_toString (SHA1_ctx *ctx, char out[41]);
+
 JSBool exec (JSContext* cx) { return SHA1_initialize(cx); }
 
 JSBool

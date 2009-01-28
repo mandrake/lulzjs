@@ -43,7 +43,6 @@ static JSClass Thread_class = {
 #include "private.h"
 
 extern JSBool Thread_start (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-void* __Thread_start (void* arg);
 
 extern JSBool Thread_join (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 

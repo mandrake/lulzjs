@@ -69,14 +69,6 @@ extern JSBool Core_sleep (JSContext* cx, JSObject* obj, uintN argc, jsval* argv,
 
 extern JSBool Core_print (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
 
-const char* __Core_getScriptName (JSContext* cx);
-char*       __Core_getRootPath (JSContext* cx, const char* fileName);
-char*       __Core_getPath (JSContext* cx, const char* fileName);
-JSBool      __Core_include (JSContext* cx, const char* path);
-JSBool      __Core_isIncluded (const char* path);
-JSScript*   __Core_loadCache (JSContext* cx, const char* path);
-void        __Core_saveCache (JSContext* cx, JSScript* script, const char* path);
-
 static JSFunctionSpec Core_methods[] = {
     {"include", Core_include, 0, 0, 0},
     {"require", Core_require, 0, 0, 0},
