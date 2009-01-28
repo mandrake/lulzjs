@@ -21,8 +21,7 @@
 
 #include "lulzjs.h"
 #include "jsdbgapi.h"
-#include "jsscript.h"
-#include "jsatom.h"
+#include "jsxdrapi.h"
 
 // Not cross platform
 #include <sys/types.h>
