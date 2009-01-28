@@ -514,12 +514,13 @@ __Core_loadCache (JSContext* cx, const char* path)
 
     buffer = JS_malloc(cx, (cacheStat.st_size+1)*sizeof(char));
 
-    uint32 readd = 0;
-    while (readd < cacheStat.st_size) {
-        readd += fread((buffer+readd), sizeof(char), cacheStat.st_size, cache);
+    uint32 offset = 0;
+    while (offset < cacheStat.st_size) {
+        offset += fread((buffer+offset), sizeof(char), (cacheStat.st_size-offset), cache);
     }
     buffer[cacheStat.st_size] = '\0';
 
+    // Can't get the check with numbers, i don't know why
     char magic[9]      = {0};
     char magicCheck[9] = {0};
     sprintf(magic,      "%x", JSXDR_MAGIC_SCRIPT_CURRENT);
@@ -542,6 +543,7 @@ __Core_loadCache (JSContext* cx, const char* path)
     }
 
     end:
+    fclose(cache);
     JS_free(cx, buffer);
 
     return script;
@@ -553,7 +555,6 @@ __Core_saveCache (JSContext* cx, JSScript* script, const char* path)
     FILE* cache;
 
     JSXDRState* xdr = JS_XDRNewMem(cx, JSXDR_ENCODE);
-    
     if (JS_XDRScript(xdr, &script)) {
         uint32 length = 0;
 
@@ -563,10 +564,11 @@ __Core_saveCache (JSContext* cx, JSScript* script, const char* path)
             return;
         }
 
-        uint32 written = 0;
-        while (written < length) {
-            written += fwrite((bytes+written), sizeof(char), length, cache);
+        uint32 offset = 0;
+        while (offset < length) {
+            offset += fwrite((bytes+offset), sizeof(char), (length-offset), cache);
         }
+        fclose(cache);
     }
     JS_XDRDestroy(xdr);
 }
