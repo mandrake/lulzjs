@@ -29,7 +29,9 @@
 char USAGE[] = {
     "lulzJS " __LJS_VERSION__ "\n"
     "\n"
-    "    -v        Get lulzJS version.\n"
+    "    -V        Get lulzJS version.\n"
+    "    -c        Compile javascript into bytecode.\n"
+    "    -o        Name of the compiled javascript.\n"
     "    -h        Read this help.\n"
 };
 

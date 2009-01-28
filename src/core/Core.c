@@ -23,8 +23,6 @@ char*       __Core_getRootPath (JSContext* cx, const char* fileName);
 char*       __Core_getPath (JSContext* cx, const char* fileName);
 JSBool      __Core_include (JSContext* cx, const char* path);
 JSBool      __Core_isIncluded (const char* path);
-JSScript*   __Core_loadCache (JSContext* cx, const char* path);
-void        __Core_saveCache (JSContext* cx, JSScript* script, const char* path);
 
 JSObject*
 Core_initialize (JSContext *cx, const char* script)
@@ -399,7 +397,7 @@ __Core_include (JSContext* cx, const char* path)
         if (!stat(cachePath, &cacheStat)) {
             if (cacheStat.st_mtime >= pathStat.st_mtime) {
                 jsval ret;
-                JSScript* script = __Core_loadCache(cx, cachePath);
+                JSScript* script = Compile_load(cx, cachePath);
 
                 if (script) {
                     JSBool result = JS_ExecuteScript(cx, JS_GetGlobalObject(cx), script, &ret);
@@ -425,7 +423,7 @@ __Core_include (JSContext* cx, const char* path)
 
         if (script) {
             if (JS_ExecuteScript(cx, JS_GetGlobalObject(cx), script, &rval)) {
-                __Core_saveCache(cx, script, cachePath);
+                Compile_save(cx, script, cachePath);
             }
             JS_DestroyScript(cx, script);
         }
@@ -497,79 +495,5 @@ __Core_isIncluded (const char* path)
     }
 
     return JS_FALSE;
-}
-
-JSScript*
-__Core_loadCache (JSContext* cx, const char* path)
-{
-    FILE* cache;
-    JSScript* script;
-    char* buffer;
-    struct stat cacheStat;
-
-    if (!(cache = fopen(path, "rb"))) {
-        return NULL;
-    }
-    stat(path, &cacheStat);
-
-    buffer = JS_malloc(cx, (cacheStat.st_size+1)*sizeof(char));
-
-    uint32 offset = 0;
-    while (offset < cacheStat.st_size) {
-        offset += fread((buffer+offset), sizeof(char), (cacheStat.st_size-offset), cache);
-    }
-    buffer[cacheStat.st_size] = '\0';
-
-    // Can't get the check with numbers, i don't know why
-    char magic[9]      = {0};
-    char magicCheck[9] = {0};
-    sprintf(magic,      "%x", JSXDR_MAGIC_SCRIPT_CURRENT);
-    sprintf(magicCheck, "%x", (*(unsigned long*) buffer));
-
-    if (cacheStat.st_size > 3 && strcmp(magic, magicCheck) == 0) {
-        JSXDRState* xdr = JS_XDRNewMem(cx, JSXDR_DECODE);
-        JS_XDRMemSetData(xdr, buffer, cacheStat.st_size);
-
-        if (!JS_XDRScript(xdr, &script)) {
-            script = NULL;
-            goto end;
-        }
-        JS_XDRMemSetData(xdr, NULL, 0);
-        JS_XDRDestroy(xdr);
-    }
-    else {
-        script = NULL;
-        goto end;
-    }
-
-    end:
-    fclose(cache);
-    JS_free(cx, buffer);
-
-    return script;
-}
-
-void
-__Core_saveCache (JSContext* cx, JSScript* script, const char* path)
-{
-    FILE* cache;
-
-    JSXDRState* xdr = JS_XDRNewMem(cx, JSXDR_ENCODE);
-    if (JS_XDRScript(xdr, &script)) {
-        uint32 length = 0;
-
-        char* bytes = (char*) JS_XDRMemGetData(xdr, &length);
-
-        if (!(cache = fopen(path, "wb"))) {
-            return;
-        }
-
-        uint32 offset = 0;
-        while (offset < length) {
-            offset += fwrite((bytes+offset), sizeof(char), (length-offset), cache);
-        }
-        fclose(cache);
-    }
-    JS_XDRDestroy(xdr);
 }
 

@@ -21,7 +21,6 @@
 
 #include "lulzjs.h"
 #include "jsdbgapi.h"
-#include "jsxdrapi.h"
 
 // Not cross platform
 #include <sys/types.h>
@@ -32,6 +31,7 @@
 #include <dlfcn.h>
 
 #include "Misc.h"
+#include "Compile.h"
 
 static char** included       = NULL;
 static size_t includedNumber = 0;

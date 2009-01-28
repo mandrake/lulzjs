@@ -220,7 +220,7 @@ Socket_accept (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* 
     int size = sizeof(struct sockaddr);
 
     SocketInformation* newData = JS_malloc(cx, sizeof(SocketInformation));
-    newData->addr     = JS_malloc(cx, sizeof(struct sockaddr*));
+    newData->addr     = JS_malloc(cx, sizeof(struct sockaddr));
     newData->socket   = accept(data->socket, newData->addr, &size);
     newData->family   = ((struct sockaddr_in*)newData->addr)->sin_family;
     JS_SetPrivate(cx, sock, newData);
