@@ -25,6 +25,6 @@ char* JS_strdup (JSContext* cx, const char* string);
 
 const char* readFile (JSContext* cx, const char* file);
       short fileExists (const char* file);
-const char* stripRemained (JSContext* cx, char* text);
+const char* stripRemainder (JSContext* cx, char* text);
 
 #endif

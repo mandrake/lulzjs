@@ -18,13 +18,12 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include "jsapi.h"
+#include "lulzjs.h"
 
 #include "Misc.h"
-
 #include "Core.h"
-
 #include "Interactive.h"
+#include "Compile.h"
 
 char USAGE[] = {
     "lulzJS " __LJS_VERSION__ "\n"
@@ -62,12 +61,16 @@ main (int argc, char *argv[])
     char* oneliner = NULL;
     int stopAt = argc;
 
+    JSBool compile = JS_FALSE;
+    char* inFile   = NULL;
+    char* outFile  = "out.jsc";
+
     // Fix the options to let a script get all the real arguments.
     if (argc > 1) {
         int i;
         char prev = '\0';
         for (i = 1; i < argc; i++) {
-            if (argv[i][0] != '-' && prev != 'e') {
+            if (argv[i][0] != '-' && (prev != 'e' && prev != 'c' && prev != 'o')) {
                 stopAt = i;
                 break;
             }
@@ -81,7 +84,7 @@ main (int argc, char *argv[])
     }
 
     int cmd;
-    while ((cmd = getopt(stopAt, argv, "vVhe:")) != -1) {
+    while ((cmd = getopt(stopAt, argv, "vVhe:c:o:")) != -1) {
         switch (cmd) {
             case 'V':
             puts("lulzJS " __LJS_VERSION__);
@@ -90,6 +93,15 @@ main (int argc, char *argv[])
 
             case 'e':
             oneliner = optarg;
+            break;
+
+            case 'c':
+            compile = JS_TRUE;
+            inFile  = optarg;
+            break;
+
+            case 'o':
+            outFile = optarg;
             break;
 
             default:
@@ -103,7 +115,7 @@ main (int argc, char *argv[])
      * of the interpreter on the system, if instead it's executing a file it passes
      * optind because it will be the script name.
      */
-    Engine engine = initEngine(argc, (argc == 1 || oneliner ? 0 : optind), argv);
+    Engine engine = initEngine(argc, (argc == 1 || (oneliner || compile) ? 0 : optind), argv);
     if (engine.error) {
         fprintf(stderr, "An error occurred while initializing the system.\n");
         return 1;
@@ -123,6 +135,24 @@ main (int argc, char *argv[])
         if (!JSVAL_IS_VOID(rval)) {
             printf("%s\n", JS_GetStringBytes(JS_ValueToString(engine.context, rval)));
         }
+    }
+    else if (compile) {
+        FILE* out;
+
+        if (!(out = fopen(outFile, "wb"))) {
+            fprintf(stderr, "Couldn't write to %s\n", outFile);
+            return EXIT_FAILURE;
+        }
+
+        CompiledScript* compiled = Compile_compileString(engine.context,
+            (char*)stripRemainder(engine.context, (char*)readFile(engine.context, inFile))
+        );
+
+        uint32 offset = 0;
+        while (offset < compiled->length) {
+            offset += fwrite((compiled->bytecode+offset), sizeof(char), (compiled->length-offset), out);
+        }
+        fclose(out);
     }
     else {
         if (!fileExists(argv[optind])) {
@@ -187,9 +217,16 @@ executeScript (JSContext* cx, const char* file)
     jsval     rval;
     JSObject* global = JS_GetGlobalObject(cx);
 
-    char* sources = stripRemainder(cx, readFile(cx, file));
-    returnValue = JS_EvaluateScript(cx, global, sources, strlen(sources), file, 1, &rval);
-    JS_free(cx, sources);
+    if (Compile_fileIsBytecode(file)) {
+        CompiledScript compiled;
+        compiled.bytecode = (char*) readFile(cx, file);
+        compiled.length   = 4;
+        returnValue = Compile_execute(cx, &compiled);
+    }
+    else {
+        char* sources = (char*) stripRemainder(cx, (char*) readFile(cx, file));
+        returnValue = JS_EvaluateScript(cx, global, sources, strlen(sources), file, 1, &rval);
+    }
 
     return returnValue;
 }

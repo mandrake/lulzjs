@@ -19,13 +19,15 @@
 #include "Compile.h"
 
 JSBool
-Compile_isBytecode (const char* bytecode)
+Compile_stringIsBytecode (const char* bytecode)
 {
     // Can't get the check with numbers, i don't know why
     char magic[9]      = {0};
     char magicCheck[9] = {0};
     sprintf(magic,      "%x", JSXDR_MAGIC_SCRIPT_CURRENT);
-    sprintf(magicCheck, "%x", (*(unsigned long*) bytecode));
+    sprintf(magicCheck, "%x", *((unsigned long*) bytecode));
+
+    printf("%s %s\n", magic, magicCheck);
 
     return (strcmp(magic, magicCheck) == 0)
         ? JS_TRUE
@@ -33,9 +35,33 @@ Compile_isBytecode (const char* bytecode)
 }
 
 JSBool
-Compile_execute (JSContext* cx, const char* bytecode)
+Compile_fileIsBytecode (const char* path)
 {
-    JSScript* script = Compile_decompile(cx, bytecode);
+    struct stat fileStat;
+     
+    if (!stat(path, &fileStat)) {
+        if (fileStat.st_size > 3) {
+            FILE* file = fopen(path, "rb");
+
+            char bytecode[4];
+            fread(bytecode, sizeof(char), 4, file);
+            fclose(file);
+
+            printf("%x\n", (*(unsigned long*) bytecode));
+            
+
+            return Compile_stringIsBytecode(bytecode);
+        }
+    }
+
+    return JS_FALSE;
+}
+
+
+JSBool
+Compile_execute (JSContext* cx, CompiledScript* compiled)
+{
+    JSScript* script = Compile_decompile(cx, compiled);
     JSBool result = JS_FALSE;
 
     if (script) {
@@ -68,7 +94,10 @@ Compile_load (JSContext* cx, const char* path)
     }
     buffer[cacheStat.st_size] = '\0';
 
-    script = Compile_decompile(cx, buffer);
+    CompiledScript* compiled = JS_malloc(cx, sizeof(CompiledScript));
+    compiled->bytecode = buffer;
+    compiled->length   = cacheStat.st_size;
+    script = Compile_decompile(cx, compiled);
 
     fclose(cache);
     JS_free(cx, buffer);
@@ -77,15 +106,13 @@ Compile_load (JSContext* cx, const char* path)
 }
 
 JSScript*
-Compile_decompile (JSContext* cx, const char* bytecode)
+Compile_decompile (JSContext* cx, CompiledScript* compiled)
 {
     JSScript* script = NULL;
 
-    uint32 length = strlen(bytecode);
-
-    if (length > 3 && Compile_isBytecode(bytecode)) {
+    if (compiled->length > 3 & Compile_stringIsBytecode(compiled->bytecode)) {
         JSXDRState* xdr = JS_XDRNewMem(cx, JSXDR_DECODE);
-        JS_XDRMemSetData(xdr, bytecode, length);
+        JS_XDRMemSetData(xdr, compiled->bytecode, compiled->length);
 
         if (JS_XDRScript(xdr, &script)) {
             JS_XDRMemSetData(xdr, NULL, 0);
@@ -96,22 +123,36 @@ Compile_decompile (JSContext* cx, const char* bytecode)
     return script;
 }
 
-char*
+CompiledScript*
 Compile_compile (JSContext* cx, JSScript* script)
 {
     JSXDRState* xdr = JS_XDRNewMem(cx, JSXDR_ENCODE);
     char* bytes;
+    uint32 length = 0;
 
     if (JS_XDRScript(xdr, &script)) {
-        uint32 length = 0;
         bytes = JS_strdup(cx, JS_XDRMemGetData(xdr, &length));
+        bytes = JS_realloc(cx, bytes, (length+1)*sizeof(char));
     }
     else {
         bytes = NULL;
     }
     JS_XDRDestroy(xdr);
+
+    CompiledScript* compiled = JS_malloc(cx, sizeof(CompiledScript));
+    compiled->bytecode = bytes;
+    compiled->length   = length;
     
-    return bytes;
+    return compiled;
+}
+
+CompiledScript*
+Compile_compileString (JSContext* cx, const char* source)
+{
+    JSScript* script         = JS_CompileScript(cx, JS_GetGlobalObject(cx), source, strlen(source), NULL, 1);
+    CompiledScript* compiled = Compile_compile(cx, script);
+    JS_DestroyScript(cx, script);
+    return compiled;
 }
 
 JSBool
@@ -123,14 +164,13 @@ Compile_save (JSContext* cx, JSScript* script, const char* path)
         return JS_FALSE;
     }
 
-    char* bytecode = Compile_compile(cx, script);
-    size_t length  = strlen(bytecode);
+    CompiledScript* compiled = Compile_compile(cx, script);
 
     uint32 offset = 0;
-    while (offset < length) {
-        offset += fwrite((bytecode+offset), sizeof(char), (length-offset), file);
+    while (offset < compiled->length) {
+        offset += fwrite((compiled->bytecode+offset), sizeof(char), (compiled->length-offset), file);
     }
-    JS_free(cx, bytecode);
+    JS_free(cx, compiled->bytecode);
 
     return JS_TRUE;
 }

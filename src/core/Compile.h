@@ -27,11 +27,18 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-JSBool    Compile_isBytecode (const char* bytecode);
-JSBool    Compile_execute (JSContext* cx, const char* bytecode);
-JSScript* Compile_load (JSContext* cx, const char* path);
-JSScript* Compile_decompile (JSContext* cx, const char* bytecode);
-char*     Compile_compile (JSContext* cx, JSScript* script);
-JSBool    Compile_save (JSContext* cx, JSScript* script, const char* path);
+typedef struct {
+    char*  bytecode;
+    uint32 length;
+} CompiledScript;
+
+JSBool          Compile_stringIsBytecode (const char* bytecode);
+JSBool          Compile_fileIsBytecode (const char* path);
+JSBool          Compile_execute (JSContext* cx, CompiledScript* compiled);
+JSScript*       Compile_load (JSContext* cx, const char* path);
+JSScript*       Compile_decompile (JSContext* cx, CompiledScript* compiled);
+CompiledScript* Compile_compile (JSContext* cx, JSScript* script);
+CompiledScript* Compile_compileString (JSContext* cx, const char* source);
+JSBool          Compile_save (JSContext* cx, JSScript* script, const char* path);
 
 #endif

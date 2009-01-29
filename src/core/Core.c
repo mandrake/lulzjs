@@ -417,7 +417,7 @@ __Core_include (JSContext* cx, const char* path)
         #endif
 
         jsval rval;
-        char* sources    = stripRemainder(cx, readFile(cx, path));
+        char* sources    = (char*)stripRemainder(cx, (char*)readFile(cx, path));
         JSScript* script = JS_CompileScript(cx, JS_GetGlobalObject(cx), sources, strlen(sources), path, 1);
         JS_free(cx, sources);
 
