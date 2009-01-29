@@ -35,27 +35,20 @@ JS_strdup (JSContext* cx, const char* string)
 const char*
 readFile (JSContext* cx, const char* file)
 {
-    FILE*  fp     = fopen(file, "r");
-    char*  text   = NULL;
-    size_t length = 0;
-    size_t read   = 0;
+    FILE*  fp;
+    struct stat fileStat;
+    char* text;
+    
+    if (!stat(file, &fileStat)) {
+        fp   = fopen(file, "rb");
+        text = JS_malloc(cx, (fileStat.st_size+1)*sizeof(char));
 
-    if (!fp) {
-        return NULL;
-    }
-
-    while (1) {
-        text = JS_realloc(cx, text, length+=256);
-        read = fread(text+(length-256), sizeof(char), 256, fp);
-
-        if (read < 256) {
-            text = JS_realloc(cx, text, length-=(256-read));
-            break;
+        uint32 offset = 0;
+        while (offset < fileStat.st_size) {
+            offset += fread((text+offset), sizeof(char), (fileStat.st_size-offset), fp);
         }
+        text[fileStat.st_size] = '\0';
     }
-    text[length-1] = '\0';
-
-    fclose(fp);
 
     return text;
 }

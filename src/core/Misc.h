@@ -21,6 +21,11 @@
 
 #include "lulzjs.h"
 
+// Not cross platform
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 char* JS_strdup (JSContext* cx, const char* string);
 
 const char* readFile (JSContext* cx, const char* file);

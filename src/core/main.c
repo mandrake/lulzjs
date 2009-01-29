@@ -218,9 +218,13 @@ executeScript (JSContext* cx, const char* file)
     JSObject* global = JS_GetGlobalObject(cx);
 
     if (Compile_fileIsBytecode(file)) {
+        struct stat fileStat;
+        stat(file, &fileStat);
+
         CompiledScript compiled;
         compiled.bytecode = (char*) readFile(cx, file);
-        compiled.length   = 4;
+        compiled.length   = fileStat.st_size;
+
         returnValue = Compile_execute(cx, &compiled);
     }
     else {

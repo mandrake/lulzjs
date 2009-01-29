@@ -32,7 +32,7 @@ typedef struct {
     uint32 length;
 } CompiledScript;
 
-JSBool          Compile_stringIsBytecode (const char* bytecode);
+inline JSBool   Compile_stringIsBytecode (const char* bytecode);
 JSBool          Compile_fileIsBytecode (const char* path);
 JSBool          Compile_execute (JSContext* cx, CompiledScript* compiled);
 JSScript*       Compile_load (JSContext* cx, const char* path);

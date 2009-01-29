@@ -21,17 +21,12 @@
 JSBool
 Compile_stringIsBytecode (const char* bytecode)
 {
-    // Can't get the check with numbers, i don't know why
     char magic[9]      = {0};
     char magicCheck[9] = {0};
-    sprintf(magic,      "%x", JSXDR_MAGIC_SCRIPT_CURRENT);
-    sprintf(magicCheck, "%x", *((unsigned long*) bytecode));
+    sprintf(magic,      "%8x", JSXDR_MAGIC_SCRIPT_CURRENT);
+    sprintf(magicCheck, "%8x", *((unsigned long*) bytecode));
 
-    printf("%s %s\n", magic, magicCheck);
-
-    return (strcmp(magic, magicCheck) == 0)
-        ? JS_TRUE
-        : JS_FALSE;
+    return strcmp(magic, magicCheck) == 0;
 }
 
 JSBool
@@ -46,9 +41,6 @@ Compile_fileIsBytecode (const char* path)
             char bytecode[4];
             fread(bytecode, sizeof(char), 4, file);
             fclose(file);
-
-            printf("%x\n", (*(unsigned long*) bytecode));
-            
 
             return Compile_stringIsBytecode(bytecode);
         }
@@ -94,10 +86,10 @@ Compile_load (JSContext* cx, const char* path)
     }
     buffer[cacheStat.st_size] = '\0';
 
-    CompiledScript* compiled = JS_malloc(cx, sizeof(CompiledScript));
-    compiled->bytecode = buffer;
-    compiled->length   = cacheStat.st_size;
-    script = Compile_decompile(cx, compiled);
+    CompiledScript compiled;
+    compiled.bytecode = buffer;
+    compiled.length   = cacheStat.st_size;
+    script            = Compile_decompile(cx, &compiled);
 
     fclose(cache);
     JS_free(cx, buffer);
@@ -110,7 +102,7 @@ Compile_decompile (JSContext* cx, CompiledScript* compiled)
 {
     JSScript* script = NULL;
 
-    if (compiled->length > 3 & Compile_stringIsBytecode(compiled->bytecode)) {
+    if (compiled->length > 3 && Compile_stringIsBytecode(compiled->bytecode)) {
         JSXDRState* xdr = JS_XDRNewMem(cx, JSXDR_DECODE);
         JS_XDRMemSetData(xdr, compiled->bytecode, compiled->length);
 
@@ -127,22 +119,20 @@ CompiledScript*
 Compile_compile (JSContext* cx, JSScript* script)
 {
     JSXDRState* xdr = JS_XDRNewMem(cx, JSXDR_ENCODE);
+    CompiledScript* compiled = JS_malloc(cx, sizeof(CompiledScript));
     char* bytes;
-    uint32 length = 0;
 
     if (JS_XDRScript(xdr, &script)) {
-        bytes = JS_strdup(cx, JS_XDRMemGetData(xdr, &length));
-        bytes = JS_realloc(cx, bytes, (length+1)*sizeof(char));
+        bytes = JS_XDRMemGetData(xdr, &compiled->length);
+        compiled->bytecode = JS_malloc(cx, compiled->length*sizeof(char));
+        memcpy(compiled->bytecode, bytes, compiled->length);
     }
     else {
-        bytes = NULL;
+        compiled->bytecode = NULL;
+        compiled->length   = 0;
     }
     JS_XDRDestroy(xdr);
 
-    CompiledScript* compiled = JS_malloc(cx, sizeof(CompiledScript));
-    compiled->bytecode = bytes;
-    compiled->length   = length;
-    
     return compiled;
 }
 
@@ -170,7 +160,9 @@ Compile_save (JSContext* cx, JSScript* script, const char* path)
     while (offset < compiled->length) {
         offset += fwrite((compiled->bytecode+offset), sizeof(char), (compiled->length-offset), file);
     }
+    fclose(file);
     JS_free(cx, compiled->bytecode);
+    JS_free(cx, compiled);
 
     return JS_TRUE;
 }
