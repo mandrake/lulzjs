@@ -27,12 +27,14 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#include "Misc.h"
+
 typedef struct {
     char*  bytecode;
     uint32 length;
 } CompiledScript;
 
-inline JSBool   Compile_stringIsBytecode (const char* bytecode);
+JSBool          Compile_stringIsBytecode (const char* bytecode);
 JSBool          Compile_fileIsBytecode (const char* path);
 JSBool          Compile_execute (JSContext* cx, CompiledScript* compiled);
 JSScript*       Compile_load (JSContext* cx, const char* path);

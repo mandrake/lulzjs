@@ -323,7 +323,8 @@ __Core_getPath (JSContext* cx, const char* fileName)
      * Getting the dirname of the file from the other file is included
      * then copying it and getting the path to the dir.
      */
-    char* from = JS_strdup(cx, __Core_getScriptName(cx));
+    char* scriptName = (char*) __Core_getScriptName(cx);
+    char* from = JS_strdup(cx, (scriptName ? scriptName : ""));
     char* dir  = dirname(from);
     char* path = JS_malloc(cx, (strlen(dir)+2)*sizeof(char));
 

@@ -78,13 +78,7 @@ Compile_load (JSContext* cx, const char* path)
     }
     stat(path, &cacheStat);
 
-    buffer = JS_malloc(cx, (cacheStat.st_size+1)*sizeof(char));
-
-    uint32 offset = 0;
-    while (offset < cacheStat.st_size) {
-        offset += fread((buffer+offset), sizeof(char), (cacheStat.st_size-offset), cache);
-    }
-    buffer[cacheStat.st_size] = '\0';
+    buffer = readFile(cx, path);
 
     CompiledScript compiled;
     compiled.bytecode = buffer;
