@@ -197,8 +197,9 @@ System.Net.Protocol.HTTP.Request = Class.create({
         var ret = new String;
 
         var length;
-        while (length = this.socket.receiveLine().toInt()) {
+        while (length = this.socket.receiveLine().toInt(16)) {
             ret += this.socket.receive(length);
+            this.socket.receiveLine()
         }
 
         return ret;
