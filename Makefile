@@ -4,7 +4,7 @@ CC         = gcc
 CXX        = g++
 BINDIR     = /usr/bin
 LJS_LIBDIR = /usr/lib/lulzjs
-CFLAGS     = -DXP_UNIX -DJS_THREADSAFE -D__LJS_LIBRARY_PATH__="\"${LJS_LIBDIR}\"" -D__LJS_VERSION__="\"${VERSION}\"" -I/usr/include/js -I./src/core -I./src/lib
+CFLAGS     = -DXP_UNIX -DJS_THREADSAFE -D__LJS_LIBRARY_PATH__="\"${LJS_LIBDIR}\"" -D__LJS_VERSION__="\"${VERSION}\"" -I/usr/include/js -I./src/core -I./src/lib 
 LDFLAGS    = -ljs -llulzjs
 
 ifdef DEBUG

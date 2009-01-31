@@ -67,9 +67,6 @@ Stream_initialize (JSContext* cx)
         data->descriptor = stderr;
         JS_SetPrivate(cx, stream, data);
     
-        // Default properties
-        jsval property;
-
         return JS_TRUE;
     }
 

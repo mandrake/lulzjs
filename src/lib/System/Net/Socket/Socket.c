@@ -89,7 +89,9 @@ Socket_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv, js
     data->family    = family;
     data->type      = type;
     data->protocol  = protocol;
-    data->connected = JS_FALSE;
+
+    jsval jsConnected = JS_FALSE;
+    JS_SetProperty(cx, object, "connected", &jsConnected);
 
     return JS_TRUE;
 }
@@ -141,16 +143,18 @@ Socket_connect (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval*
         addrin->sin_addr.s_addr = inet_addr(ip);
     }
 
+    jsval jsConnected;
     if (connect(data->socket, (struct sockaddr*) addrin, sizeof(struct sockaddr_in)) < 0) {
-        data->connected = JS_FALSE;
+        jsConnected = JSVAL_FALSE;
     }
     else {
-        data->connected = JS_TRUE;
+        jsConnected = JSVAL_TRUE;
     }
+    JS_SetProperty(cx, object, "connected", &jsConnected);
 
     data->addr = (struct sockaddr*) addrin;
 
-    *rval = BOOLEAN_TO_JSVAL(data->connected);
+    *rval = jsConnected;
 
     return JS_TRUE;
 }
@@ -249,7 +253,10 @@ Socket_send (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rv
 
     SocketInformation* data = JS_GetPrivate(cx, object);
 
-    if (!data->connected) {
+    jsval jsConnected; JS_GetProperty(cx, object, "connected", &jsConnected);
+    JSBool connected = JSVAL_TO_BOOLEAN(jsConnected);
+
+    if (!connected) {
         JS_ReportError(cx, "The socket isn't connected.");
         return JS_FALSE;
     }
@@ -284,7 +291,10 @@ Socket_receive (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval 
 
     SocketInformation* data = JS_GetPrivate(cx, object);
 
-    if (!data->connected) {
+    jsval jsConnected; JS_GetProperty(cx, object, "connected", &jsConnected);
+    JSBool connected = JSVAL_TO_BOOLEAN(jsConnected);
+
+    if (!connected) {
         JS_ReportError(cx, "The socket isn't connected.");
         return JS_FALSE;
     }
@@ -293,8 +303,22 @@ Socket_receive (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval 
 
     jsrefcount req = JS_SuspendRequest(cx);
     unsigned offset = 0;
+    int      tmp;
     while (offset < size) {
-        offset += recv(data->socket, (string+offset), sizeof(char)*(size-offset), flags);
+         tmp = recv(data->socket, (string+offset), (size-offset)*sizeof(char), flags);
+
+         if (tmp == -1) {
+            JS_ReportError(cx, "An error occurred with the socket.");
+            JS_free(cx, string);
+            return JS_FALSE;
+         }
+         else if (tmp == 0) {
+            jsConnected = JSVAL_FALSE;
+            JS_SetProperty(cx, object, "connected", &jsConnected);
+            break;
+         }
+        
+         offset += tmp;
     }
     string[size] = '\0';
     JS_ResumeRequest(cx, req);
@@ -325,7 +349,10 @@ Socket_sendBytes (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsva
 
     SocketInformation* data = JS_GetPrivate(cx, object);
 
-    if (!data->connected) {
+    jsval jsConnected; JS_GetProperty(cx, object, "connected", &jsConnected);
+    JSBool connected = JSVAL_TO_BOOLEAN(jsConnected);
+
+    if (!connected) {
         JS_ReportError(cx, "The socket isn't connected.");
         return JS_FALSE;
     }
@@ -370,7 +397,10 @@ Socket_receiveBytes (JSContext *cx, JSObject *object, uintN argc, jsval *argv, j
 
     SocketInformation* data = JS_GetPrivate(cx, object);
 
-    if (!data->connected) {
+    jsval jsConnected; JS_GetProperty(cx, object, "connected", &jsConnected);
+    JSBool connected = JSVAL_TO_BOOLEAN(jsConnected);
+
+    if (!connected) {
         JS_ReportError(cx, "The socket isn't connected.");
         return JS_FALSE;
     }
@@ -379,8 +409,22 @@ Socket_receiveBytes (JSContext *cx, JSObject *object, uintN argc, jsval *argv, j
 
     jsrefcount req = JS_SuspendRequest(cx);
     unsigned offset = 0;
+    int      tmp;
     while (offset < size) {
-        offset += recv(data->socket, (string+offset), sizeof(char)*(size-offset), flags);
+         tmp = recv(data->socket, (string+offset), (size-offset)*sizeof(char), flags);
+
+         if (tmp == -1) {
+            JS_ReportError(cx, "An error occurred with the socket.");
+            JS_free(cx, string);
+            return JS_FALSE;
+         }
+         else if (tmp == 0) {
+            jsConnected = JSVAL_FALSE;
+            JS_SetProperty(cx, object, "connected", &jsConnected);
+            break;
+         }
+        
+         offset += tmp;
     }
     string[size] = '\0';
     JS_ResumeRequest(cx, req);
