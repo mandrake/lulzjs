@@ -401,7 +401,7 @@ __Core_include (JSContext* cx, const char* path)
                 JSScript* script = Compile_load(cx, cachePath);
 
                 if (script) {
-                    JSBool result = JS_ExecuteScript(cx, JS_GetGlobalObject(cx), script, &ret);
+                    JS_ExecuteScript(cx, JS_GetGlobalObject(cx), script, &ret);
                     JS_DestroyScript(cx, script);
 
                     #ifdef DEBUG

@@ -67,9 +67,9 @@ Socket_initialize (JSContext* cx)
 JSBool
 Socket_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
 {
-    unsigned family   = AF_INET;
-    unsigned type     = SOCK_STREAM;
-    unsigned protocol = PF_UNSPEC;
+    uint16 family   = AF_INET;
+    uint16 type     = SOCK_STREAM;
+    uint16 protocol = PF_UNSPEC;
 
     if (argc > 3) {
         JS_ReportError(cx, "Too many arguments.");
@@ -77,9 +77,9 @@ Socket_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv, js
     }
 
     switch (argc) {
-        case 3: JS_ValueToInt32(cx, argv[2], &protocol);
-        case 2: JS_ValueToInt32(cx, argv[1], &type);
-        case 1: JS_ValueToInt32(cx, argv[0], &family);
+        case 3: JS_ValueToUint16(cx, argv[2], &protocol);
+        case 2: JS_ValueToUint16(cx, argv[1], &type);
+        case 1: JS_ValueToUint16(cx, argv[0], &family);
     }
 
     SocketInformation* data = JS_malloc(cx, sizeof(SocketInformation));
@@ -217,7 +217,7 @@ Socket_accept (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* 
 
     JSObject* sock = JS_NewObject(cx, &Socket_class, JS_GetPrototype(cx, object), NULL);
 
-    int size = sizeof(struct sockaddr);
+    socklen_t size = sizeof(struct sockaddr);
 
     SocketInformation* newData = JS_malloc(cx, sizeof(SocketInformation));
     newData->addr     = JS_malloc(cx, sizeof(struct sockaddr));
@@ -232,8 +232,8 @@ Socket_accept (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* 
 JSBool
 Socket_send (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
 {
-    char* string;
-    unsigned flags = 0;
+    char*  string;
+    uint16 flags = 0;
 
     JS_BeginRequest(cx);
 
@@ -243,7 +243,7 @@ Socket_send (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rv
     }
 
     switch (argc) {
-        case 2: JS_ValueToInt32(cx, argv[1], &flags);
+        case 2: JS_ValueToUint16(cx, argv[1], &flags);
         case 1: string = JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
     }
 
@@ -267,8 +267,8 @@ Socket_send (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rv
 JSBool
 Socket_receive (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval *rval)
 {
-    unsigned size;
-    unsigned flags = 0;
+    uint16 size;
+    uint16 flags = 0;
 
     JS_BeginRequest(cx);
 
@@ -278,8 +278,8 @@ Socket_receive (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval 
     }
 
     switch (argc) {
-        case 2: JS_ValueToInt32(cx, argv[1], &flags);
-        case 1: JS_ValueToInt32(cx, argv[0], &size);
+        case 2: JS_ValueToUint16(cx, argv[1], &flags);
+        case 1: JS_ValueToUint16(cx, argv[0], &size);
     }
 
     SocketInformation* data = JS_GetPrivate(cx, object);
@@ -309,7 +309,7 @@ JSBool
 Socket_sendBytes (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
 {
     JSObject* obj;
-    unsigned flags = 0;
+    uint16    flags = 0;
 
     JS_BeginRequest(cx);
 
@@ -319,7 +319,7 @@ Socket_sendBytes (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsva
     }
 
     switch (argc) {
-        case 2: JS_ValueToInt32(cx, argv[1], &flags);
+        case 2: JS_ValueToUint16(cx, argv[1], &flags);
         case 1: JS_ValueToObject(cx, argv[0], &obj);
     }
 
@@ -346,15 +346,15 @@ Socket_sendBytes (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsva
     
     JS_EndRequest(cx);
 
-    *rval = INT_TO_JSVAL(send(data->socket, string, sizeof(char)*strlen(string), flags));
+    *rval = INT_TO_JSVAL(send(data->socket, string, sizeof(char)*strlen((char*)string), flags));
     return JS_TRUE;
 }
 
 JSBool
 Socket_receiveBytes (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval *rval)
 {
-    unsigned size;
-    unsigned flags = 0;
+    uint16 size;
+    uint16 flags = 0;
 
     JS_BeginRequest(cx);
 
@@ -364,8 +364,8 @@ Socket_receiveBytes (JSContext *cx, JSObject *object, uintN argc, jsval *argv, j
     }
 
     switch (argc) {
-        case 2: JS_ValueToInt32(cx, argv[2], &flags);
-        case 1: JS_ValueToInt32(cx, argv[0], &size);
+        case 2: JS_ValueToUint16(cx, argv[1], &flags);
+        case 1: JS_ValueToUint16(cx, argv[0], &size);
     }
 
     SocketInformation* data = JS_GetPrivate(cx, object);
@@ -436,7 +436,6 @@ const char*
 __Socket_getHostByName (JSContext* cx, const char* host)
 {
     struct hostent* hp = gethostbyname(host);
-    struct in_addr in;
 
     if (!hp) {
         return NULL;

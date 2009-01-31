@@ -179,12 +179,12 @@ initEngine (int argc, int offset, char *argv[])
     Engine engine;
     engine.error = JS_TRUE;
 
-    if (engine.runtime = JS_NewRuntime(8L * 1024L * 1024L)) {
-        if (engine.context = JS_NewContext(engine.runtime, 8192)) {
+    if ((engine.runtime = JS_NewRuntime(8L * 1024L * 1024L))) {
+        if ((engine.context = JS_NewContext(engine.runtime, 8192))) {
             JS_SetOptions(engine.context, JSOPTION_VAROBJFIX);
             JS_SetErrorReporter(engine.context, reportError);
 
-            if (engine.core = Core_initialize(engine.context, argv[offset])) {
+            if ((engine.core = Core_initialize(engine.context, argv[offset]))) {
                 jsval property;
                 JSObject* arguments = JS_NewArrayObject(engine.context, 0, NULL);
                 property = OBJECT_TO_JSVAL(arguments);

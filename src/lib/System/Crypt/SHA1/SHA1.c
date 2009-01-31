@@ -61,7 +61,7 @@ SHA1_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsva
     JS_SetPrivate(cx, object, data);
 
     __SHA1_init(data);
-    __SHA1_update(data, string, strlen(string));
+    __SHA1_update(data, (unsigned char*) string, strlen(string));
 
     return JS_TRUE;
 }

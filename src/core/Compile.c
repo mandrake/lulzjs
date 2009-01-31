@@ -78,7 +78,7 @@ Compile_load (JSContext* cx, const char* path)
     }
     stat(path, &cacheStat);
 
-    buffer = readFile(cx, path);
+    buffer = (char*) readFile(cx, path);
 
     CompiledScript compiled;
     compiled.bytecode = buffer;

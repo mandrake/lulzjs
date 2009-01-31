@@ -178,6 +178,8 @@ __Thread_start (void* arg)
     if (!detach) {
         pthread_exit(NULL);
     }
+
+    return NULL;
 }
 
 JSBool
@@ -238,5 +240,6 @@ JSBool
 Thread_static_cancelPoint (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
 {
     pthread_testcancel();
+    return JS_TRUE;
 }
 
