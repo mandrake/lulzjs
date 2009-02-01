@@ -34,3 +34,6 @@ extern jsint js_parseInt (JSContext* cx, jsval number, int base);
 extern jsdouble js_parseFloat (JSContext* cx, jsval number);
 #define JS_ParseFloat(cx, number, base) js_parseInt(cx, number)
 
+extern jsval js_eval (JSContext* cx, const char* string);
+#define JS_EVAL(cx, string) js_eval(cx, string)
+

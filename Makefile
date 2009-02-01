@@ -8,11 +8,11 @@ CFLAGS     = -DXP_UNIX -DJS_THREADSAFE -D__LJS_LIBRARY_PATH__="\"${LJS_LIBDIR}\"
 LDFLAGS    = -ljs -llulzjs
 
 ifdef DEBUG
-CFLAGS += -g -DWORKING
+CFLAGS += -g -DWORKING -Wall
 endif
 
 ifdef DDEBUG
-CFLAGS += -DDEBUG -g
+CFLAGS += -DDEBUG -g -Wall
 endif
 
 ## CORE ##

@@ -71,3 +71,16 @@ js_parseFloat (JSContext* cx, jsval number)
     return nret;
 }
 
+jsval
+js_eval (JSContext* cx, const char* string)
+{
+    jsval ret;
+    JS_EvaluateScript(cx, JS_GetGlobalObject(cx), string, strlen(string), "eval", 1, &ret);
+
+    if (JS_IsExceptionPending(cx)) {
+        ret = JSVAL_VOID;
+    }
+
+    return ret;
+}
+
