@@ -41,7 +41,7 @@ Program.Bytes = Class.create({
         return this.array;
     },
 
-    toText: function () {
+    toString: function () {
         var str = new String;
 
         for (var i = 0; i < this.array.length; i++) {
@@ -51,7 +51,7 @@ Program.Bytes = Class.create({
         return str;
     },
     
-    toString: function () {
+    inspect: function () {
         var str = new String;
 
         for (var i = 0; i < this.array.length; i++) {

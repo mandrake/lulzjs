@@ -53,6 +53,9 @@ Console_write (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* 
     }
 
     printf("%s", string);
+    fflush(stdout);
+    
+    return JS_TRUE;
 }
 
 JSBool
@@ -66,6 +69,9 @@ Console_error (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* 
     }
 
     fprintf(stderr, "%s", string);
+    fflush(stderr);
+
+    return JS_TRUE;
 }
 
 JSBool
