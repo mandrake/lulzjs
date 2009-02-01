@@ -45,5 +45,5 @@ require("Crypt/Crypt.so");
 require(["Crypt/SHA1/SHA1.so", "Crypt/SHA1/SHA1.js"]);
 
 // Console module
-require("Console/Console.js")
+require(["Console/Console.so", "Console/Console.js"]);
 
