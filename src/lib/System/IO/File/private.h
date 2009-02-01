@@ -19,11 +19,9 @@
 #ifndef _SYSTEM_IO_FILE_PRIVATE_H
 #define _SYSTEM_IO_FILE_PRIVATE_H
 
-#include "../Stream/private.h"
-
 typedef struct {
     char* path;
-    StreamInformation* stream;
+    FILE* descriptor;
     char* mode;
 } FileInformation;
 

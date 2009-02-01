@@ -47,6 +47,7 @@ extern JSObject* Core_initialize (JSContext* cx, const char* script);
 
 extern JSBool Core_include (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval); 
 extern JSBool Core_require (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
+extern JSBool Core_compile (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
 extern JSBool Core_GC (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
 
 extern JSBool Core_die (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);

@@ -35,6 +35,8 @@ static JSClass File_class = {
 
 #include "private.h"
 
+extern JSBool File_close (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+
 extern JSBool File_write (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 extern JSBool File_read (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
@@ -46,6 +48,8 @@ extern JSBool File_isEnd (JSContext* cx, JSObject* object, uintN argc, jsval* ar
 extern JSBool File_static_exists (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
 static JSFunctionSpec File_methods[] = {
+    {"close", File_close, 0, 0, 0},
+
     {"write", File_write, 0, 0, 0},
     {"read",  File_read,  0, 0, 0},
 

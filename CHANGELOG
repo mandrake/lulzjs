@@ -1,3 +1,8 @@
+0.1.8:
+  - Added js bytecode compilation, it automatically saves the pcode.
+  - Added the compile function
+  - Fixed some major bugs in the Socket object.
+
 0.1.7:
   - Added Bytes object to store bytes.
   - Added System.Net.Socket

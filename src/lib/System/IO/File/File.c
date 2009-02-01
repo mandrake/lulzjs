@@ -28,11 +28,8 @@ File_initialize (JSContext* cx)
     JS_GetProperty(cx, JSVAL_TO_OBJECT(jsParent), "IO", &jsParent);
     JSObject* parent = JSVAL_TO_OBJECT(jsParent);
 
-    jsval jsSuper;
-    JS_GetProperty(cx, parent, "Stream", &jsSuper);
-
     JSObject* object = JS_InitClass(
-        cx, parent, JSVAL_TO_OBJECT(jsSuper), &File_class,
+        cx, parent, NULL, &File_class,
         File_constructor, 2, NULL, File_methods, NULL, File_static_methods
     );
 
@@ -60,14 +57,13 @@ File_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsva
         return JS_FALSE;
     }
 
-    FileInformation* data    = JS_malloc(cx, sizeof(FileInformation));
-    data->path               = JS_strdup(cx, fileName);
-    data->mode               = JS_strdup(cx, mode);
-    data->stream             = (StreamInformation*) JS_malloc(cx, sizeof(StreamInformation));
-    data->stream->descriptor = fopen(data->path, data->mode);
+    FileInformation* data = JS_malloc(cx, sizeof(FileInformation));
+    data->path            = JS_strdup(cx, fileName);
+    data->mode            = JS_strdup(cx, mode);
+    data->descriptor      = fopen(data->path, data->mode);
     JS_SetPrivate(cx, object, data);
 
-    if (!data->stream->descriptor) {
+    if (!data->descriptor) {
         JS_ReportError(cx, "An error occurred while opening the file.");
         return JS_FALSE;
     }
@@ -83,10 +79,26 @@ File_finalize (JSContext* cx, JSObject* object)
     if (data) {
         JS_free(cx, data->path);
         JS_free(cx, data->mode);
-        fclose(data->stream->descriptor);
-        JS_free(cx, data->stream);
+
+        if (data->descriptor) {
+            fclose(data->descriptor);
+        }
+
         JS_free(cx, data);
     }
+}
+
+JSBool
+File_close (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
+{
+    FileInformation* data = JS_GetPrivate(cx, object);
+
+    if (data->descriptor) {
+        fclose(data->descriptor);
+        data->descriptor = NULL;
+    }
+
+    return JS_TRUE;
 }
 
 JSBool
@@ -103,7 +115,7 @@ File_write (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rva
 
     unsigned offset = 0;
     while (offset < strlen(string)) {
-        offset += fwrite((string+offset), sizeof(char), strlen(string)-offset, data->stream->descriptor);
+        offset += fwrite((string+offset), sizeof(char), strlen(string)-offset, data->descriptor);
     }
 
     return JS_TRUE;
@@ -121,14 +133,14 @@ File_read (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval *rval
 
     FileInformation* data = JS_GetPrivate(cx, object);
 
-    if (feof(data->stream->descriptor)) {
+    if (feof(data->descriptor)) {
         *rval = JSVAL_FALSE;
         return JS_TRUE;
     }
 
     char* string = JS_malloc(cx, (size+1)*sizeof(char));
     memset(string, 0, size+1);
-    fread(string, sizeof(char), size, data->stream->descriptor);
+    fread(string, sizeof(char), size, data->descriptor);
 
     *rval = STRING_TO_JSVAL(JS_NewString(cx, string, size));
 
@@ -163,7 +175,7 @@ File_writeBytes (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval
 
     unsigned offset = 0;
     while (offset < length) {
-        offset += fwrite((string-offset), sizeof(char), length-offset, data->stream->descriptor);
+        offset += fwrite((string-offset), sizeof(char), length-offset, data->descriptor);
     }
 
     return JS_TRUE;
@@ -183,14 +195,14 @@ File_readBytes (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval 
 
     FileInformation* data = JS_GetPrivate(cx, object);
 
-    if (feof(data->stream->descriptor)) {
+    if (feof(data->descriptor)) {
         *rval = JSVAL_FALSE;
         return JS_TRUE;
     }
 
     unsigned char* string = JS_malloc(cx, (size+1)*sizeof(char));
     memset(string, 0, size+1);
-    fread(string, sizeof(char), size, data->stream->descriptor);
+    fread(string, sizeof(char), size, data->descriptor);
 
     JSObject* array = JS_NewArrayObject(cx, 0, NULL);
 
@@ -223,7 +235,7 @@ File_isEnd (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rva
 {
     FileInformation* data = JS_GetPrivate(cx, object);
 
-    *rval = BOOLEAN_TO_JSVAL(feof(data->stream->descriptor));
+    *rval = BOOLEAN_TO_JSVAL(feof(data->descriptor));
     return JS_TRUE;
 }
 

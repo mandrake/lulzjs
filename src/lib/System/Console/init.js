@@ -20,8 +20,6 @@ require("System/System.so");
 
 require("System/IO/IO.so");
 
-require(["System/IO/Stream/Stream.so", "System/IO/Stream/Stream.js"]);
+require(["Console.so", "Console.js"]);
 
-require("Console.js");
-
-var Console = System.Console;
+Program.Console = System.Console;

@@ -20,7 +20,6 @@ require("System/System.so");
 
 require("IO.so");
 
-require(["Stream/Stream.so", "Stream/Stream.js"]);
 require(["File/File.so", "File/File.js"]);
 
 Program.IO = Program.System.IO;

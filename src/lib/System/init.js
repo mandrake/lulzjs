@@ -22,8 +22,6 @@ require("System.so")
 // Input output modules
 require("IO/IO.so")
 
-require(["IO/Stream/Stream.so", "IO/Stream/Stream.js"]);
-
 require(["IO/File/File.so", "IO/File/File.js"]);
 
 // Networking modules
