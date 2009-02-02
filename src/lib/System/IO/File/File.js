@@ -23,6 +23,10 @@ Object.extend(System.IO.File, {
 });
 
 Object.extend(System.IO.File.prototype, {
+    writeLine: function (str) {
+        this.write(str+"\n");
+    },
+
     readLine: function () {
         if (this.isEnd())
             return null;
