@@ -1,0 +1,11 @@
+Implement signal management:
+    Program.onAbort     # SIGABRT
+    Program.onSegfault  # SIGSEGV
+    Program.onKill      # SIGKILL
+    Program.onMathError # SIGFPE
+    Program.onIllegal   # SIGILL
+    Program.onQuit      # SIGQUIT
+    Program.onTerminate # SIGTERM
+    Program.onStop      # SIGTSTP
+
+:O
