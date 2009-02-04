@@ -78,6 +78,7 @@ js_eval (JSContext* cx, const char* string)
     JS_EvaluateScript(cx, JS_GetGlobalObject(cx), string, strlen(string), "eval", 1, &ret);
 
     if (JS_IsExceptionPending(cx)) {
+        JS_ClearExceptionPending(cx);
         ret = JSVAL_VOID;
     }
 

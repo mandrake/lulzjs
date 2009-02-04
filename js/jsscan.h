@@ -44,7 +44,7 @@
  */
 #include <stddef.h>
 #include <stdio.h>
-#include "jsconfig.h"
+#include "jsversion.h"
 #include "jsopcode.h"
 #include "jsprvtd.h"
 #include "jspubtd.h"
@@ -84,60 +84,59 @@ typedef enum JSTokenType {
     TOK_NAME = 29,                      /* identifier */
     TOK_NUMBER = 30,                    /* numeric constant */
     TOK_STRING = 31,                    /* string constant */
-    TOK_OBJECT = 32,                    /* RegExp or other object constant */
+    TOK_REGEXP = 32,                    /* RegExp constant */
     TOK_PRIMARY = 33,                   /* true, false, null, this, super */
     TOK_FUNCTION = 34,                  /* function keyword */
-    TOK_EXPORT = 35,                    /* export keyword */
-    TOK_IMPORT = 36,                    /* import keyword */
-    TOK_IF = 37,                        /* if keyword */
-    TOK_ELSE = 38,                      /* else keyword */
-    TOK_SWITCH = 39,                    /* switch keyword */
-    TOK_CASE = 40,                      /* case keyword */
-    TOK_DEFAULT = 41,                   /* default keyword */
-    TOK_WHILE = 42,                     /* while keyword */
-    TOK_DO = 43,                        /* do keyword */
-    TOK_FOR = 44,                       /* for keyword */
-    TOK_BREAK = 45,                     /* break keyword */
-    TOK_CONTINUE = 46,                  /* continue keyword */
-    TOK_IN = 47,                        /* in keyword */
-    TOK_VAR = 48,                       /* var keyword */
-    TOK_WITH = 49,                      /* with keyword */
-    TOK_RETURN = 50,                    /* return keyword */
-    TOK_NEW = 51,                       /* new keyword */
-    TOK_DELETE = 52,                    /* delete keyword */
-    TOK_DEFSHARP = 53,                  /* #n= for object/array initializers */
-    TOK_USESHARP = 54,                  /* #n# for object/array initializers */
-    TOK_TRY = 55,                       /* try keyword */
-    TOK_CATCH = 56,                     /* catch keyword */
-    TOK_FINALLY = 57,                   /* finally keyword */
-    TOK_THROW = 58,                     /* throw keyword */
-    TOK_INSTANCEOF = 59,                /* instanceof keyword */
-    TOK_DEBUGGER = 60,                  /* debugger keyword */
-    TOK_XMLSTAGO = 61,                  /* XML start tag open (<) */
-    TOK_XMLETAGO = 62,                  /* XML end tag open (</) */
-    TOK_XMLPTAGC = 63,                  /* XML point tag close (/>) */
-    TOK_XMLTAGC = 64,                   /* XML start or end tag close (>) */
-    TOK_XMLNAME = 65,                   /* XML start-tag non-final fragment */
-    TOK_XMLATTR = 66,                   /* XML quoted attribute value */
-    TOK_XMLSPACE = 67,                  /* XML whitespace */
-    TOK_XMLTEXT = 68,                   /* XML text */
-    TOK_XMLCOMMENT = 69,                /* XML comment */
-    TOK_XMLCDATA = 70,                  /* XML CDATA section */
-    TOK_XMLPI = 71,                     /* XML processing instruction */
-    TOK_AT = 72,                        /* XML attribute op (@) */
-    TOK_DBLCOLON = 73,                  /* namespace qualified name op (::) */
-    TOK_ANYNAME = 74,                   /* XML AnyName singleton (*) */
-    TOK_DBLDOT = 75,                    /* XML descendant op (..) */
-    TOK_FILTER = 76,                    /* XML filtering predicate op (.()) */
-    TOK_XMLELEM = 77,                   /* XML element node type (no token) */
-    TOK_XMLLIST = 78,                   /* XML list node type (no token) */
-    TOK_YIELD = 79,                     /* yield from generator function */
-    TOK_ARRAYCOMP = 80,                 /* array comprehension initialiser */
-    TOK_ARRAYPUSH = 81,                 /* array push within comprehension */
-    TOK_LEXICALSCOPE = 82,              /* block scope AST node label */
-    TOK_LET = 83,                       /* let keyword */
-    TOK_BODY = 84,                      /* synthetic body of function with
-                                           destructuring formal parameters */
+    TOK_IF = 35,                        /* if keyword */
+    TOK_ELSE = 36,                      /* else keyword */
+    TOK_SWITCH = 37,                    /* switch keyword */
+    TOK_CASE = 38,                      /* case keyword */
+    TOK_DEFAULT = 39,                   /* default keyword */
+    TOK_WHILE = 40,                     /* while keyword */
+    TOK_DO = 41,                        /* do keyword */
+    TOK_FOR = 42,                       /* for keyword */
+    TOK_BREAK = 43,                     /* break keyword */
+    TOK_CONTINUE = 44,                  /* continue keyword */
+    TOK_IN = 45,                        /* in keyword */
+    TOK_VAR = 46,                       /* var keyword */
+    TOK_WITH = 47,                      /* with keyword */
+    TOK_RETURN = 48,                    /* return keyword */
+    TOK_NEW = 49,                       /* new keyword */
+    TOK_DELETE = 50,                    /* delete keyword */
+    TOK_DEFSHARP = 51,                  /* #n= for object/array initializers */
+    TOK_USESHARP = 52,                  /* #n# for object/array initializers */
+    TOK_TRY = 53,                       /* try keyword */
+    TOK_CATCH = 54,                     /* catch keyword */
+    TOK_FINALLY = 55,                   /* finally keyword */
+    TOK_THROW = 56,                     /* throw keyword */
+    TOK_INSTANCEOF = 57,                /* instanceof keyword */
+    TOK_DEBUGGER = 58,                  /* debugger keyword */
+    TOK_XMLSTAGO = 59,                  /* XML start tag open (<) */
+    TOK_XMLETAGO = 60,                  /* XML end tag open (</) */
+    TOK_XMLPTAGC = 61,                  /* XML point tag close (/>) */
+    TOK_XMLTAGC = 62,                   /* XML start or end tag close (>) */
+    TOK_XMLNAME = 63,                   /* XML start-tag non-final fragment */
+    TOK_XMLATTR = 64,                   /* XML quoted attribute value */
+    TOK_XMLSPACE = 65,                  /* XML whitespace */
+    TOK_XMLTEXT = 66,                   /* XML text */
+    TOK_XMLCOMMENT = 67,                /* XML comment */
+    TOK_XMLCDATA = 68,                  /* XML CDATA section */
+    TOK_XMLPI = 69,                     /* XML processing instruction */
+    TOK_AT = 70,                        /* XML attribute op (@) */
+    TOK_DBLCOLON = 71,                  /* namespace qualified name op (::) */
+    TOK_ANYNAME = 72,                   /* XML AnyName singleton (*) */
+    TOK_DBLDOT = 73,                    /* XML descendant op (..) */
+    TOK_FILTER = 74,                    /* XML filtering predicate op (.()) */
+    TOK_XMLELEM = 75,                   /* XML element node type (no token) */
+    TOK_XMLLIST = 76,                   /* XML list node type (no token) */
+    TOK_YIELD = 77,                     /* yield from generator function */
+    TOK_ARRAYCOMP = 78,                 /* array comprehension initialiser */
+    TOK_ARRAYPUSH = 79,                 /* array push within comprehension */
+    TOK_LEXICALSCOPE = 80,              /* block scope AST node label */
+    TOK_LET = 81,                       /* let keyword */
+    TOK_SEQ = 82,                       /* synthetic sequence of statements,
+                                           not a block */
+    TOK_FORHEAD = 83,                   /* head of for(;;)-style loop */
     TOK_RESERVED,                       /* reserved keywords */
     TOK_LIMIT                           /* domain size */
 } JSTokenType;
@@ -183,6 +182,9 @@ extern void
 js_AppendCString(JSStringBuffer *sb, const char *asciiz);
 
 extern void
+js_AppendUCString(JSStringBuffer *sb, const jschar *buf, uintN len);
+
+extern void
 js_AppendJSString(JSStringBuffer *sb, JSString *str);
 
 struct JSTokenPtr {
@@ -200,10 +202,12 @@ struct JSToken {
     JSTokenPos          pos;            /* token position in file */
     jschar              *ptr;           /* beginning of token in line buffer */
     union {
-        struct {                        /* non-numeric literal */
+        struct {                        /* name or string literal */
             JSOp        op;             /* operator, for minimal parser */
             JSAtom      *atom;          /* atom table entry */
         } s;
+        uintN           reflags;        /* regexp flags, use tokenbuf to access
+                                           regexp chars */
         struct {                        /* atom pair, for XML PIs */
             JSAtom      *atom2;         /* auxiliary atom table entry */
             JSAtom      *atom;          /* main atom table entry */
@@ -213,6 +217,7 @@ struct JSToken {
 };
 
 #define t_op            u.s.op
+#define t_reflags       u.reflags
 #define t_atom          u.s.atom
 #define t_atom2         u.p.atom2
 #define t_dval          u.dval
@@ -243,7 +248,6 @@ struct JSTokenStream {
     JSStringBuffer      tokenbuf;       /* current token string buffer */
     const char          *filename;      /* input filename or null */
     FILE                *file;          /* stdio stream if reading from file */
-    JSPrincipals        *principals;    /* principals associated with source */
     JSSourceHandler     listener;       /* callback for source; eg debugger */
     void                *listenerData;  /* listener 'this' data */
     void                *listenerTSData;/* listener data for this TokenStream */
@@ -302,21 +306,16 @@ struct JSTokenStream {
  * Create a new token stream, either from an input buffer or from a file.
  * Return null on file-open or memory-allocation failure.
  *
- * NB: All of js_New{,Buffer,File}TokenStream() return a pointer to transient
- * memory in the current context's temp pool.  This memory is deallocated via
- * JS_ARENA_RELEASE() after parsing is finished.
+ * The function uses JSContext.tempPool to allocate internal buffers. The
+ * caller should release them using JS_ARENA_RELEASE after it has finished
+ * with the token stream and has called js_CloseTokenStream.
  */
-extern JSTokenStream *
-js_NewTokenStream(JSContext *cx, const jschar *base, size_t length,
-                  const char *filename, uintN lineno, JSPrincipals *principals);
+extern JSBool
+js_InitTokenStream(JSContext *cx, JSTokenStream *ts,
+                   const jschar *base, size_t length,
+                   FILE *fp, const char *filename, uintN lineno);
 
-extern JS_FRIEND_API(JSTokenStream *)
-js_NewBufferTokenStream(JSContext *cx, const jschar *base, size_t length);
-
-extern JS_FRIEND_API(JSTokenStream *)
-js_NewFileTokenStream(JSContext *cx, const char *filename, FILE *defaultfp);
-
-extern JS_FRIEND_API(JSBool)
+extern void
 js_CloseTokenStream(JSContext *cx, JSTokenStream *ts);
 
 extern JS_FRIEND_API(int)
@@ -329,9 +328,6 @@ js_fgets(char *buf, int size, FILE *file);
 extern JSTokenType
 js_CheckKeyword(const jschar *chars, size_t length);
 
-#define js_IsKeyword(chars, length) \
-    (js_CheckKeyword(chars, length) != TOK_EOF)
-
 /*
  * Friend-exported API entry point to call a mapping function on each reserved
  * identifier in the scanner's keyword table.
@@ -340,22 +336,26 @@ extern JS_FRIEND_API(void)
 js_MapKeywords(void (*mapfun)(const char *));
 
 /*
- * Report a compile-time error by its number, using ts or cg to show context.
- * Return true for a warning, false for an error.
+ * Check that str forms a valid JS identifier name. The function does not
+ * check if str is a JS keyword.
  */
 extern JSBool
-js_ReportCompileErrorNumber(JSContext *cx, void *handle, uintN flags,
-                            uintN errorNumber, ...);
+js_IsIdentifier(JSString *str);
 
-extern JSBool
-js_ReportCompileErrorNumberUC(JSContext *cx, void *handle, uintN flags,
-                              uintN errorNumber, ...);
+/*
+ * Report a compile-time error by its number. Return true for a warning, false
+ * for an error. When pn is not null, use it to report error's location.
+ * Otherwise use ts, which must not be null.
+ */
+JSBool
+js_ReportCompileErrorNumber(JSContext *cx, JSTokenStream *ts, JSParseNode *pn,
+                            uintN flags, uintN errorNumber, ...);
 
-/* Steal some JSREPORT_* bits (see jsapi.h) to tell handle's type. */
-#define JSREPORT_HANDLE 0x300
-#define JSREPORT_TS     0x000
-#define JSREPORT_CG     0x100
-#define JSREPORT_PN     0x200
+/*
+ * Steal one JSREPORT_* bit (see jsapi.h) to tell that arguments to the error
+ * message have const jschar* type, not const char*.
+ */
+#define JSREPORT_UC 0x100
 
 /*
  * Look ahead one token and return its type.

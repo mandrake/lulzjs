@@ -57,30 +57,30 @@
 #include "jspubtd.h"
 
 /* Internal identifier (jsid) macros. */
-#define JSID_ATOM                   0x0
-#define JSID_INT                    0x1
-#define JSID_OBJECT                 0x2
-#define JSID_TAGMASK                0x3
-#define JSID_TAG(id)                ((id) & JSID_TAGMASK)
-#define JSID_SETTAG(id,t)           ((id) | (t))
-#define JSID_CLRTAG(id)             ((id) & ~(jsid)JSID_TAGMASK)
 
-#define JSID_IS_ATOM(id)            (JSID_TAG(id) == JSID_ATOM)
+#define JSID_IS_ATOM(id)            JSVAL_IS_STRING((jsval)(id))
 #define JSID_TO_ATOM(id)            ((JSAtom *)(id))
-#define ATOM_TO_JSID(atom)          ((jsid)(atom))
-#define ATOM_JSID_TO_JSVAL(id)      ATOM_KEY(JSID_TO_ATOM(id))
+#define ATOM_TO_JSID(atom)          (JS_ASSERT(ATOM_IS_STRING(atom)),         \
+                                     (jsid)(atom))
 
-#define JSID_IS_INT(id)             ((id) & JSID_INT)
-#define JSID_TO_INT(id)             ((jsint)(id) >> 1)
-#define INT_TO_JSID(i)              (((jsint)(i) << 1) | JSID_INT)
-#define INT_JSID_TO_JSVAL(id)       (id)
-#define INT_JSVAL_TO_JSID(v)        (v)
+#define JSID_IS_INT(id)             JSVAL_IS_INT((jsval)(id))
+#define JSID_TO_INT(id)             JSVAL_TO_INT((jsval)(id))
+#define INT_TO_JSID(i)              ((jsid)INT_TO_JSVAL(i))
+#define INT_JSVAL_TO_JSID(v)        ((jsid)(v))
+#define INT_JSID_TO_JSVAL(id)       ((jsval)(id))
 
-#define JSID_IS_OBJECT(id)          (JSID_TAG(id) == JSID_OBJECT)
-#define JSID_TO_OBJECT(id)          ((JSObject *) JSID_CLRTAG(id))
-#define OBJECT_TO_JSID(obj)         ((jsid)(obj) | JSID_OBJECT)
-#define OBJECT_JSID_TO_JSVAL(id)    OBJECT_TO_JSVAL(JSID_CLRTAG(id))
-#define OBJECT_JSVAL_TO_JSID(v)     OBJECT_TO_JSID(JSVAL_TO_OBJECT(v))
+#define JSID_IS_OBJECT(id)          JSVAL_IS_OBJECT((jsval)(id))
+#define JSID_TO_OBJECT(id)          JSVAL_TO_OBJECT((jsval)(id))
+#define OBJECT_TO_JSID(obj)         ((jsid)OBJECT_TO_JSVAL(obj))
+#define OBJECT_JSVAL_TO_JSID(v)     ((jsid)v)
+
+#define ID_TO_VALUE(id)             ((jsval)(id))
+
+/*
+ * Convenience constants.
+ */
+#define JS_BITS_PER_UINT32_LOG2 5
+#define JS_BITS_PER_UINT32      32
 
 /* Scalar typedefs. */
 typedef uint8  jsbytecode;
@@ -90,11 +90,15 @@ typedef uint32 jsatomid;
 /* Struct typedefs. */
 typedef struct JSArgumentFormatMap  JSArgumentFormatMap;
 typedef struct JSCodeGenerator      JSCodeGenerator;
-typedef struct JSDependentString    JSDependentString;
 typedef struct JSGCThing            JSGCThing;
 typedef struct JSGenerator          JSGenerator;
+typedef struct JSNativeEnumerator   JSNativeEnumerator;
+typedef struct JSParseContext       JSParseContext;
+typedef struct JSParsedObjectBox    JSParsedObjectBox;
 typedef struct JSParseNode          JSParseNode;
+typedef struct JSPropCacheEntry     JSPropCacheEntry;
 typedef struct JSSharpObjectMap     JSSharpObjectMap;
+typedef struct JSTempValueRooter    JSTempValueRooter;
 typedef struct JSThread             JSThread;
 typedef struct JSToken              JSToken;
 typedef struct JSTokenPos           JSTokenPos;
@@ -102,6 +106,7 @@ typedef struct JSTokenPtr           JSTokenPtr;
 typedef struct JSTokenStream        JSTokenStream;
 typedef struct JSTreeContext        JSTreeContext;
 typedef struct JSTryNote            JSTryNote;
+typedef struct JSWeakRoots          JSWeakRoots;
 
 /* Friend "Advanced API" typedefs. */
 typedef struct JSAtom               JSAtom;
@@ -119,9 +124,8 @@ typedef struct JSScopeProperty      JSScopeProperty;
 typedef struct JSStackHeader        JSStackHeader;
 typedef struct JSStringBuffer       JSStringBuffer;
 typedef struct JSSubString          JSSubString;
+typedef struct JSTraceableNative    JSTraceableNative;
 typedef struct JSXML                JSXML;
-typedef struct JSXMLNamespace       JSXMLNamespace;
-typedef struct JSXMLQName           JSXMLQName;
 typedef struct JSXMLArray           JSXMLArray;
 typedef struct JSXMLArrayCursor     JSXMLArrayCursor;
 
@@ -135,32 +139,31 @@ typedef enum JSTrapStatus {
 } JSTrapStatus;
 
 typedef JSTrapStatus
-(* JS_DLL_CALLBACK JSTrapHandler)(JSContext *cx, JSScript *script,
-                                  jsbytecode *pc, jsval *rval, void *closure);
+(* JSTrapHandler)(JSContext *cx, JSScript *script, jsbytecode *pc, jsval *rval,
+                  void *closure);
 
 typedef JSBool
-(* JS_DLL_CALLBACK JSWatchPointHandler)(JSContext *cx, JSObject *obj, jsval id,
-                                        jsval old, jsval *newp, void *closure);
+(* JSWatchPointHandler)(JSContext *cx, JSObject *obj, jsval id, jsval old,
+                        jsval *newp, void *closure);
 
 /* called just after script creation */
 typedef void
-(* JS_DLL_CALLBACK JSNewScriptHook)(JSContext  *cx,
-                                    const char *filename,  /* URL of script */
-                                    uintN      lineno,     /* first line */
-                                    JSScript   *script,
-                                    JSFunction *fun,
-                                    void       *callerdata);
+(* JSNewScriptHook)(JSContext  *cx,
+                    const char *filename,  /* URL of script */
+                    uintN      lineno,     /* first line */
+                    JSScript   *script,
+                    JSFunction *fun,
+                    void       *callerdata);
 
 /* called just before script destruction */
 typedef void
-(* JS_DLL_CALLBACK JSDestroyScriptHook)(JSContext *cx,
-                                        JSScript  *script,
-                                        void      *callerdata);
+(* JSDestroyScriptHook)(JSContext *cx,
+                        JSScript  *script,
+                        void      *callerdata);
 
 typedef void
-(* JS_DLL_CALLBACK JSSourceHandler)(const char *filename, uintN lineno,
-                                    jschar *str, size_t length,
-                                    void **listenerTSData, void *closure);
+(* JSSourceHandler)(const char *filename, uintN lineno, jschar *str,
+                    size_t length, void **listenerTSData, void *closure);
 
 /*
  * This hook captures high level script execution and function calls (JS or
@@ -188,15 +191,73 @@ typedef void
  * be called.
  */
 typedef void *
-(* JS_DLL_CALLBACK JSInterpreterHook)(JSContext *cx, JSStackFrame *fp, JSBool before,
-                                      JSBool *ok, void *closure);
+(* JSInterpreterHook)(JSContext *cx, JSStackFrame *fp, JSBool before,
+                      JSBool *ok, void *closure);
 
 typedef void
-(* JS_DLL_CALLBACK JSObjectHook)(JSContext *cx, JSObject *obj, JSBool isNew,
-                                 void *closure);
+(* JSObjectHook)(JSContext *cx, JSObject *obj, JSBool isNew, void *closure);
 
 typedef JSBool
-(* JS_DLL_CALLBACK JSDebugErrorHook)(JSContext *cx, const char *message,
-                                     JSErrorReport *report, void *closure);
+(* JSDebugErrorHook)(JSContext *cx, const char *message, JSErrorReport *report,
+                     void *closure);
+
+typedef struct JSDebugHooks {
+    JSTrapHandler       interruptHandler;
+    void                *interruptHandlerData;
+    JSNewScriptHook     newScriptHook;
+    void                *newScriptHookData;
+    JSDestroyScriptHook destroyScriptHook;
+    void                *destroyScriptHookData;
+    JSTrapHandler       debuggerHandler;
+    void                *debuggerHandlerData;
+    JSSourceHandler     sourceHandler;
+    void                *sourceHandlerData;
+    JSInterpreterHook   executeHook;
+    void                *executeHookData;
+    JSInterpreterHook   callHook;
+    void                *callHookData;
+    JSObjectHook        objectHook;
+    void                *objectHookData;
+    JSTrapHandler       throwHook;
+    void                *throwHookData;
+    JSDebugErrorHook    debugErrorHook;
+    void                *debugErrorHookData;
+} JSDebugHooks;
+
+/*
+ * Type definitions for temporary GC roots that register with GC local C
+ * variables. See jscntxt.h for details.
+ */
+typedef void
+(* JSTempValueTrace)(JSTracer *trc, JSTempValueRooter *tvr);
+
+typedef union JSTempValueUnion {
+    jsval               value;
+    JSObject            *object;
+    JSString            *string;
+    JSXML               *xml;
+    JSTempValueTrace    trace;
+    JSScopeProperty     *sprop;
+    JSWeakRoots         *weakRoots;
+    JSParseContext      *parseContext;
+    JSScript            *script;
+    jsval               *array;
+} JSTempValueUnion;
+
+struct JSTempValueRooter {
+    JSTempValueRooter   *down;
+    ptrdiff_t           count;
+    JSTempValueUnion    u;
+};
+
+/*
+ * The following determines whether JS_EncodeCharacters and JS_DecodeBytes
+ * treat char[] as utf-8 or simply as bytes that need to be inflated/deflated.
+ */
+#ifdef JS_C_STRINGS_ARE_UTF8
+# define js_CStringsAreUTF8 JS_TRUE
+#else
+extern JSBool js_CStringsAreUTF8;
+#endif
 
 #endif /* jsprvtd_h___ */
