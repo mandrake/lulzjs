@@ -2,7 +2,7 @@
 mkdir -p /usr/include/js
 mkdir -p /usr/lib
 
-if [ ! autoconf-2.13 ]; then
+if [ ! -x $(which autoconf-2.13) ]; then
     echo "Install autoconf 2.13 kthx"
     exit 1
 fi
