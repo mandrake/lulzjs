@@ -6,6 +6,6 @@ if (arguments.length < 1) {
     die("You have to pass at least a string to transform into SHA1");
 }
 
-arguments.each(function (str) {
+arguments.forEach(function (str) {
     Console.writeLine(str+": "+new SHA1(str));
 });

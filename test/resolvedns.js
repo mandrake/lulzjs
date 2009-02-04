@@ -5,7 +5,7 @@ require("System/Net/Socket");
 if (arguments.length < 1)
     die("You must pass at least a hostname to resolve.");
 
-arguments.each(function (host) {
+arguments.forEach(function (host) {
     var resolved;
 
     try {

@@ -37,14 +37,24 @@ Object.extend(Object, {
     },
 
     addGetters: function (to, obj) {
-        for (let [name, getter] in obj) {
-            to.prototype.__defineGetter__(name, getter);
+        for (let name in obj) {
+            if (to.prototype) {
+                to.prototype.__defineGetter__(name, obj[name]);
+            }
+            else {
+                to.__defineGetter__(name, obj[name]);
+            }
         }
     },
 
     addSetters: function (obj) {
-        for (let [name, setter] in obj) {
-            to.prototype.__defineSetter__(name, setter);
+        for (let name in obj) {
+            if (to.prototype) {
+                to.prototype.__defineSetter__(name, obj[name]);
+            }
+            else {
+                to.__defineSetter__(name, obj[name]);
+            }
         }
     },
 
