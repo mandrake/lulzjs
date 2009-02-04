@@ -2,7 +2,11 @@
 mkdir -p /usr/include/js
 mkdir -p /usr/lib
 
-autoconf-2.13 || die "LOL"
+if [ ! autoconf-2.13 ]; then
+    echo "Install autoconf 2.13 kthx"
+    exit 1
+fi
+
 ./configure --enable-thread --bindir=/usr/bin --libdir=/usr/lib --includedir=/usr/include
 make
 make install
