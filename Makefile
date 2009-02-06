@@ -46,7 +46,11 @@ LIB_SYSTEM_LDFLAGS = ${LDFLAGS}
 all: ljs libcore libsystem
 
 ljs: $(CORE)
-	${CC} ${CORE_LDFLAGS} ${CORE_CFLAGS} ${CORE} -o ljs
+	${CXX} ${CORE_LDFLAGS} ${CORE} -o ljs
+
+$(CORE): $(CORE:.o=.cpp)
+	${CXX} ${CORE_CFLAGS} -c $*.cpp -o $*.o
+
 
 core_install:
 	mkdir -p ${LJS_LIBDIR}
@@ -54,9 +58,9 @@ core_install:
 
 libcore: $(LIB_CORE)
 
-$(LIB_CORE): $(LIB_CORE:.o=.c)
-	${CC} ${LIB_CORE_CFLAGS} -fPIC -c $*.c -o $*.lo
-	${CC} ${LIB_CORE_LDFLAGS} -shared -Wl,-soname,`basename $*`.so -o $*.o $*.lo -lc
+$(LIB_CORE): $(LIB_CORE:.o=.cpp)
+	${CXX} ${LIB_CORE_CFLAGS} -fPIC -c $*.cpp -o $*.lo
+	${CXX} ${LIB_CORE_LDFLAGS} -shared -Wl,-soname,`basename $*`.so -o $*.o $*.lo -lc
 
 libcore_install: libcore
 	mkdir -p ${LJS_LIBDIR}
@@ -81,9 +85,9 @@ libcore_install: libcore
 	
 libsystem: $(LIB_SYSTEM)
 
-$(LIB_SYSTEM): $(LIB_SYSTEM:.o=.c)
-	${CC} ${LIB_SYSTEM_CFLAGS} -fPIC -c $*.c -o $*.lo
-	${CC} ${LIB_SYSTEM_LDFLAGS} -shared -Wl,-soname,`basename $*`.so -o $*.o $*.lo -lc
+$(LIB_SYSTEM): $(LIB_SYSTEM:.o=.cpp)
+	${CXX} ${LIB_SYSTEM_CFLAGS} -fPIC -c $*.cpp -o $*.lo
+	${CXX} ${LIB_SYSTEM_LDFLAGS} -shared -Wl,-soname,`basename $*`.so -o $*.o $*.lo -lc
 
 libsystem_install: libsystem
 	mkdir -p ${LJS_LIBDIR}

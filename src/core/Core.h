@@ -22,6 +22,8 @@
 #include "lulzjs.h"
 #include "jsdbgapi.h"
 
+#include <string>
+
 // Not cross platform
 #include <sys/types.h>
 #include <sys/stat.h>

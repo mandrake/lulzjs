@@ -19,18 +19,14 @@
 #include "Core.h"
 
 const char* __Core_getScriptName (JSContext* cx);
-char*       __Core_getRootPath (JSContext* cx, const char* fileName);
-char*       __Core_getPath (JSContext* cx, const char* fileName);
-JSBool      __Core_include (JSContext* cx, const char* path);
+std::string __Core_getRootPath (JSContext* cx, std::string& fileName);
+std::string __Core_getPath (JSContext* cx, std::string&fileName);
+JSBool      __Core_include (JSContext* cx, std::string& path);
 JSBool      __Core_isIncluded (const char* path);
 
 JSObject*
 Core_initialize (JSContext *cx, const char* script)
 {
-    JS_SetVersion(cx, 180);
-
-    srand((unsigned) time(NULL));
-
     JSObject* object = JS_NewObject(cx, &Core_class, NULL, NULL);
 
     if (object && JS_InitStandardClasses(cx, object)) {
@@ -39,10 +35,10 @@ Core_initialize (JSContext *cx, const char* script)
         // Properties
         jsval property;
 
-        char* rootPath = __Core_getRootPath(cx, script);
+        std::string rootPath = __Core_getRootPath(cx, script);
         jsval paths[] = {
-            STRING_TO_JSVAL(JS_NewString(cx, rootPath, strlen(rootPath))),
-            STRING_TO_JSVAL(JS_NewString(cx, JS_strdup(cx, __LJS_LIBRARY_PATH__), strlen(__LJS_LIBRARY_PATH__)))
+            STRING_TO_JSVAL(JS_NewString(cx, rootPath.c_str(), rootPath.length())),
+            STRING_TO_JSVAL(JS_NewString(cx, __LJS_LIBRARY_PATH__, strlen(__LJS_LIBRARY_PATH__)))
         };
         JSObject* path = JS_NewArrayObject(cx, 2, paths);
         property       = OBJECT_TO_JSVAL(path);
@@ -283,24 +279,19 @@ Core_print (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return JS_TRUE;
 }
 
-char*
-__Core_getRootPath (JSContext* cx, const char* fileName)
+std::string
+__Core_getRootPath (JSContext* cx, std::string& fileName)
 {
-    char* path;
+    std::string path;
 
     if (fileName == NULL) {
-        path = JS_strdup(cx, getenv("PWD"));
+        path = getenv("PWD");
     }
     else if (fileName[0] == '/') {
-        path = dirname(JS_strdup(cx, fileName));
+        path = dirname(fileName);
     }
     else {
-        path = JS_strdup(cx, getenv("PWD"));
-        path = JS_realloc(cx, path, (strlen(path)+2)*sizeof(char));
-        strcat(path, "/");
-        path = JS_realloc(cx, path, (strlen(path)+strlen(fileName)+1)*sizeof(char));
-        strcat(path, fileName);
-        path = dirname(path);
+        path = dirname(getenv("PWD") + "/" + fileName);
     }
 
     return path;
@@ -316,27 +307,18 @@ __Core_getScriptName (JSContext* cx)
     return JS_GetScriptFilename(cx, script);
 }
 
-char*
-__Core_getPath (JSContext* cx, const char* fileName)
+std::string
+__Core_getPath (JSContext* cx, std::string& fileName)
 {
     /*
      * Getting the dirname of the file from the other file is included
      * then copying it and getting the path to the dir.
      */
-    char* scriptName = (char*) __Core_getScriptName(cx);
-    char* from = JS_strdup(cx, (scriptName ? scriptName : ""));
-    char* dir  = dirname(from);
-    char* path = JS_malloc(cx, (strlen(dir)+2)*sizeof(char));
-
-    strcpy(path, dir); strcat(path, "/"); JS_free(cx, from);
+    char* scriptName = __Core_getScriptName(cx);
+    char* from       = (scriptName ? strdup(scriptName) : "");
+    char* dir        = dirname(from); free(from);
+    std::string path = dir + "/" + fileName;
     
-    /*
-     * Copying the base to the path and then adding the relative path to
-     * the file to import
-     */
-    path = JS_realloc(cx, path, (strlen(path)+strlen(fileName)+1)*sizeof(char));
-    strcat(path, fileName);
-
     if (!fileExists(path)) {
         jsval jsPath;
         JS_GetProperty(cx, JS_GetGlobalObject(cx), "__PATH__", &jsPath);
@@ -347,16 +329,10 @@ __Core_getPath (JSContext* cx, const char* fileName)
 
         size_t i;
         for (i = 0; i < length; i++) {
-            JS_free(cx, path);
-
             jsval pathFile;
             JS_GetElement(cx, lPath, i, &pathFile);
 
-            path = JS_strdup(cx, JS_GetStringBytes(JSVAL_TO_STRING(pathFile)));
-            path = JS_realloc(cx, path, (strlen(path)+2)*sizeof(char));
-            strcat(path, "/");
-            path = JS_realloc(cx, path, (strlen(path)+strlen(fileName)+1)*sizeof(char));
-            strcat(path, fileName);
+            path = JS_GetStringBytes(JSVAL_TO_STRING(pathFile)) + "/" + fileName;
 
             if (fileExists(path)) {
                 break;

@@ -88,7 +88,7 @@ namespace nanojit
 	
 	// LCompressedBuffer
 	LirBuffer::LirBuffer(Fragmento* frago, const CallInfo* functions)
-		: _frago(frago), _pages(frago->core()->GetGC()), _functions(functions), abi(ABI_FASTCALL)
+		: _frago(frago), _functions(functions), abi(ABI_FASTCALL), _pages(frago->core()->GetGC())
 	{
 		rewind();
 	}
@@ -2207,8 +2207,12 @@ namespace nanojit
 
     LabelMap::~LabelMap()
     {
+        clear();
+    }
+
+    void LabelMap::clear()
+    {
         Entry *e;
-        
         while ((e = names.removeLast()) != NULL) {
             core->freeString(e->name);
             NJ_DELETE(e);

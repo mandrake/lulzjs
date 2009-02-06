@@ -16,9 +16,9 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-#include <stdio.h>
-#include <stdlib.h>
 #include "lulzjs.h"
+#include <iostream>
+#include <fstream>
 
 #include "Misc.h"
 #include "Core.h"
@@ -45,6 +45,7 @@ void
 reportError (JSContext *cx, const char *message, JSErrorReport *report)
 {
     fprintf(stderr, "%s:%u > %s\n",
+
         report->filename ? report->filename : "lulzJS",
         (unsigned int) report->lineno,
         message
@@ -59,11 +60,11 @@ int
 main (int argc, char *argv[])
 {
     char* oneliner = NULL;
-    int stopAt = argc;
+    int stopAt     = argc;
 
-    JSBool compile = JS_FALSE;
-    char* inFile   = NULL;
-    char* outFile  = "out.jsc";
+    JSBool compile      = JS_FALSE;
+    std::string inFile  = NULL;
+    std::string outFile = "out.jsc";
 
     // Fix the options to let a script get all the real arguments.
     if (argc > 1) {
@@ -117,7 +118,7 @@ main (int argc, char *argv[])
      */
     Engine engine = initEngine(argc, (argc == 1 || (oneliner || compile) ? 0 : optind), argv);
     if (engine.error) {
-        fprintf(stderr, "An error occurred while initializing the system.\n");
+        std::cerr << "An error occurred while initializing the system." << std::endl;
         return 1;
     }
 
@@ -133,34 +134,31 @@ main (int argc, char *argv[])
         }
 
         if (!JSVAL_IS_VOID(rval)) {
-            printf("%s\n", JS_GetStringBytes(JS_ValueToString(engine.context, rval)));
+            std::cout << JS_GetStringBytes(JS_ValueToString(engine.context, rval)) << std::endl;
         }
     }
     else if (compile) {
-        FILE* out;
+        std::ofstream out(outFile.c_str());
 
-        if (!(out = fopen(outFile, "wb"))) {
-            fprintf(stderr, "Couldn't write to %s\n", outFile);
+        if (out.fail()) {
+            std::cerr << "Couldn't write to " << outFile << std::endl;
             return EXIT_FAILURE;
         }
 
         CompiledScript* compiled = Compile_compileString(engine.context,
-            (char*)stripRemainder(engine.context, (char*)readFile(engine.context, inFile))
+            stripRemainder(engine.context, readFile(engine.context, inFile))
         );
 
-        uint32 offset = 0;
-        while (offset < compiled->length) {
-            offset += fwrite((compiled->bytecode+offset), sizeof(char), (compiled->length-offset), out);
-        }
-        fclose(out);
+        out.write(compiled->bytecode, compiled->length);
+        out.close();
     }
     else {
         if (!fileExists(argv[optind])) {
-            fprintf(stderr, "The file doesnt't exist.\n");
+            std::cerr << "The file doesnt't exist." << std::endl;
             return EXIT_FAILURE;
         }
         if (!executeScript(engine.context, argv[optind])) {
-            fprintf(stderr, "The script couldn't be executed.\n");
+            std::cerr << "The script couldn't be executed." << std::endl;
             return EXIT_FAILURE;
         }
     }

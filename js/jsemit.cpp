@@ -1705,7 +1705,6 @@ EmitIndexOp(JSContext *cx, JSOp op, uintN index, JSCodeGenerator *cg)
             return JS_FALSE;                                                  \
     JS_END_MACRO
 
-
 static JSBool
 EmitAtomOp(JSContext *cx, JSParseNode *pn, JSOp op, JSCodeGenerator *cg)
 {
@@ -1831,18 +1830,16 @@ BindNameToSlot(JSContext *cx, JSCodeGenerator *cg, JSParseNode *pn)
     if (pn->pn_op == JSOP_QNAMEPART)
         return JS_TRUE;
 
-    /*
-     * We can't optimize if we are compiling a with statement and its body,
-     * or we're in a catch block whose exception variable has the same name
-     * as this node.  FIXME: we should be able to optimize catch vars to be
-     * block-locals.
-     */
     tc = &cg->treeContext;
     atom = pn->pn_atom;
     stmt = js_LexicalLookup(tc, atom, &slot);
     if (stmt) {
-        if (stmt->type == STMT_WITH)
+        /* We can't optimize if we are inside a with statement. */
+        if (stmt->type == STMT_WITH) {
+            JS_ASSERT_IF(tc->flags & TCF_IN_FUNCTION,
+                         tc->flags & TCF_FUN_HEAVYWEIGHT);
             return JS_TRUE;
+        }
 
         JS_ASSERT(stmt->flags & SIF_SCOPE);
         JS_ASSERT(slot >= 0);
@@ -1867,14 +1864,6 @@ BindNameToSlot(JSContext *cx, JSCodeGenerator *cg, JSParseNode *pn)
         }
         return JS_TRUE;
     }
-
-    /*
-     * We can't optimize if var and closure (a local function not in a larger
-     * expression and not at top-level within another's body) collide.
-     * XXX suboptimal: keep track of colliding names and deoptimize only those
-     */
-    if (tc->flags & TCF_FUN_CLOSURE_VS_VAR)
-        return JS_TRUE;
 
     if (!(tc->flags & TCF_IN_FUNCTION)) {
         JSStackFrame *caller;
@@ -1990,51 +1979,50 @@ BindNameToSlot(JSContext *cx, JSCodeGenerator *cg, JSParseNode *pn)
         return JS_TRUE;
     }
 
-    if (tc->flags & TCF_IN_FUNCTION) {
-        /*
-         * We are compiling a function body and may be able to optimize name
-         * to stack slot. Look for an argument or variable in the function and
-         * rewrite pn_op and update pn accordingly.
-         */
-        localKind = js_LookupLocal(cx, tc->u.fun, atom, &index);
-        if (localKind != JSLOCAL_NONE) {
-            op = PN_OP(pn);
-            if (localKind == JSLOCAL_ARG) {
-                switch (op) {
-                  case JSOP_NAME:     op = JSOP_GETARG; break;
-                  case JSOP_SETNAME:  op = JSOP_SETARG; break;
-                  case JSOP_INCNAME:  op = JSOP_INCARG; break;
-                  case JSOP_NAMEINC:  op = JSOP_ARGINC; break;
-                  case JSOP_DECNAME:  op = JSOP_DECARG; break;
-                  case JSOP_NAMEDEC:  op = JSOP_ARGDEC; break;
-                  case JSOP_FORNAME:  op = JSOP_FORARG; break;
-                  case JSOP_DELNAME:  op = JSOP_FALSE; break;
-                  default: JS_NOT_REACHED("arg");
-                }
-                pn->pn_const = JS_FALSE;
-            } else {
-                JS_ASSERT(localKind == JSLOCAL_VAR ||
-                          localKind == JSLOCAL_CONST);
-                switch (op) {
-                  case JSOP_NAME:     op = JSOP_GETLOCAL; break;
-                  case JSOP_SETNAME:  op = JSOP_SETLOCAL; break;
-                  case JSOP_SETCONST: op = JSOP_SETLOCAL; break;
-                  case JSOP_INCNAME:  op = JSOP_INCLOCAL; break;
-                  case JSOP_NAMEINC:  op = JSOP_LOCALINC; break;
-                  case JSOP_DECNAME:  op = JSOP_DECLOCAL; break;
-                  case JSOP_NAMEDEC:  op = JSOP_LOCALDEC; break;
-                  case JSOP_FORNAME:  op = JSOP_FORLOCAL; break;
-                  case JSOP_DELNAME:  op = JSOP_FALSE; break;
-                  default: JS_NOT_REACHED("local");
-                }
-                pn->pn_const = (localKind == JSLOCAL_CONST);
+    /*
+     * We are compiling a function body and may be able to optimize name to
+     * stack slot. Look for an argument or variable in the function and
+     * rewrite pn_op and update pn accordingly.
+     */
+    JS_ASSERT(tc->flags & TCF_IN_FUNCTION);
+    localKind = js_LookupLocal(cx, tc->u.fun, atom, &index);
+    if (localKind != JSLOCAL_NONE) {
+        op = PN_OP(pn);
+        if (localKind == JSLOCAL_ARG) {
+            switch (op) {
+              case JSOP_NAME:     op = JSOP_GETARG; break;
+              case JSOP_SETNAME:  op = JSOP_SETARG; break;
+              case JSOP_INCNAME:  op = JSOP_INCARG; break;
+              case JSOP_NAMEINC:  op = JSOP_ARGINC; break;
+              case JSOP_DECNAME:  op = JSOP_DECARG; break;
+              case JSOP_NAMEDEC:  op = JSOP_ARGDEC; break;
+              case JSOP_FORNAME:  op = JSOP_FORARG; break;
+              case JSOP_DELNAME:  op = JSOP_FALSE; break;
+              default: JS_NOT_REACHED("arg");
             }
-            pn->pn_op = op;
-            pn->pn_slot = index;
-            return JS_TRUE;
+            pn->pn_const = JS_FALSE;
+        } else {
+            JS_ASSERT(localKind == JSLOCAL_VAR ||
+                      localKind == JSLOCAL_CONST);
+            switch (op) {
+              case JSOP_NAME:     op = JSOP_GETLOCAL; break;
+              case JSOP_SETNAME:  op = JSOP_SETLOCAL; break;
+              case JSOP_SETCONST: op = JSOP_SETLOCAL; break;
+              case JSOP_INCNAME:  op = JSOP_INCLOCAL; break;
+              case JSOP_NAMEINC:  op = JSOP_LOCALINC; break;
+              case JSOP_DECNAME:  op = JSOP_DECLOCAL; break;
+              case JSOP_NAMEDEC:  op = JSOP_LOCALDEC; break;
+              case JSOP_FORNAME:  op = JSOP_FORLOCAL; break;
+              case JSOP_DELNAME:  op = JSOP_FALSE; break;
+              default: JS_NOT_REACHED("local");
+            }
+            pn->pn_const = (localKind == JSLOCAL_CONST);
         }
-        tc->flags |= TCF_FUN_USES_NONLOCALS;
+        pn->pn_op = op;
+        pn->pn_slot = index;
+        return JS_TRUE;
     }
+    tc->flags |= TCF_FUN_USES_NONLOCALS;
 
   arguments_check:
     /*
@@ -2340,11 +2328,40 @@ EmitXMLName(JSContext *cx, JSParseNode *pn, JSOp op, JSCodeGenerator *cg)
 #endif
 
 static JSBool
+EmitSpecialPropOp(JSContext *cx, JSParseNode *pn, JSOp op, JSCodeGenerator *cg)
+{
+    /*
+     * Special case for obj.__proto__, obj.__parent__, obj.__count__ to
+     * deoptimize away from fast paths in the interpreter and trace recorder,
+     * which skip dense array instances by going up to Array.prototype before
+     * looking up the property name.
+     */
+    JSAtomListElement *ale = js_IndexAtom(cx, pn->pn_atom, &cg->atomList);
+    if (!ale)
+        return JS_FALSE;
+    if (!EmitIndexOp(cx, JSOP_QNAMEPART, ALE_INDEX(ale), cg))
+        return JS_FALSE;
+    if (js_Emit1(cx, cg, op) < 0)
+        return JS_FALSE;
+    return JS_TRUE;
+}
+
+static JSBool
 EmitPropOp(JSContext *cx, JSParseNode *pn, JSOp op, JSCodeGenerator *cg,
            JSBool callContext)
 {
     JSParseNode *pn2, *pndot, *pnup, *pndown;
     ptrdiff_t top;
+    
+    /* Special case deoptimization on __proto__, __count__ and __parent__. */
+    if (pn->pn_arity == PN_NAME && 
+        (pn->pn_atom == cx->runtime->atomState.protoAtom || 
+         pn->pn_atom == cx->runtime->atomState.countAtom ||
+         pn->pn_atom == cx->runtime->atomState.parentAtom)) {
+        if (pn->pn_expr && !js_EmitTree(cx, cg, pn->pn_expr))
+            return JS_FALSE;
+        return EmitSpecialPropOp(cx, pn, callContext ? JSOP_CALLELEM : JSOP_GETELEM, cg);
+    }
 
     pn2 = pn->pn_expr;
     if (callContext) {
@@ -2425,8 +2442,20 @@ EmitPropOp(JSContext *cx, JSParseNode *pn, JSOp op, JSCodeGenerator *cg,
                                CG_OFFSET(cg) - pndown->pn_offset) < 0) {
                 return JS_FALSE;
             }
-            if (!EmitAtomOp(cx, pndot, PN_OP(pndot), cg))
+
+            /* 
+             * Special case deoptimization on __proto__, __count__ and
+             * __parent__, as above. 
+             */
+            if (pndot->pn_arity == PN_NAME && 
+                (pndot->pn_atom == cx->runtime->atomState.protoAtom || 
+                 pndot->pn_atom == cx->runtime->atomState.countAtom ||
+                 pndot->pn_atom == cx->runtime->atomState.parentAtom)) {                
+                if (!EmitSpecialPropOp(cx, pndot, JSOP_GETELEM, cg))
+                    return JS_FALSE;
+            } else if (!EmitAtomOp(cx, pndot, PN_OP(pndot), cg)) {
                 return JS_FALSE;
+            }
 
             /* Reverse the pn_expr link again. */
             pnup = pndot->pn_expr;
@@ -5337,6 +5366,11 @@ js_EmitTree(JSContext *cx, JSCodeGenerator *cg, JSParseNode *pn)
                     return JS_FALSE;
                 if (pn2->pn_atom == cx->runtime->atomState.lengthAtom) {
                     if (js_Emit1(cx, cg, JSOP_LENGTH) < 0)
+                        return JS_FALSE;
+                } else if (pn2->pn_atom == cx->runtime->atomState.protoAtom) {
+                    if (!EmitIndexOp(cx, JSOP_QNAMEPART, atomIndex, cg))
+                        return JS_FALSE;
+                    if (js_Emit1(cx, cg, JSOP_GETELEM) < 0)
                         return JS_FALSE;
                 } else {
                     EMIT_INDEX_OP(JSOP_GETPROP, atomIndex);

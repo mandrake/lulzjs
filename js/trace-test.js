@@ -13,6 +13,12 @@ const RECORDLOOP = HOTLOOP;
 // The loop count at which we run the trace
 const RUNLOOP = HOTLOOP + 1;
 
+var gDoMandelbrotTest = true;
+if ("gSkipSlowTests" in this && gSkipSlowTests) {
+    print("** Skipping slow tests");
+    gDoMandelbrotTest = false;
+}
+
 var testName = null;
 if ("arguments" in this && arguments.length > 0)
   testName = arguments[0];
@@ -4155,6 +4161,26 @@ function testReverseArgTypes() {
 testReverseArgTypes.expected = 1;
 test(testReverseArgTypes);
 
+function testBug458838() {
+    var a = 1;
+    function g() {
+        var b = 0
+            for (var i = 0; i < 10; ++i) {
+                b += a;
+            }
+        return b;
+    }
+
+    return g();
+}
+testBug458838.expected = 10;
+testBug458838.jitstats = {
+  recorderStarted: 1,
+  recorderAborted: 1,
+  traceCompleted: 0
+};
+test(testBug458838);
+
 function testInterpreterReentry() {
     this.__defineSetter__('x', function(){})
     for (var j = 0; j < 5; ++j) { x = 3; }
@@ -4231,6 +4257,28 @@ function testInterpreterReentery8() {
 }
 test(testInterpreterReentery8);
 
+function testHolePushing() {
+    var a = ["foobar", "baz"];
+    for (var i = 0; i < 5; i++)
+        a = [, "overwritten", "new"];
+    var s = "[";
+    for (i = 0; i < a.length; i++) {
+        s += (i in a) ? a[i] : "<hole>";
+        if (i != a.length - 1)
+            s += ",";
+    }
+    return s + "], " + (0 in a);
+}
+testHolePushing.expected = "[<hole>,overwritten,new], false";
+test(testHolePushing);
+
+function testDeepBail1() {
+    var y = <z/>;
+    for (var i = 0; i < RUNLOOP; i++)
+        "" in y;
+}
+test(testDeepBail1);
+
 /*****************************************************************************
  *                                                                           *
  *  _____ _   _  _____ ______ _____ _______                                  *
@@ -4264,6 +4312,7 @@ load("math-trace-tests.js");
 // XXXbz I would dearly like to wrap it up into a function to avoid polluting
 // the global scope, but the function ends up heavyweight, and then we lose on
 // the jit.
+if (gDoMandelbrotTest) {
 load("mandelbrot-results.js");
 //function testMandelbrotAll() {
   // Configuration options that affect which codepaths we follow.
@@ -4507,6 +4556,7 @@ load("mandelbrot-results.js");
   test(createMandelSet);
 //}
 //testMandelbrotAll();
+} /* if (gDoMandelbrotTest) */
 // END MANDELBROT STUFF
 
 /*****************************************************************************

@@ -441,6 +441,9 @@ namespace nanojit
 		virtual LInsp insAlloc(int32_t size) {
 			return out->insAlloc(size);
 		}
+		virtual LInsp skip(size_t size) {
+			return out->skip(size);
+		}
 
 		// convenience
 	    LIns*		insLoadi(LIns *base, int disp);
@@ -490,6 +493,7 @@ namespace nanojit
 		const char *dup(const char *);
 		const char *format(const void *p);
 		void promoteAll(const void *newbase);
+		void clear();
     };
 
 	class LirNameMap MMGC_SUBCLASS_DECL

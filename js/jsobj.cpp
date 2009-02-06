@@ -327,10 +327,20 @@ js_SetProtoOrParent(JSContext *cx, JSObject *obj, uint32 slot, JSObject *pobj)
         return JS_FALSE;
     }
 
-    // Maintain the "any Array prototype has indexed properties hazard" flag.
+    /*
+     * Maintain the "any Array prototype has indexed properties hazard" flag by
+     * conservatively setting it. We simply don't know what pobj has in the way
+     * of indexed properties, either directly or along its prototype chain, and
+     * we won't expend effort here to find out. We do know that if obj is not
+     * an array or a prototype (delegate), then we're ok. And, of course, pobj
+     * must be non-null.
+     *
+     * This pessimistic approach could be improved, but setting __proto__ is
+     * quite rare and arguably deserving of deoptimization.
+     */
     if (slot == JSSLOT_PROTO &&
-        OBJ_IS_ARRAY(cx, pobj) &&
-        pobj->fslots[JSSLOT_ARRAY_LENGTH] != 0) {
+        pobj &&
+        (OBJ_IS_ARRAY(cx, obj) || OBJ_IS_DELEGATE(cx, obj))) {
         rt->anyArrayProtoHasElement = JS_TRUE;
     }
     return JS_TRUE;
@@ -1682,10 +1692,12 @@ Object_p_hasOwnProperty(JSContext* cx, JSObject* obj, JSString *str)
     jsid id;
     jsval v;
 
-    if (!js_ValueToStringId(cx, STRING_TO_JSVAL(str), &id))
+    if (!js_ValueToStringId(cx, STRING_TO_JSVAL(str), &id) ||
+        !js_HasOwnProperty(cx, obj->map->ops->lookupProperty, obj, id, &v)) {
+        cx->builtinStatus |= JSBUILTIN_ERROR;
         return JSVAL_TO_BOOLEAN(JSVAL_VOID);
-    if (!js_HasOwnProperty(cx, obj->map->ops->lookupProperty, obj, id, &v))
-        return JSVAL_TO_BOOLEAN(JSVAL_VOID);
+    }
+
     JS_ASSERT(JSVAL_IS_BOOLEAN(v));
     return JSVAL_TO_BOOLEAN(v);
 }
@@ -1725,8 +1737,12 @@ Object_p_propertyIsEnumerable(JSContext* cx, JSObject* obj, JSString *str)
 {
     jsid id = ATOM_TO_JSID(STRING_TO_JSVAL(str));
     jsval v;
-    if (!js_PropertyIsEnumerable(cx, obj, id, &v))
+
+    if (!js_PropertyIsEnumerable(cx, obj, id, &v)) {
+        cx->builtinStatus |= JSBUILTIN_ERROR;
         return JSVAL_TO_BOOLEAN(JSVAL_VOID);
+    }
+
     JS_ASSERT(JSVAL_IS_BOOLEAN(v));
     return JSVAL_TO_BOOLEAN(v);
 }
@@ -1863,7 +1879,7 @@ obj_lookupGetter(JSContext *cx, uintN argc, jsval *vp)
         if (OBJ_IS_NATIVE(pobj)) {
             sprop = (JSScopeProperty *) prop;
             if (sprop->attrs & JSPROP_GETTER)
-                *vp = OBJECT_TO_JSVAL(sprop->getter);
+                *vp = OBJECT_TO_JSVAL((JSObject *) sprop->getter);
         }
         OBJ_DROP_PROPERTY(cx, pobj, prop);
     }
@@ -1888,7 +1904,7 @@ obj_lookupSetter(JSContext *cx, uintN argc, jsval *vp)
         if (OBJ_IS_NATIVE(pobj)) {
             sprop = (JSScopeProperty *) prop;
             if (sprop->attrs & JSPROP_SETTER)
-                *vp = OBJECT_TO_JSVAL(sprop->setter);
+                *vp = OBJECT_TO_JSVAL((JSObject *) sprop->setter);
         }
         OBJ_DROP_PROPERTY(cx, pobj, prop);
     }
@@ -1934,9 +1950,9 @@ const char js_lookupSetter_str[] = "__lookupSetter__";
 JS_DEFINE_TRCINFO_1(obj_valueOf,
     (3, (static, JSVAL,      Object_p_valueOf,              CONTEXT, THIS, STRING,  0, 0)))
 JS_DEFINE_TRCINFO_1(obj_hasOwnProperty,
-    (3, (static, BOOL_RETRY, Object_p_hasOwnProperty,       CONTEXT, THIS, STRING,  0, 0)))
+    (3, (static, BOOL_FAIL, Object_p_hasOwnProperty,        CONTEXT, THIS, STRING,  0, 0)))
 JS_DEFINE_TRCINFO_1(obj_propertyIsEnumerable,
-    (3, (static, BOOL_RETRY, Object_p_propertyIsEnumerable, CONTEXT, THIS, STRING,  0, 0)))
+    (3, (static, BOOL_FAIL, Object_p_propertyIsEnumerable,  CONTEXT, THIS, STRING,  0, 0)))
 
 static JSFunctionSpec object_methods[] = {
 #if JS_HAS_TOSOURCE
@@ -3389,6 +3405,9 @@ js_DefineProperty(JSContext *cx, JSObject *obj, jsid id, jsval value,
  * nominal initial value of a slot-full property, while GC safety wants that
  * value to be stored before the call-out through the hook.  Optimize to do
  * both while saving cycles for classes that stub their addProperty hook.
+ *
+ * As in js_SetProtoOrParent (see above), we maintain the "any Array prototype
+ * has indexed properties hazard" flag by conservatively setting it.
  */
 #define ADD_PROPERTY_HELPER(cx,clasp,obj,scope,sprop,vp,cleanup)              \
     JS_BEGIN_MACRO                                                            \
@@ -3402,12 +3421,15 @@ js_DefineProperty(JSContext *cx, JSObject *obj, jsid id, jsval value,
                     LOCKED_OBJ_WRITE_BARRIER(cx, obj, (sprop)->slot, *(vp));  \
             }                                                                 \
         }                                                                     \
+        if (STOBJ_IS_DELEGATE(obj) && JSID_IS_INT(sprop->id))                 \
+            cx->runtime->anyArrayProtoHasElement = JS_TRUE;                   \
     JS_END_MACRO
 
 JSBool
 js_DefineNativeProperty(JSContext *cx, JSObject *obj, jsid id, jsval value,
                         JSPropertyOp getter, JSPropertyOp setter, uintN attrs,
-                        uintN flags, intN shortid, JSProperty **propp)
+                        uintN flags, intN shortid, JSProperty **propp,
+                        JSPropCacheEntry** entryp /* = NULL */)
 {
     JSClass *clasp;
     JSScope *scope;
@@ -3415,6 +3437,8 @@ js_DefineNativeProperty(JSContext *cx, JSObject *obj, jsid id, jsval value,
 
     /* Convert string indices to integers if appropriate. */
     CHECK_FOR_STRING_INDEX(id);
+
+    uint32 shape = OBJ_SHAPE(obj);
 
 #if JS_HAS_GETTER_SETTER
     /*
@@ -3503,6 +3527,13 @@ js_DefineNativeProperty(JSContext *cx, JSObject *obj, jsid id, jsval value,
                         js_RemoveScopeProperty(cx, scope, id);
                         goto bad);
 
+    if (entryp) {
+        JS_ASSERT_NOT_ON_TRACE(cx);
+        if (!(attrs & JSPROP_SHARED))
+            js_FillPropertyCache(cx, obj, shape, 0, 0, obj, sprop, entryp);
+        else
+            PCMETER(JS_PROPERTY_CACHE(cx).nofills++);
+    }
     if (propp)
         *propp = (JSProperty *) sprop;
     else
@@ -4135,7 +4166,7 @@ js_SetPropertyHelper(JSContext *cx, JSObject *obj, jsid id, jsval *vp,
                     return JS_TRUE;
                 }
 
-                return !!SPROP_SET(cx, sprop, obj, pobj, vp);
+                return SPROP_SET(cx, sprop, obj, pobj, vp);
             }
 
             /* Restore attrs to the ECMA default for new properties. */
