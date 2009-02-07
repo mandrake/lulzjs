@@ -94,18 +94,23 @@ File_finalize (JSContext* cx, JSObject* object)
 
         delete data;
     }
+
+    JS_EndRequest(cx);
 }
 
 JSBool
 File_close (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
 {
-    FileInformation* data = JS_GetPrivate(cx, object);
+    JS_BeginRequest(cx);
+
+    FileInformation* data = (FileInformation*) JS_GetPrivate(cx, object);
 
     if (data->descriptor) {
         fclose(data->descriptor);
         data->descriptor = NULL;
     }
 
+    JS_EndRequest(cx);
     return JS_TRUE;
 }
 
@@ -119,7 +124,7 @@ File_write (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rva
         return JS_FALSE;
     }
 
-    FileInformation* data = JS_GetPrivate(cx, object);
+    FileInformation* data = (FileInformation*) JS_GetPrivate(cx, object);
 
     unsigned offset = 0;
     while (offset < strlen(string)) {
@@ -132,25 +137,26 @@ File_write (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rva
 JSBool
 File_read (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval *rval)
 {
-    const unsigned size;
+    unsigned size;
 
     if (argc != 1 || !JS_ConvertArguments(cx, argc, argv, "u", &size)) {
         JS_ReportError(cx, "Not enough parameters.");
         return JS_FALSE;
     }
 
-    FileInformation* data = JS_GetPrivate(cx, object);
+    FileInformation* data = (FileInformation*) JS_GetPrivate(cx, object);
 
     if (feof(data->descriptor)) {
         *rval = JSVAL_FALSE;
         return JS_TRUE;
     }
 
-    char* string = JS_malloc(cx, (size+1)*sizeof(char));
+    JS_EnterLocalRootScope(cx);
+    char* string = (char*) JS_malloc(cx, (size+1)*sizeof(char));
     memset(string, 0, size+1);
     fread(string, sizeof(char), size, data->descriptor);
-
     *rval = STRING_TO_JSVAL(JS_NewString(cx, string, size));
+    JS_LeaveLocalRootScope(cx);
 
     return JS_TRUE;
 }
@@ -165,15 +171,17 @@ File_writeBytes (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval
         return JS_FALSE;
     }
 
-    FileInformation* data = JS_GetPrivate(cx, object);
+    FileInformation* data = (FileInformation*) JS_GetPrivate(cx, object);
 
     unsigned char* string;
+
+    JS_EnterLocalRootScope(cx);
 
     jsval ret; JS_CallFunctionName(cx, obj, "toArray", 0, NULL, &ret);
     JSObject* array = JSVAL_TO_OBJECT(ret);
 
     jsuint length; JS_GetArrayLength(cx, array, &length);
-    string = JS_malloc(cx, length*sizeof(char));
+    string = new unsigned char[length];
 
     jsuint i;
     for (i = 0; i < length; i++) {
@@ -186,29 +194,31 @@ File_writeBytes (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval
         offset += fwrite((string-offset), sizeof(char), length-offset, data->descriptor);
     }
 
+    delete string;
+    JS_LeaveLocalRootScope(cx);
+
     return JS_TRUE;
 }
 
 JSBool
 File_readBytes (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval *rval)
 {
-    const unsigned size;
-
-    JS_BeginRequest(cx);
+    unsigned size;
 
     if (argc != 1 || !JS_ConvertArguments(cx, argc, argv, "u", &size)) {
         JS_ReportError(cx, "Not enough parameters.");
         return JS_FALSE;
     }
 
-    FileInformation* data = JS_GetPrivate(cx, object);
+    FileInformation* data = (FileInformation*) JS_GetPrivate(cx, object);
 
     if (feof(data->descriptor)) {
         *rval = JSVAL_FALSE;
         return JS_TRUE;
     }
 
-    unsigned char* string = JS_malloc(cx, (size+1)*sizeof(char));
+    JS_EnterLocalRootScope(cx);
+    unsigned char* string = new unsigned char[size+1];
     memset(string, 0, size+1);
     fread(string, sizeof(char), size, data->descriptor);
 
@@ -219,6 +229,7 @@ File_readBytes (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval 
         jsval val = INT_TO_JSVAL(string[i]);
         JS_SetElement(cx, array, i, &val);
     }
+    delete string;
 
     jsval newArgv[] = {OBJECT_TO_JSVAL(array)};
 
@@ -233,7 +244,8 @@ File_readBytes (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval 
     JS_CallFunctionValue(cx, bytes, OBJECT_TO_JSVAL(Bytes), 1, newArgv, &ret);
 
     *rval = OBJECT_TO_JSVAL(bytes);
-    JS_EndRequest(cx);
+
+    JS_LeaveLocalRootScope(cx);
     return JS_TRUE;
 }
 
@@ -241,7 +253,7 @@ File_readBytes (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval 
 JSBool
 File_isEnd (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
 {
-    FileInformation* data = JS_GetPrivate(cx, object);
+    FileInformation* data = (FileInformation*) JS_GetPrivate(cx, object);
 
     *rval = BOOLEAN_TO_JSVAL(feof(data->descriptor));
     return JS_TRUE;
