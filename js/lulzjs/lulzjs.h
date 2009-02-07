@@ -16,7 +16,11 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
+#ifndef _JS_LULJS_H
+#define _JS_LULJS_H
+
 #include "jsapi.h"
+#include "jsxdrapi.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,15 +29,82 @@
 #include <limits.h>
 #include <time.h>
 
-extern JSBool js_ObjectIs (JSContext* cx, jsval check, const char* name);
+#include <sys/stat.h>
+#include <sys/types.h>
+
+extern "C" {
+
+JSBool js_ObjectIs (JSContext* cx, jsval check, const char* name);
 #define JS_OBJECT_IS(cx, check, name) js_ObjectIs(cx, check, name)
 
-extern jsint js_parseInt (JSContext* cx, jsval number, int base);
+jsint js_parseInt (JSContext* cx, jsval number, int base);
 #define JS_ParseInt(cx, number, base) js_parseInt(cx, number, base)
 
-extern jsdouble js_parseFloat (JSContext* cx, jsval number);
+jsdouble js_parseFloat (JSContext* cx, jsval number);
 #define JS_ParseFloat(cx, number, base) js_parseInt(cx, number)
 
-extern jsval js_eval (JSContext* cx, const char* string);
+jsval js_eval (JSContext* cx, const char* string);
 #define JS_EVAL(cx, string) js_eval(cx, string)
 
+typedef struct {
+    char*  bytecode;
+    uint32 length;
+} CompiledScript;
+
+JSBool          Compile_stringIsBytecode (const char* bytecode);
+JSBool          Compile_fileIsBytecode (const char* path);
+JSBool          Compile_execute (JSContext* cx, CompiledScript* compiled);
+JSScript*       Compile_load (JSContext* cx, const char* path);
+JSScript*       Compile_decompile (JSContext* cx, CompiledScript* compiled);
+CompiledScript* Compile_compile (JSContext* cx, JSScript* script);
+CompiledScript* Compile_compileString (JSContext* cx, const char* source);
+JSBool          Compile_save (JSContext* cx, JSScript* script, const char* path);
+
+}
+
+#ifdef __cplusplus
+#include <fstream>
+
+namespace lulzJS {
+
+class Script
+{
+  public:
+    static const int Bytecode = 0x02;
+    static const int Text     = 0x04;
+
+  public:
+    Script (void);
+    Script (JSContext* cx, const char* bytecode, uint32 length);
+    Script (JSContext* cx, JSScript* script);
+    Script (JSContext* cx, std::string source);
+    Script (JSContext* cx, std::string path, int mode = Text);
+
+    virtual ~Script (void);
+
+    void   save (std::string path, int mode);
+    void   load (std::string path, int mode);
+    void   compile (void);
+    void   decompile (void);
+    JSBool execute (void);
+
+    static JSScript* load (JSContext* cx, std::string path);
+    static JSBool    isBytecode (const char* bytecode);
+    static JSBool    isBytecode (std::ifstream file);
+
+  private:
+    JSContext* _cx;
+    char*      _bytecode;
+    uint32     _length;
+    JSScript*  _script;
+    char*      _filename;
+
+    bool _loaded;
+    bool _compiled;
+    bool _executable;
+};
+
+}
+#endif
+
+#endif

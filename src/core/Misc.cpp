@@ -21,19 +21,19 @@
 char*
 JS_strdup (JSContext* cx, const char* string)
 {
-    char* new = JS_malloc(cx, strlen(string)*sizeof(char)+1);
+    char* newString = JS_malloc(cx, strlen(string)*sizeof(char)+1);
 
     size_t i;
     for (i = 0; i < strlen(string); i++) {
-        new[i] = string[i];
+        newString[i] = string[i];
     }
-    new[i] = '\0';
+    newString[i] = '\0';
 
-    return new;
+    return newString;
 }
 
-const char*
-readFile (JSContext* cx, const char* file)
+std::string
+readFile (JSContext* cx, std::string file)
 {
     FILE*  fp;
     struct stat fileStat;
@@ -41,7 +41,7 @@ readFile (JSContext* cx, const char* file)
     
     if (!stat(file, &fileStat)) {
         fp   = fopen(file, "rb");
-        text = JS_malloc(cx, (fileStat.st_size+1)*sizeof(char));
+        text = malloc(cx, (fileStat.st_size+1)*sizeof(char));
 
         uint32 offset = 0;
         while (offset < fileStat.st_size) {
@@ -50,11 +50,14 @@ readFile (JSContext* cx, const char* file)
         text[fileStat.st_size] = '\0';
     }
 
+    std::string sText = text;
+    free(text);
+
     return text;
 }
 
-short
-fileExists (const char* file)
+JSBool
+fileExists (std::string file)
 {
     FILE* check = fopen(file, "r");
 
@@ -67,15 +70,15 @@ fileExists (const char* file)
     }
 }
 
-const char*
-stripRemainder (JSContext* cx, char* text)
+std::string
+stripRemainder (JSContext* cx, std::string text)
 {
     char* stripped = NULL;
     short strip = 0;
 
-    size_t position;
+    size_t position = 0;
     if (text[0] == '#') {
-        for (position = 0; text[position] != '\n'; position++) {
+        for (position = 0; position < text.length() && text[position] != '\n'; position++) {
             if (text[position] == '!') {
                 strip = 1;
             }
@@ -83,14 +86,10 @@ stripRemainder (JSContext* cx, char* text)
     }
 
     if (strip) {
-        stripped = JS_malloc(cx, (strlen(&text[position])+1)*sizeof(char));
-        strcpy(stripped, &text[position]);
-        JS_free(cx, text);
+        return text.substr(position);
     }
     else {
-        stripped = text;
+        return text;
     }
-
-    return stripped;
 }
 

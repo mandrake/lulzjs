@@ -12,8 +12,8 @@ CXXFLAGS=-Os ./configure --enable-thread --bindir=/usr/bin --libdir=/usr/lib --i
 make
 make install
 
-gcc `js-config --cflags` -DXP_UNIX -DJS_THREADSAFE -fPIC -c lulzjs/lulzjs.c -o lulzjs.lo
-gcc `js-config --libs` -shared -Wl,-soname,liblulzjs.so -o liblulzjs.so lulzjs.lo -lc
+g++ `js-config --cflags` -DXP_UNIX -DJS_THREADSAFE -fPIC -c lulzjs/lulzjs.cpp -o lulzjs.lo
+g++ `js-config --libs` -shared -Wl,-soname,liblulzjs.so -o liblulzjs.so lulzjs.lo -lc
 cp -f liblulzjs.so /usr/lib/
 cp -f lulzjs/lulzjs.h /usr/include/js
 rm lulzjs.lo

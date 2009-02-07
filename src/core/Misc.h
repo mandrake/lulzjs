@@ -28,8 +28,8 @@
 
 char* JS_strdup (JSContext* cx, const char* string);
 
-const char* readFile (JSContext* cx, const char* file);
-      short fileExists (const char* file);
-const char* stripRemainder (JSContext* cx, char* text);
+std::string readFile (JSContext* cx, std::string file);
+     JSBool fileExists (std::string file);
+std::string stripRemainder (JSContext* cx, std::string text);
 
 #endif

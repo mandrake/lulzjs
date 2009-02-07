@@ -23,7 +23,6 @@
 #include "Misc.h"
 #include "Core.h"
 #include "Interactive.h"
-#include "Compile.h"
 
 char USAGE[] = {
     "lulzJS " __LJS_VERSION__ "\n"
@@ -126,9 +125,8 @@ main (int argc, char *argv[])
         Interactive(engine.context, engine.core);
     }
     else if (oneliner) {
-        jsval rval;
-
-        if (!JS_EvaluateScript(engine.context, engine.core, oneliner, strlen(oneliner), "lulzJS", 1, &rval)) {
+        lulzJS::Script script(engine.context, oneliner);
+        if (!script.execute()) {
             JS_ReportPendingException(engine.context);
             return EXIT_FAILURE;
         }
@@ -138,19 +136,12 @@ main (int argc, char *argv[])
         }
     }
     else if (compile) {
-        std::ofstream out(outFile.c_str());
+        lulzJS::Script script(engine.context, stripRemainder(readFile(inFile)));
 
-        if (out.fail()) {
+        if (!script.save(outFile)) {
             std::cerr << "Couldn't write to " << outFile << std::endl;
             return EXIT_FAILURE;
         }
-
-        CompiledScript* compiled = Compile_compileString(engine.context,
-            stripRemainder(engine.context, readFile(engine.context, inFile))
-        );
-
-        out.write(compiled->bytecode, compiled->length);
-        out.close();
     }
     else {
         if (!fileExists(argv[optind])) {
@@ -220,14 +211,14 @@ executeScript (JSContext* cx, const char* file)
         stat(file, &fileStat);
 
         CompiledScript compiled;
-        compiled.bytecode = (char*) readFile(cx, file);
+        compiled.bytecode = readFile(cx, file).c_str();
         compiled.length   = fileStat.st_size;
 
         returnValue = Compile_execute(cx, &compiled);
     }
     else {
-        char* sources = (char*) stripRemainder(cx, (char*) readFile(cx, file));
-        returnValue = JS_EvaluateScript(cx, global, sources, strlen(sources), file, 1, &rval);
+        std::string sources = stripRemainder(cx, readFile(cx, file));
+        returnValue         = JS_EvaluateScript(cx, global, sources, sources.length(), file, 1, &rval);
     }
 
     return returnValue;

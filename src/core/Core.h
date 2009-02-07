@@ -33,7 +33,6 @@
 #include <dlfcn.h>
 
 #include "Misc.h"
-#include "Compile.h"
 
 static char** included       = NULL;
 static size_t includedNumber = 0;
