@@ -21,7 +21,7 @@
 char*
 JS_strdup (JSContext* cx, const char* string)
 {
-    char* newString = JS_malloc(cx, strlen(string)*sizeof(char)+1);
+    char* newString = (char*) JS_malloc(cx, strlen(string)*sizeof(char)+1);
 
     size_t i;
     for (i = 0; i < strlen(string); i++) {
@@ -33,15 +33,15 @@ JS_strdup (JSContext* cx, const char* string)
 }
 
 std::string
-readFile (JSContext* cx, std::string file)
+readFile (std::string file)
 {
     FILE*  fp;
     struct stat fileStat;
     char* text;
     
-    if (!stat(file, &fileStat)) {
-        fp   = fopen(file, "rb");
-        text = malloc(cx, (fileStat.st_size+1)*sizeof(char));
+    if (!stat(file.c_str(), &fileStat)) {
+        fp   = fopen(file.c_str(), "rb");
+        text = new char[fileStat.st_size+1];
 
         uint32 offset = 0;
         while (offset < fileStat.st_size) {
@@ -59,7 +59,7 @@ readFile (JSContext* cx, std::string file)
 JSBool
 fileExists (std::string file)
 {
-    FILE* check = fopen(file, "r");
+    FILE* check = fopen(file.c_str(), "r");
 
     if (check) {
         fclose(check);
@@ -71,7 +71,7 @@ fileExists (std::string file)
 }
 
 std::string
-stripRemainder (JSContext* cx, std::string text)
+stripRemainder (std::string text)
 {
     char* stripped = NULL;
     short strip = 0;

@@ -18,11 +18,13 @@
 
 #include "Core.h"
 
+std::list<std::string> included;
+
 const char* __Core_getScriptName (JSContext* cx);
-std::string __Core_getRootPath (JSContext* cx, std::string& fileName);
-std::string __Core_getPath (JSContext* cx, std::string&fileName);
-JSBool      __Core_include (JSContext* cx, std::string& path);
-JSBool      __Core_isIncluded (const char* path);
+std::string __Core_getRootPath (JSContext* cx, std::string fileName);
+std::string __Core_getPath (JSContext* cx, std::string fileName);
+JSBool      __Core_include (JSContext* cx, std::string path);
+JSBool      __Core_isIncluded (std::string path);
 
 JSObject*
 Core_initialize (JSContext *cx, const char* script)
@@ -37,8 +39,8 @@ Core_initialize (JSContext *cx, const char* script)
 
         std::string rootPath = __Core_getRootPath(cx, script);
         jsval paths[] = {
-            STRING_TO_JSVAL(JS_NewString(cx, rootPath.c_str(), rootPath.length())),
-            STRING_TO_JSVAL(JS_NewString(cx, __LJS_LIBRARY_PATH__, strlen(__LJS_LIBRARY_PATH__)))
+            STRING_TO_JSVAL(JS_NewString(cx, JS_strdup(cx, rootPath.c_str()), rootPath.length())),
+            STRING_TO_JSVAL(JS_NewString(cx, JS_strdup(cx, __LJS_LIBRARY_PATH__), strlen(__LJS_LIBRARY_PATH__)))
         };
         JSObject* path = JS_NewArrayObject(cx, 2, paths);
         property       = OBJECT_TO_JSVAL(path);
@@ -63,6 +65,8 @@ Core_initialize (JSContext *cx, const char* script)
 JSBool
 Core_include (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+    JS_BeginRequest(cx);
+
     JSObject* files;
 
     if (argc != 1 || !JS_ConvertArguments(cx, argc, argv, "o", &files)) {
@@ -81,20 +85,20 @@ Core_include (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
             jsval fileName;
             JS_GetElement(cx, files, i, &fileName);
 
-            char* path = __Core_getPath(cx, JS_GetStringBytes(JS_ValueToString(cx, OBJECT_TO_JSVAL(fileName))));
+            std::string path = __Core_getPath(cx, JS_GetStringBytes(JS_ValueToString(cx, fileName)));
             jsval ret = BOOLEAN_TO_JSVAL(__Core_include(cx, path));
 
             JS_SetElement(cx, retArray, i, &ret);
-            JS_free(cx, path);
         }
 
         *rval = OBJECT_TO_JSVAL(retArray);
     }
     else {
-        char* path = __Core_getPath(cx, JS_GetStringBytes(JS_ValueToString(cx, OBJECT_TO_JSVAL(files))));
+        std::string path = __Core_getPath(cx, JS_GetStringBytes(JS_ValueToString(cx, OBJECT_TO_JSVAL(files))));
         *rval = BOOLEAN_TO_JSVAL(__Core_include(cx, path));
-        JS_free(cx, path);
     }
+
+    JS_EndRequest(cx);
 
     return JS_TRUE;
 }
@@ -103,6 +107,8 @@ JSBool
 Core_require (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JSObject* files;
+
+    JS_BeginRequest(cx);
 
     if (argc != 1 || !JS_ConvertArguments(cx, argc, argv, "o", &files)) {
         JS_ReportError(cx, "You must pass only the modules/files to include.");
@@ -120,28 +126,26 @@ Core_require (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
             jsval fileName;
             JS_GetElement(cx, files, i, &fileName);
 
-            char* path = __Core_getPath(cx, JS_GetStringBytes(JS_ValueToString(cx, OBJECT_TO_JSVAL(fileName))));
+            std::string path = __Core_getPath(cx, JS_GetStringBytes(JS_ValueToString(cx, fileName)));
             if (!__Core_include(cx, path)) {
-                JS_ReportError(cx, "%s couldn't be included.", path);
-                JS_free(cx, path);
+                JS_ReportError(cx, "%s couldn't be included.", path.c_str());
 
                 return JS_FALSE;
             }
-            JS_free(cx, path);
         }
     }
     else {
-        char* path = __Core_getPath(cx, JS_GetStringBytes(JS_ValueToString(cx, OBJECT_TO_JSVAL(files))));
+        std::string path = __Core_getPath(cx, JS_GetStringBytes(JS_ValueToString(cx, OBJECT_TO_JSVAL(files))));
         ok = __Core_include(cx, path);
 
         if (!ok) {
-            JS_ReportError(cx, "%s couldn't be included.", path);
-            JS_free(cx, path);
+            JS_ReportError(cx, "%s couldn't be included.", path.c_str());
 
             return JS_FALSE;
         }
-        JS_free(cx, path);
     }
+
+    JS_EndRequest(cx);
 
     return JS_TRUE;
 }
@@ -149,7 +153,9 @@ Core_require (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 JSBool
 Core_GC (JSContext* cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+    JS_BeginRequest(cx);
     JS_MaybeGC(cx);
+    JS_EndRequest(cx);
 
     return JS_TRUE;
 }
@@ -159,15 +165,19 @@ Core_die (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     char* error;
 
+    JS_BeginRequest(cx);
+
     if (argc) {
-        error = JS_GetStringBytes(JSVAL_TO_STRING(argv[0]));
+        error = JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
     }
     else {
-        error = JS_strdup(cx, "Program died.");
+        error = strdup("Program died.");
     }
 
     JS_ReportError(cx, error);
     JS_ReportPendingException(cx);
+
+    JS_EndRequest(cx);
 
     exit(EXIT_FAILURE);
     return JS_FALSE;
@@ -183,6 +193,8 @@ Core_exit (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 JSBool
 Core_ENV (JSContext* cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+    JS_BeginRequest(cx);
+
     if (argc < 1) {
         JS_ReportError(cx, "Not enough parameters.");
         return JS_FALSE;
@@ -208,6 +220,8 @@ Core_ENV (JSContext* cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
         }
     }
 
+    JS_EndRequest(cx);
+
     return JS_TRUE;
 }
 
@@ -219,6 +233,9 @@ Core_exec (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     size_t length = 0;
     size_t read   = 0;
     const char* command;
+
+    JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
 
     if (argc != 1 || !JS_ConvertArguments(cx, argc, argv, "s", &command)) {
         JS_ReportError(cx, "Not enough parameters.");
@@ -232,11 +249,11 @@ Core_exec (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
     // Read untill the pipe is empty.
     while (1) {
-        output = JS_realloc(cx, output, length+=512);
+        output = (char*) JS_realloc(cx, output, length+=512);
         read   = fread(output+(length-512), sizeof(char), 512, pipe);
 
         if (read < 512) {
-            output = JS_realloc(cx, output, length-=(512-read));
+            output = (char*) JS_realloc(cx, output, length-=(512-read));
             break;
         }
     }
@@ -244,6 +261,10 @@ Core_exec (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     pclose(pipe);
 
     *rval = STRING_TO_JSVAL(JS_NewString(cx, output, length));
+
+    JS_LeaveLocalRootScope(cx);
+    JS_EndRequest(cx);
+
     return JS_TRUE;
 }
 
@@ -252,10 +273,14 @@ Core_sleep (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     jsdouble time;
 
+    JS_BeginRequest(cx);
+
     if (argc != 1 || !JS_ConvertArguments(cx, argc, argv, "d", &time)) {
         JS_ReportError(cx, "Not enough parameters.");
         return JS_FALSE;
     }
+
+    JS_EndRequest(cx);
 
     if (time < 1) {
         usleep(time * 1000000);
@@ -270,28 +295,36 @@ Core_sleep (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 JSBool
 Core_print (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
+    JS_BeginRequest(cx);
+
     uintN i;
     for (i = 0; i < argc; i++) {
         printf("%s", JS_GetStringBytes(JS_ValueToString(cx, argv[i])));
     }
     puts("");
 
+    JS_EndRequest(cx);
+
     return JS_TRUE;
 }
 
 std::string
-__Core_getRootPath (JSContext* cx, std::string& fileName)
+__Core_getRootPath (JSContext* cx, std::string fileName)
 {
     std::string path;
 
-    if (fileName == NULL) {
+    if (fileName.empty()) {
         path = getenv("PWD");
     }
     else if (fileName[0] == '/') {
-        path = dirname(fileName);
+        char* tmp = strdup(fileName.c_str());
+        path      = dirname(tmp);
+        free(tmp);
     }
     else {
-        path = dirname(getenv("PWD") + "/" + fileName);
+        char* tmp = strdup((std::string(getenv("PWD")) + "/" + fileName).c_str());
+        path      = dirname(tmp);
+        free(tmp);
     }
 
     return path;
@@ -308,16 +341,19 @@ __Core_getScriptName (JSContext* cx)
 }
 
 std::string
-__Core_getPath (JSContext* cx, std::string& fileName)
+__Core_getPath (JSContext* cx, std::string fileName)
 {
     /*
      * Getting the dirname of the file from the other file is included
      * then copying it and getting the path to the dir.
      */
-    char* scriptName = __Core_getScriptName(cx);
-    char* from       = (scriptName ? strdup(scriptName) : "");
-    char* dir        = dirname(from); free(from);
-    std::string path = dir + "/" + fileName;
+    const char* scriptName = __Core_getScriptName(cx);
+    char* from             = strdup(scriptName ? scriptName : "");
+    char* dir              = dirname(from);
+    std::string path       = std::string(dir) + "/" + fileName;
+    free(from);
+
+    JS_BeginRequest(cx);
     
     if (!fileExists(path)) {
         jsval jsPath;
@@ -332,7 +368,7 @@ __Core_getPath (JSContext* cx, std::string& fileName)
             jsval pathFile;
             JS_GetElement(cx, lPath, i, &pathFile);
 
-            path = JS_GetStringBytes(JSVAL_TO_STRING(pathFile)) + "/" + fileName;
+            path = std::string(JS_GetStringBytes(JSVAL_TO_STRING(pathFile))) + "/" + fileName;
 
             if (fileExists(path)) {
                 break;
@@ -340,11 +376,13 @@ __Core_getPath (JSContext* cx, std::string& fileName)
         }
     }
 
+    JS_EndRequest(cx);
+
     return path;
 }
 
 JSBool
-__Core_include (JSContext* cx, const char* path)
+__Core_include (JSContext* cx, std::string path)
 {
     if (__Core_isIncluded(path)) {
         #ifdef DEBUG
@@ -354,37 +392,26 @@ __Core_include (JSContext* cx, const char* path)
         return JS_TRUE;
     }
 
-    if (strstr(path, ".js") == &path[strlen(path)-3]) {
+    if (path.substr(path.length()-3) == ".js") {
         struct stat pathStat;
 
-        if (stat(path, &pathStat) == -1) {
+        if (stat(path.c_str(), &pathStat) == -1) {
             #ifdef DEBUG
             printf("(javascript) %s not found.\n", path);
             #endif
             return JS_FALSE;
         }
         
-        size_t length = strlen(path);
-
-        char* cachePath = JS_malloc(cx, (length+2)*sizeof(char));
-        memset(cachePath, 0, length+2); strcpy(cachePath, path);
-        cachePath[length] = 'c';
-
+        std::string cachePath = path + "c";
         struct stat cacheStat;
-        if (!stat(cachePath, &cacheStat)) {
+        if (!stat(cachePath.c_str(), &cacheStat)) {
             if (cacheStat.st_mtime >= pathStat.st_mtime) {
-                jsval ret;
-                JSScript* script = Compile_load(cx, cachePath);
+                lulzJS::Script script(cx, cachePath, lulzJS::Script::Bytecode);
+                script.execute();
 
-                if (script) {
-                    JS_ExecuteScript(cx, JS_GetGlobalObject(cx), script, &ret);
-                    JS_DestroyScript(cx, script);
-
-                    #ifdef DEBUG
-                    printf("(cached) path: %sc\n", path);
-                    #endif
-
-                    goto exceptions;
+                if (JS_IsExceptionPending(cx)) {
+                    JS_ReportPendingException(cx);
+                    return JS_FALSE;
                 }
             }
         }
@@ -393,26 +420,18 @@ __Core_include (JSContext* cx, const char* path)
         printf("(javascript) path: %s\n", path);
         #endif
 
-        jsval rval;
-        char* sources    = (char*)stripRemainder(cx, (char*)readFile(cx, path));
-        JSScript* script = JS_CompileScript(cx, JS_GetGlobalObject(cx), sources, strlen(sources), path, 1);
-        JS_free(cx, sources);
+        lulzJS::Script script(cx, stripRemainder(readFile(path)));
+        script.execute();
 
-        if (script) {
-            if (JS_ExecuteScript(cx, JS_GetGlobalObject(cx), script, &rval)) {
-                Compile_save(cx, script, cachePath);
-            }
-            JS_DestroyScript(cx, script);
+        if (!JS_IsExceptionPending(cx)) {
+            script.save(cachePath, lulzJS::Script::Bytecode);
         }
-
-        exceptions:
-        while (JS_IsExceptionPending(cx)) {
+        else {
             JS_ReportPendingException(cx);
-
             return JS_FALSE;
         }
     }
-    else if (strstr(path, ".so") == &path[strlen(path)-3]) {
+    else if (path.substr(path.length()-3) == ".so") {
         #ifdef DEBUG
         printf("(object) path: %s\n", path);
         #endif
@@ -424,15 +443,15 @@ __Core_include (JSContext* cx, const char* path)
             return JS_FALSE;
         }
 
-        void* handle = dlopen(path, RTLD_LAZY|RTLD_GLOBAL);
-        char* error = dlerror();
+        void* handle = dlopen(path.c_str(), RTLD_LAZY|RTLD_GLOBAL);
+        char* error  = dlerror();
 
         if (error) {
             fprintf(stderr, "%s\n", error);
             return JS_FALSE;
         }
 
-        JSBool (*exec)(JSContext*) = dlsym(handle, "exec");
+        JSBool (*exec)(JSContext*) = (JSBool (*)(JSContext*)) dlsym(handle, "exec");
 
         if(!(*exec)(cx)) {
             fprintf(stderr, "The initialization of the module failed.\n");
@@ -444,29 +463,25 @@ __Core_include (JSContext* cx, const char* path)
         printf("(module) path: %s\n", path);
         #endif
 
-        char* newPath = JS_strdup(cx, path);
-        newPath = JS_realloc(cx, newPath, (strlen(newPath)+strlen("/init.js")+1)*sizeof(char));
-        strcat(newPath, "/init.js");
+        std::string newPath = path + "/init.js";
 
         if (!__Core_include(cx, newPath)) {
-            JS_free(cx, newPath);
             return JS_FALSE;
         }
-        JS_free(cx, newPath);
     }
 
-    included = JS_realloc(cx, included, ++includedNumber*sizeof(char*));
-    included[includedNumber-1] = JS_strdup(cx, path);
+    included.push_back(path);
 
     return JS_TRUE;
 }
 
 JSBool
-__Core_isIncluded (const char* path)
+__Core_isIncluded (std::string path)
 {
-    size_t i;
-    for (i = 0; i < includedNumber; i++) {
-        if (strcmp(included[i], path) == 0) {
+    std::list<std::string>::iterator i;
+
+    for (i = included.begin(); i != included.end(); i++) {
+        if (*i == path) {
             return JS_TRUE;
         }
     }

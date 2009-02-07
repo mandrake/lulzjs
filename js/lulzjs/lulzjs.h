@@ -53,7 +53,7 @@ typedef struct {
 
 JSBool          Compile_stringIsBytecode (const char* bytecode);
 JSBool          Compile_fileIsBytecode (const char* path);
-JSBool          Compile_execute (JSContext* cx, CompiledScript* compiled);
+jsval           Compile_execute (JSContext* cx, CompiledScript* compiled);
 JSScript*       Compile_load (JSContext* cx, const char* path);
 JSScript*       Compile_decompile (JSContext* cx, CompiledScript* compiled);
 CompiledScript* Compile_compile (JSContext* cx, JSScript* script);
@@ -78,15 +78,15 @@ class Script
     Script (JSContext* cx, const char* bytecode, uint32 length);
     Script (JSContext* cx, JSScript* script);
     Script (JSContext* cx, std::string source);
-    Script (JSContext* cx, std::string path, int mode = Text);
+    Script (JSContext* cx, std::string path, int mode);
 
     virtual ~Script (void);
 
-    void   save (std::string path, int mode);
-    void   load (std::string path, int mode);
-    void   compile (void);
-    void   decompile (void);
-    JSBool execute (void);
+    bool  save (std::string path, int mode);
+    bool  load (std::string path, int mode);
+    void  compile (void);
+    void  decompile (void);
+    jsval execute (void);
 
     static JSScript* load (JSContext* cx, std::string path);
     static JSBool    isBytecode (const char* bytecode);

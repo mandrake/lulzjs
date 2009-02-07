@@ -28,8 +28,8 @@
 
 char* JS_strdup (JSContext* cx, const char* string);
 
-std::string readFile (JSContext* cx, std::string file);
+std::string readFile (std::string file);
      JSBool fileExists (std::string file);
-std::string stripRemainder (JSContext* cx, std::string text);
+std::string stripRemainder (std::string text);
 
 #endif

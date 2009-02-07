@@ -23,6 +23,7 @@
 #include "jsdbgapi.h"
 
 #include <string>
+#include <list>
 
 // Not cross platform
 #include <sys/types.h>
@@ -33,9 +34,6 @@
 #include <dlfcn.h>
 
 #include "Misc.h"
-
-static char** included       = NULL;
-static size_t includedNumber = 0;
 
 static JSClass Core_class = {
     "Core", JSCLASS_GLOBAL_FLAGS|JSCLASS_HAS_PRIVATE,

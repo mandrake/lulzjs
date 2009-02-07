@@ -53,13 +53,13 @@ Interactive (JSContext* cx, JSObject* global)
             }
 
             // Realloc the whole string with length of whole + the length of the inserted line.
-            whole = JS_realloc(cx, whole, (whole==NULL?0:strlen(whole))+strlen(line)*sizeof(char)+1);
+            whole = (char*) realloc(whole, (whole==NULL?0:strlen(whole))+strlen(line)*sizeof(char)+1);
 
             // If it's the first line use strcpy to avoid not cleaned memory bugs if it's not
             // use strcat.
             whole = (lineno == 1) ? strcpy(whole, line) : strcat(whole, line);
 
-            JS_free(cx, line);
+            free(line);
             lineno++; lineNumber++;
         } while (!JS_BufferIsCompilableUnit(cx, global, whole, strlen(whole)));
 
@@ -94,7 +94,7 @@ Interactive (JSContext* cx, JSObject* global)
             JS_DestroyScript(cx, script);
         }
         
-        JS_free(cx, whole);
+        free(whole);
     } while (!exit);
 }
 

@@ -155,33 +155,39 @@ Script::~Script (void)
     }
 }
 
-void
+bool
 Script::save (std::string path, int mode)
 {
     switch (mode) {
         case Text: {
-            return;
+            return false;
         } break;
 
         case Bytecode: {
             if (!_compiled) {
-                return;
+                return false;
             }
 
             std::ofstream file(path.c_str(), std::ios_base::binary|std::ios_base::out);
             if (file.is_open()) {
                 file.write(_bytecode, _length);
                 file.close();
+
+                return true;
             }
+            
+            return false;
         } break;
     }
+
+    return false;
 }
 
-void
+bool
 Script::load (std::string path, int mode)
 {
     if (_loaded) {
-        return;
+        return false;
     }
 
     switch (mode) {
@@ -199,7 +205,10 @@ Script::load (std::string path, int mode)
 
                 _loaded     = true;
                 _executable = true;
+                return true;
             }
+
+            return false;
         } break;
 
         case Bytecode: {
@@ -214,9 +223,14 @@ Script::load (std::string path, int mode)
 
                 _loaded   = true;
                 _compiled = true;
+                return true;
             }
+
+            return false;
         } break;
     }
+
+    return false;
 }
 
 void
@@ -251,7 +265,7 @@ Script::decompile (void)
     JS_XDRDestroy(xdr);
 }
 
-JSBool
+jsval
 Script::execute (void)
 {
     if (!_executable && _compiled) {
@@ -263,8 +277,9 @@ Script::execute (void)
         }
     }
     
-    jsval ret;
-    return JS_ExecuteScript(_cx, JS_GetGlobalObject(_cx), _script, &ret);
+    jsval ret = JSVAL_VOID;
+    JS_ExecuteScript(_cx, JS_GetGlobalObject(_cx), _script, &ret);
+    return ret;
 }
 
 JSBool
@@ -334,19 +349,18 @@ Compile_fileIsBytecode (const char* path)
 }
 
 
-JSBool
+jsval
 Compile_execute (JSContext* cx, CompiledScript* compiled)
 {
     JSScript* script = Compile_decompile(cx, compiled);
-    JSBool result = JS_FALSE;
 
+    jsval ret = JSVAL_VOID;
     if (script) {
-        jsval ret;
-        result = JS_ExecuteScript(cx, JS_GetGlobalObject(cx), script, &ret);
+        JS_ExecuteScript(cx, JS_GetGlobalObject(cx), script, &ret);
         JS_DestroyScript(cx, script);
     }
     
-    return result;
+    return ret;
 }
 
 JSScript*

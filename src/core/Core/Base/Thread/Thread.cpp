@@ -52,7 +52,7 @@ Thread_initialize (JSContext* cx)
 JSBool
 Thread_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
 {
-    jsval class;
+    jsval klass;
     jsval detach = JSVAL_FALSE;
 
     if (argc < 1) {
@@ -62,13 +62,13 @@ Thread_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv, js
 
     switch (argc) {
         case 2: detach = argv[1]; break;
-        case 1: class  = argv[0];  break;
+        case 1: klass  = argv[0];  break;
     }
 
-    pthread_t* thread = JS_malloc(cx, sizeof(pthread_t));
+    pthread_t* thread =  new pthread_t;
     JS_SetPrivate(cx, object, thread);
 
-    JS_SetProperty(cx, object, "__class", &class);
+    JS_SetProperty(cx, object, "__class", &klass);
     JS_SetProperty(cx, object, "__detach", &detach);
 
     return JS_TRUE;
@@ -77,19 +77,19 @@ Thread_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv, js
 void
 Thread_finalize (JSContext* cx, JSObject* object)
 {
-    pthread_t* thread = JS_GetPrivate(cx, object);
+    pthread_t* thread = (pthread_t*) JS_GetPrivate(cx, object);
 
     if (thread) {
-        JS_free(cx, thread);
+        delete thread;
     }
 }
 
 JSBool
 Thread_start (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
 {
-    pthread_t* thread = JS_GetPrivate(cx, object);
+    pthread_t* thread = (pthread_t*) JS_GetPrivate(cx, object);
 
-    ThreadData* data = malloc(sizeof(ThreadData));
+    ThreadData* data = new ThreadData;
     data->cx = JS_NewContext(JS_GetRuntime(cx), 8192);
     JS_SetOptions(data->cx, JSOPTION_VAROBJFIX);
     JS_SetErrorReporter(data->cx, reportError);
@@ -97,7 +97,7 @@ Thread_start (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* r
 
     data->object = object;
     data->argc   = argc;
-    data->argv   = JS_malloc(data->cx, argc*sizeof(jsval*));
+    data->argv   = new jsval[argc];;
     memcpy(data->argv, argv, argc*sizeof(jsval*));
 
     jsval property; JS_GetProperty(cx, object, "__detach", &property);
@@ -152,10 +152,10 @@ __Thread_start (void* arg)
 
     // Get the class that's the actual class to construct.
     JS_GetProperty(cx, object, "__class", &property);
-    JSObject* class = JSVAL_TO_OBJECT(property);
+    JSObject* klass = JSVAL_TO_OBJECT(property);
 
     // Get the prototype of the object to use in the JS_ConstructObject
-    jsval jsProto; JS_GetProperty(cx, class, "prototype", &jsProto);
+    jsval jsProto; JS_GetProperty(cx, klass, "prototype", &jsProto);
     JSObject* proto = JSVAL_TO_OBJECT(jsProto);
 
     // Construct the object if it's a javascript thingy.
@@ -165,12 +165,12 @@ __Thread_start (void* arg)
 
     // Execute the actual javascript constructor
     jsval ret;
-    JS_CallFunctionValue(cx, threadObj, OBJECT_TO_JSVAL(class), argc, argv, &ret);
+    JS_CallFunctionValue(cx, threadObj, OBJECT_TO_JSVAL(klass), argc, argv, &ret);
 
     property = JSVAL_FALSE;
     JS_SetProperty(cx, object, "__going", &property);
 
-    JS_free(cx, argv);
+    delete argv;
     JS_EndRequest(cx);
     JS_ClearContextThread(cx);
     JS_DestroyContext(cx);
@@ -191,7 +191,7 @@ Thread_join (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rv
         return JS_FALSE;
     }
 
-    pthread_t* thread = JS_GetPrivate(cx, object);
+    pthread_t* thread = (pthread_t*) JS_GetPrivate(cx, object);
     pthread_join(*thread, NULL);
 
     jsval ret;
@@ -205,7 +205,7 @@ Thread_join (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rv
 JSBool
 Thread_stop (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval *rval)
 {
-    pthread_t* thread = JS_GetPrivate(cx, object);
+    pthread_t* thread = (pthread_t*) JS_GetPrivate(cx, object);
 
     jsval property = JSVAL_FALSE;
     JS_SetProperty(cx, object, "__going", &property);
@@ -224,7 +224,7 @@ Thread_static_cancel (JSContext* cx, JSObject* object, uintN argc, jsval* argv, 
         return JS_FALSE;
     }
 
-    pthread_t *thread = JS_GetInstancePrivate(cx, obj, &Thread_class, NULL);
+    pthread_t *thread = (pthread_t*) JS_GetInstancePrivate(cx, obj, &Thread_class, NULL);
 
     if (!thread) {
         JS_ReportError(cx, "It's not a thread.");

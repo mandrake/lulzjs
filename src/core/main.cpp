@@ -126,19 +126,21 @@ main (int argc, char *argv[])
     }
     else if (oneliner) {
         lulzJS::Script script(engine.context, oneliner);
-        if (!script.execute()) {
+
+        jsval ret = script.execute();
+        if (JS_IsExceptionPending(engine.context)) {
             JS_ReportPendingException(engine.context);
             return EXIT_FAILURE;
         }
 
-        if (!JSVAL_IS_VOID(rval)) {
-            std::cout << JS_GetStringBytes(JS_ValueToString(engine.context, rval)) << std::endl;
+        if (!JSVAL_IS_VOID(ret)) {
+            std::cout << JS_GetStringBytes(JS_ValueToString(engine.context, ret)) << std::endl;
         }
     }
     else if (compile) {
         lulzJS::Script script(engine.context, stripRemainder(readFile(inFile)));
 
-        if (!script.save(outFile)) {
+        if (!script.save(outFile, lulzJS::Script::Bytecode)) {
             std::cerr << "Couldn't write to " << outFile << std::endl;
             return EXIT_FAILURE;
         }
@@ -209,16 +211,16 @@ executeScript (JSContext* cx, const char* file)
     if (Compile_fileIsBytecode(file)) {
         struct stat fileStat;
         stat(file, &fileStat);
-
-        CompiledScript compiled;
-        compiled.bytecode = readFile(cx, file).c_str();
-        compiled.length   = fileStat.st_size;
-
-        returnValue = Compile_execute(cx, &compiled);
+        lulzJS::Script script(cx, (std::string)file, lulzJS::Script::Bytecode);
+        returnValue = script.execute();
     }
     else {
-        std::string sources = stripRemainder(cx, readFile(cx, file));
-        returnValue         = JS_EvaluateScript(cx, global, sources, sources.length(), file, 1, &rval);
+        lulzJS::Script script(cx, stripRemainder(readFile(file)));
+        returnValue = script.execute();
+    }
+
+    if (JS_IsExceptionPending(cx)) {
+        JS_ReportPendingException(cx);
     }
 
     return returnValue;
