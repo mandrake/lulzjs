@@ -23,6 +23,8 @@ JSBool exec (JSContext* cx) { return IO_initialize(cx); }
 JSBool
 IO_initialize (JSContext* cx)
 {
+    JS_BeginRequest(cx);
+
     jsval jsParent;
     JS_GetProperty(cx, JS_GetGlobalObject(cx), "System", &jsParent);
     JSObject* parent = JSVAL_TO_OBJECT(jsParent);
@@ -35,6 +37,7 @@ IO_initialize (JSContext* cx)
     if (object) {
         JS_DefineFunctions(cx, object, IO_methods);
 
+        JS_EndRequest(cx);
         return JS_TRUE;
     }
 

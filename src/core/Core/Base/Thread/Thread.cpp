@@ -35,6 +35,8 @@ reportError (JSContext *cx, const char *message, JSErrorReport *report)
 JSBool
 Thread_initialize (JSContext* cx)
 {
+    JS_BeginRequest(cx);
+    
     JSObject* parent = JS_GetGlobalObject(cx);
 
     JSObject* object = JS_InitClass(
@@ -43,6 +45,7 @@ Thread_initialize (JSContext* cx)
     );
 
     if (object) {
+        JS_EndRequest(cx);
         return JS_TRUE;
     }
 
@@ -54,6 +57,8 @@ Thread_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv, js
 {
     jsval klass;
     jsval detach = JSVAL_FALSE;
+
+    JS_BeginRequest(cx);
 
     if (argc < 1) {
         JS_ReportError(cx, "Thread needs an object to transform into a thread.");
@@ -71,22 +76,30 @@ Thread_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv, js
     JS_SetProperty(cx, object, "__class", &klass);
     JS_SetProperty(cx, object, "__detach", &detach);
 
+    JS_EndRequest(cx);
+
     return JS_TRUE;
 }
 
 void
 Thread_finalize (JSContext* cx, JSObject* object)
 {
+    JS_BeginRequest(cx);
+
     pthread_t* thread = (pthread_t*) JS_GetPrivate(cx, object);
 
     if (thread) {
         delete thread;
     }
+
+    JS_EndRequest(cx);
 }
 
 JSBool
 Thread_start (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
 {
+    JS_BeginRequest(cx);
+
     pthread_t* thread = (pthread_t*) JS_GetPrivate(cx, object);
 
     ThreadData* data = new ThreadData;
@@ -122,6 +135,8 @@ Thread_start (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* r
         pthread_detach(*thread);
     }
 
+    JS_EndRequest(cx);
+
     return JS_TRUE;
 }
 
@@ -133,7 +148,7 @@ __Thread_start (void* arg)
     JSObject*  object = data->object;
     uintN      argc   = data->argc;
     jsval*     argv   = data->argv;
-    free(data);
+    delete data;
 
     JS_SetContextThread(cx);
     JS_BeginRequest(cx);
@@ -185,6 +200,8 @@ __Thread_start (void* arg)
 JSBool
 Thread_join (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
 {
+    JS_BeginRequest(cx);
+
     jsval detach; JS_GetProperty(cx, object, "__detach", &detach);
     if (JSVAL_TO_BOOLEAN(detach)) {
         JS_ReportError(cx, "You can't join a detached thread.");
@@ -199,18 +216,24 @@ Thread_join (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rv
     JS_GetProperty(cx, JSVAL_TO_OBJECT(ret), "__return", &ret);
 
     *rval = ret;
+
+    JS_EndRequest(cx);
     return JS_TRUE;
 }
 
 JSBool
 Thread_stop (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval *rval)
 {
+    JS_BeginRequest(cx);
+
     pthread_t* thread = (pthread_t*) JS_GetPrivate(cx, object);
 
     jsval property = JSVAL_FALSE;
     JS_SetProperty(cx, object, "__going", &property);
 
     *rval = BOOLEAN_TO_JSVAL(pthread_cancel(*thread));
+
+    JS_EndRequest(cx);
     return JS_TRUE;
 }
 
@@ -218,6 +241,8 @@ JSBool
 Thread_static_cancel (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
 {
     JSObject* obj;
+
+    JS_BeginRequest(cx);
 
     if (argc != 1 || !JS_ConvertArguments(cx, argc, argv, "o", &obj)) {
         JS_ReportError(cx, "Not enough paramteres.");
@@ -232,6 +257,8 @@ Thread_static_cancel (JSContext* cx, JSObject* object, uintN argc, jsval* argv, 
     }
 
     *rval = BOOLEAN_TO_JSVAL(pthread_cancel(*thread));
+
+    JS_EndRequest(cx);
 
     return JS_TRUE;
 }

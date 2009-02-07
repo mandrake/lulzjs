@@ -23,6 +23,8 @@ JSBool exec (JSContext* cx) { return File_initialize(cx); }
 JSBool
 File_initialize (JSContext* cx)
 {
+    JS_BeginRequest(cx);
+
     jsval jsParent;
     JS_GetProperty(cx, JS_GetGlobalObject(cx), "System", &jsParent);
     JS_GetProperty(cx, JSVAL_TO_OBJECT(jsParent), "IO", &jsParent);
@@ -40,6 +42,7 @@ File_initialize (JSContext* cx)
         property = INT_TO_JSVAL(EOF);
         JS_SetProperty(cx, parent, "EOF", &property);
 
+        JS_EndRequest(cx);
         return JS_TRUE;
     }
 
@@ -49,17 +52,19 @@ File_initialize (JSContext* cx)
 JSBool
 File_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
 {
-    const char* fileName;
-    const char* mode;
+    char* fileName;
+    char* mode;
+
+    JS_BeginRequest(cx);
 
     if (argc != 2 || !JS_ConvertArguments(cx, argc, argv, "ss", &fileName, &mode)) {
         JS_ReportError(cx, "File requires the path and the mode as arguments.");
         return JS_FALSE;
     }
 
-    FileInformation* data = JS_malloc(cx, sizeof(FileInformation));
-    data->path            = JS_strdup(cx, fileName);
-    data->mode            = JS_strdup(cx, mode);
+    FileInformation* data = new FileInformation;
+    data->path            = strdup(fileName);
+    data->mode            = strdup(mode);
     data->descriptor      = fopen(data->path, data->mode);
     JS_SetPrivate(cx, object, data);
 
@@ -68,23 +73,26 @@ File_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsva
         return JS_FALSE;
     }
 
+    JS_EndRequest(cx);
     return JS_TRUE;
 }
 
 void
 File_finalize (JSContext* cx, JSObject* object)
 {
-    FileInformation* data = JS_GetPrivate(cx, object);
+    JS_BeginRequest(cx);
+
+    FileInformation* data = (FileInformation*) JS_GetPrivate(cx, object);
 
     if (data) {
-        JS_free(cx, data->path);
-        JS_free(cx, data->mode);
+        free(data->path);
+        free(data->mode);
 
         if (data->descriptor) {
             fclose(data->descriptor);
         }
 
-        JS_free(cx, data);
+        delete data;
     }
 }
 

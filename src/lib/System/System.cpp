@@ -23,6 +23,8 @@ JSBool exec (JSContext* cx) { return System_initialize(cx); }
 JSBool
 System_initialize (JSContext* cx)
 {
+    JS_BeginRequest(cx);
+
     JSObject* object = JS_DefineObject(
         cx, JS_GetGlobalObject(cx),
         System_class.name, &System_class, NULL, 
@@ -32,6 +34,7 @@ System_initialize (JSContext* cx)
     if (object) {
         JS_DefineFunctions(cx, object, System_methods);
 
+        JS_EndRequest(cx);
         return JS_TRUE;
     }
 

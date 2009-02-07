@@ -23,6 +23,8 @@ JSBool exec (JSContext* cx) { return Console_initialize(cx); }
 JSBool
 Console_initialize (JSContext* cx)
 {
+    JS_BeginRequest(cx);
+
     jsval jsParent;
     JS_GetProperty(cx, JS_GetGlobalObject(cx), "System", &jsParent);
     JSObject* parent = JSVAL_TO_OBJECT(jsParent);
@@ -36,6 +38,7 @@ Console_initialize (JSContext* cx)
     if (object) {
         JS_DefineFunctions(cx, object, Console_methods);
 
+        JS_EndRequest(cx);
         return JS_TRUE;
     }
 
@@ -47,6 +50,8 @@ Console_write (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* 
 {
     char* string;
 
+    JS_BeginRequest(cx);
+
     if (argc != 1 || !JS_ConvertArguments(cx, argc, argv, "s", &string)) {
         JS_ReportError(cx, "Not enough parameters.");
         return JS_FALSE;
@@ -54,7 +59,8 @@ Console_write (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* 
 
     printf("%s", string);
     fflush(stdout);
-    
+
+    JS_EndRequest(cx);
     return JS_TRUE;
 }
 
@@ -62,6 +68,8 @@ JSBool
 Console_error (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
 {
     char* string;
+
+    JS_BeginRequest(cx);
 
     if (argc != 1 || !JS_ConvertArguments(cx, argc, argv, "s", &string)) {
         JS_ReportError(cx, "Not enough parameters.");
@@ -71,27 +79,34 @@ Console_error (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* 
     fprintf(stderr, "%s", string);
     fflush(stderr);
 
+    JS_EndRequest(cx);
     return JS_TRUE;
 }
 
 JSBool
 Console_readLine (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
 {
-    char* string  = malloc(16*sizeof(char));
+    JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
+
+    char* string  = (char*) JS_malloc(cx, 16*sizeof(char));
     size_t length = 0;
     
     do {
-        if ((length+1) % 16) { //definisci %
-            string = realloc(string, (length+16+1)*sizeof(char));
+        if ((length+1) % 16) {
+            string = (char*) JS_realloc(cx, string, (length+16+1)*sizeof(char));
         }
         
         string[length] = (char) getchar();
     } while (string[(++length)-1] != '\n');
     
     string[length-1] = '\0';
-    string = realloc(string, length*sizeof(char));
+    string = (char*) JS_realloc(cx, string, length*sizeof(char));
     
     *rval = STRING_TO_JSVAL(JS_NewString(cx, string, strlen(string)));
+
+    JS_LeaveLocalRootScope(cx);
+    JS_EndRequest(cx);
     
     return JS_TRUE;
 }
