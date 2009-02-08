@@ -447,8 +447,8 @@ __Core_include (JSContext* cx, std::string path)
             return JS_FALSE;
         }
 
-        void* handle = dlopen(path.c_str(), RTLD_LAZY|RTLD_GLOBAL);
-        const char* error  = dlerror();
+        void* handle      = dlopen(path.c_str(), RTLD_LAZY|RTLD_GLOBAL);
+        const char* error = dlerror();
 
         if (error) {
             std::cerr << error << std::endl;

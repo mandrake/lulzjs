@@ -360,12 +360,11 @@ Script::load (std::string path, int mode)
                 char* source = new char[fileStat.st_size+1];
                 file.read(source, fileStat.st_size);
                 source[fileStat.st_size] = '\0';
-                _script = JS_CompileScript(_cx, JS_GetGlobalObject(_cx), source, strlen(source), path.c_str(), 1);
-                _source = source;
+                _source = source; _stripShebang();
+                _script = JS_CompileScript(_cx, JS_GetGlobalObject(_cx), _source.c_str(), _source.length(), path.c_str(), 1);
                 delete [] source;
 
                 file.close();
-                _stripShebang();
 
                 _loaded     = true;
                 _executable = true;
