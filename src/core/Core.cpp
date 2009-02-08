@@ -457,7 +457,7 @@ __Core_include (JSContext* cx, std::string path)
 
         JSBool (*exec)(JSContext*) = (JSBool (*)(JSContext*)) dlsym(handle, "exec");
 
-        if (!(*exec)(cx)) {
+        if (exec == NULL || !(*exec)(cx)) {
             std::cerr << "The initialization of the module failed." << std::endl;
             return JS_FALSE;
         }

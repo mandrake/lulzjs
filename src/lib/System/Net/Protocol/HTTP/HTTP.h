@@ -21,8 +21,8 @@
 
 #include "lulzjs.h"
 
-extern JSBool exec (JSContext* cx);
-extern JSBool HTTP_initialize (JSContext* cx);
+extern "C" JSBool exec (JSContext* cx);
+JSBool HTTP_initialize (JSContext* cx);
 
 static JSClass HTTP_class = {
     "HTTP", 0,

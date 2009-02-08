@@ -26,13 +26,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-extern JSBool exec (JSContext* cx);
-extern void reportError (JSContext *cx, const char *message, JSErrorReport *report);
+extern "C" JSBool exec (JSContext* cx);
+void reportError (JSContext *cx, const char *message, JSErrorReport *report);
 
-extern JSBool Thread_initialize (JSContext* cx);
+JSBool Thread_initialize (JSContext* cx);
 
-extern JSBool Thread_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-extern void   Thread_finalize (JSContext* cx, JSObject* object); 
+JSBool Thread_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+void   Thread_finalize (JSContext* cx, JSObject* object); 
 
 static JSClass Thread_class = {
     "Thread", JSCLASS_HAS_PRIVATE,
@@ -42,14 +42,14 @@ static JSClass Thread_class = {
 
 #include "private.h"
 
-extern JSBool Thread_start (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool Thread_start (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
-extern JSBool Thread_join (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool Thread_join (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
-extern JSBool Thread_stop (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool Thread_stop (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
-extern JSBool Thread_static_cancel (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-extern JSBool Thread_static_cancelPoint (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool Thread_static_cancel (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool Thread_static_cancelPoint (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
 static JSFunctionSpec Thread_methods[] = {
     {"start", Thread_start, 0, 0, 0},

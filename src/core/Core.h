@@ -41,17 +41,17 @@ static JSClass Core_class = {
     JSCLASS_NO_OPTIONAL_MEMBERS
 };
 
-extern JSObject* Core_initialize (JSContext* cx, const char* script);
+JSObject* Core_initialize (JSContext* cx, const char* script);
 
-extern JSBool Core_include (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval); 
-extern JSBool Core_require (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
-extern JSBool Core_compile (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
-extern JSBool Core_GC (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
+JSBool Core_include (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval); 
+JSBool Core_require (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
+JSBool Core_compile (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
+JSBool Core_GC (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
 
-extern JSBool Core_die (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
-extern JSBool Core_exit (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
+JSBool Core_die (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
+JSBool Core_exit (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
 
-extern JSBool Core_ENV (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
+JSBool Core_ENV (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
 
 /*
  * Execute a system command and return the output.
@@ -62,11 +62,11 @@ extern JSBool Core_ENV (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, j
  * RETURN:
  *     String < The command's output.
  */
-extern JSBool Core_exec (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
+JSBool Core_exec (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
 
-extern JSBool Core_sleep (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
+JSBool Core_sleep (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
 
-extern JSBool Core_print (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
+JSBool Core_print (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
 
 static JSFunctionSpec Core_methods[] = {
     {"include", Core_include, 0, 0, 0},

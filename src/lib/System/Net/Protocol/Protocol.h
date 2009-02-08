@@ -21,8 +21,8 @@
 
 #include "lulzjs.h"
 
-extern JSBool exec (JSContext* cx);
-extern JSBool Protocol_initialize (JSContext* cx);
+extern "C" JSBool exec (JSContext* cx);
+JSBool Protocol_initialize (JSContext* cx);
 
 static JSClass Protocol_class = {
     "Protocol", 0,
