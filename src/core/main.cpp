@@ -20,7 +20,6 @@
 #include <iostream>
 #include <fstream>
 
-#include "Misc.h"
 #include "Core.h"
 #include "Interactive.h"
 
@@ -53,7 +52,7 @@ reportError (JSContext *cx, const char *message, JSErrorReport *report)
 
 
 Engine initEngine (int argc, int optind, char *argv[]);
-JSBool executeScript (JSContext* cx, const char* file);
+JSBool executeScript (JSContext* cx, std::string file);
 
 int
 main (int argc, char *argv[])
@@ -62,7 +61,7 @@ main (int argc, char *argv[])
     int stopAt     = argc;
 
     JSBool compile      = JS_FALSE;
-    std::string inFile  = NULL;
+    std::string inFile  = "";
     std::string outFile = "out.jsc";
 
     // Fix the options to let a script get all the real arguments.
@@ -138,7 +137,7 @@ main (int argc, char *argv[])
         }
     }
     else if (compile) {
-        lulzJS::Script script(engine.context, stripRemainder(readFile(inFile)));
+        lulzJS::Script script(engine.context, inFile, lulzJS::Script::Text);
 
         if (!script.save(outFile, lulzJS::Script::Bytecode)) {
             std::cerr << "Couldn't write to " << outFile << std::endl;
@@ -146,7 +145,8 @@ main (int argc, char *argv[])
         }
     }
     else {
-        if (!fileExists(argv[optind])) {
+        struct stat exists;
+        if (stat(argv[optind], &exists)) {
             std::cerr << "The file doesnt't exist." << std::endl;
             return EXIT_FAILURE;
         }
@@ -202,20 +202,18 @@ initEngine (int argc, int offset, char *argv[])
 }
 
 JSBool
-executeScript (JSContext* cx, const char* file)
+executeScript (JSContext* cx, std::string file)
 {
     JSBool    returnValue;
     jsval     rval;
     JSObject* global = JS_GetGlobalObject(cx);
 
-    if (Compile_fileIsBytecode(file)) {
-        struct stat fileStat;
-        stat(file, &fileStat);
-        lulzJS::Script script(cx, (std::string)file, lulzJS::Script::Bytecode);
+    if (lulzJS::Script::isBytecode(new std::ifstream(file.c_str()))) {
+        lulzJS::Script script(cx, file, lulzJS::Script::Bytecode);
         returnValue = script.execute();
     }
     else {
-        lulzJS::Script script(cx, stripRemainder(readFile(file)));
+        lulzJS::Script script(cx, file, lulzJS::Script::Text);
         returnValue = script.execute();
     }
 

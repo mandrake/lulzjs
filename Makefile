@@ -8,16 +8,16 @@ CFLAGS     = -DXP_UNIX -DJS_THREADSAFE -D__LJS_LIBRARY_PATH__="\"${LJS_LIBDIR}\"
 LDFLAGS    = $(shell js-config --libs) -llulzjs
 
 ifdef DEBUG
-CFLAGS += -g -DWORKING -Wall
+CFLAGS += -g3 -DWORKING -Wall
 endif
 
 ifdef DDEBUG
-CFLAGS += -DDEBUG -g -Wall
+CFLAGS += -DDEBUG -g3 -Wall
 endif
 
 ## CORE ##
 CORE_DIR     = src/core
-CORE         = ${CORE_DIR}/main.o ${CORE_DIR}/Core.o ${CORE_DIR}/Misc.o ${CORE_DIR}/Interactive.o 
+CORE         = ${CORE_DIR}/main.o ${CORE_DIR}/Core.o ${CORE_DIR}/Interactive.o 
 CORE_CFLAGS  = ${CFLAGS}
 CORE_LDFLAGS = ${LDFLAGS} -ldl -lreadline -lncurses
 

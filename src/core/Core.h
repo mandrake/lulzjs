@@ -22,6 +22,7 @@
 #include "lulzjs.h"
 #include "jsdbgapi.h"
 
+#include <iostream>
 #include <string>
 #include <list>
 
@@ -32,8 +33,6 @@
 
 #include <libgen.h>
 #include <dlfcn.h>
-
-#include "Misc.h"
 
 static JSClass Core_class = {
     "Core", JSCLASS_GLOBAL_FLAGS|JSCLASS_HAS_PRIVATE,

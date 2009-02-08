@@ -21,11 +21,11 @@
 
 #include "lulzjs.h"
 
-extern JSBool exec (JSContext* cx);
-extern JSBool File_initialize (JSContext* cx);
+extern "C" JSBool exec (JSContext* cx);
+JSBool File_initialize (JSContext* cx);
 
-extern JSBool File_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-extern void  File_finalize (JSContext* cx, JSObject* object); 
+JSBool File_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+void  File_finalize (JSContext* cx, JSObject* object); 
 
 static JSClass File_class = {
     "File", JSCLASS_HAS_PRIVATE,
@@ -35,17 +35,17 @@ static JSClass File_class = {
 
 #include "private.h"
 
-extern JSBool File_close (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool File_close (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
-extern JSBool File_write (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-extern JSBool File_read (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool File_write (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool File_read (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
-extern JSBool File_writeBytes (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-extern JSBool File_readBytes (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool File_writeBytes (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool File_readBytes (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
-extern JSBool File_isEnd (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool File_isEnd (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
-extern JSBool File_static_exists (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool File_static_exists (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
 static JSFunctionSpec File_methods[] = {
     {"close", File_close, 0, 0, 0},

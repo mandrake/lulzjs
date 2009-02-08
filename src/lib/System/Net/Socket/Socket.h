@@ -30,11 +30,11 @@
 #include <fcntl.h>
 #include <errno.h>
 
-extern JSBool exec (JSContext* cx);
-extern JSBool Socket_initialize (JSContext* cx);
+extern "C" JSBool exec (JSContext* cx);
+JSBool Socket_initialize (JSContext* cx);
 
-extern JSBool Socket_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-extern void  Socket_finalize (JSContext* cx, JSObject* object); 
+JSBool Socket_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+void  Socket_finalize (JSContext* cx, JSObject* object); 
 
 static JSClass Socket_class = {
     "Socket", JSCLASS_HAS_PRIVATE,
@@ -44,20 +44,20 @@ static JSClass Socket_class = {
 
 #include "private.h"
 
-extern JSBool Socket_connect (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool Socket_connect (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
-extern JSBool Socket_listen (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-extern JSBool Socket_accept (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool Socket_listen (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool Socket_accept (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
-extern JSBool Socket_send (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-extern JSBool Socket_receive (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool Socket_send (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool Socket_receive (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
-extern JSBool Socket_sendBytes (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-extern JSBool Socket_receiveBytes (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool Socket_sendBytes (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool Socket_receiveBytes (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
-extern JSBool Socket_static_getHostByName (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool Socket_static_getHostByName (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
-extern JSBool Socket_static_isIPv4 (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool Socket_static_isIPv4 (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
 static JSFunctionSpec Socket_methods[] = {
     {"connect", Socket_connect, 0, 0, 0},

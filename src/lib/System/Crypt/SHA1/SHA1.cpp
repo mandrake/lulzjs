@@ -57,7 +57,7 @@ SHA1_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsva
         return JS_FALSE;
     }
 
-    SHA1_ctx* data = JS_malloc(cx, sizeof(SHA1_ctx));
+    SHA1_ctx* data = new SHA1_ctx;
     JS_SetPrivate(cx, object, data);
 
     __SHA1_init(data);
@@ -69,10 +69,10 @@ SHA1_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsva
 void
 SHA1_finalize (JSContext* cx, JSObject* object)
 {
-    SHA1_ctx* data = JS_GetPrivate(cx, object);
+    SHA1_ctx* data = (SHA1_ctx*) JS_GetPrivate(cx, object);
 
     if (data) {
-        JS_free(cx, data);
+        delete data;
     }
 }
 
@@ -245,12 +245,18 @@ void __SHA1_final(SHA1_ctx* ctx)
 JSBool
 SHA1_toString (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
 {
-    char* string   = JS_malloc(cx, 41*sizeof(char));
-    SHA1_ctx* data = JS_GetPrivate(cx, object);
+    JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
+
+    char* string   = (char*) JS_malloc(cx, 41*sizeof(char));
+    SHA1_ctx* data = (SHA1_ctx*) JS_GetPrivate(cx, object);
 
     __SHA1_toString(data, string);
     
     *rval = STRING_TO_JSVAL(JS_NewString(cx, string, 40));
+
+    JS_LeaveLocalRootScope(cx);
+    JS_EndRequest(cx);
     return JS_TRUE;
 }
 

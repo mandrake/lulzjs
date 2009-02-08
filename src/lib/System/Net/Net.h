@@ -21,8 +21,8 @@
 
 #include "lulzjs.h"
 
-extern JSBool exec (JSContext* cx);
-extern JSBool Net_initialize (JSContext* cx);
+extern "C" JSBool exec (JSContext* cx);
+JSBool Net_initialize (JSContext* cx);
 
 static JSClass Net_class = {
     "Net", 0,

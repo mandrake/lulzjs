@@ -29,6 +29,8 @@ JSBool      __Core_isIncluded (std::string path);
 JSObject*
 Core_initialize (JSContext *cx, const char* script)
 {
+    JS_SetVersion(cx, JS_StringToVersion("1.8"));
+
     JSObject* object = JS_NewObject(cx, &Core_class, NULL, NULL);
 
     if (object && JS_InitStandardClasses(cx, object)) {
@@ -355,7 +357,8 @@ __Core_getPath (JSContext* cx, std::string fileName)
 
     JS_BeginRequest(cx);
     
-    if (!fileExists(path)) {
+    struct stat test;
+    if (stat(path.c_str(), &test) != 0) {
         jsval jsPath;
         JS_GetProperty(cx, JS_GetGlobalObject(cx), "__PATH__", &jsPath);
         JSObject* lPath = JSVAL_TO_OBJECT(jsPath);
@@ -370,7 +373,7 @@ __Core_getPath (JSContext* cx, std::string fileName)
 
             path = std::string(JS_GetStringBytes(JSVAL_TO_STRING(pathFile))) + "/" + fileName;
 
-            if (fileExists(path)) {
+            if (stat(path.c_str(), &test) == 0) {
                 break;
             }
         }
@@ -420,7 +423,7 @@ __Core_include (JSContext* cx, std::string path)
         printf("(javascript) path: %s\n", path);
         #endif
 
-        lulzJS::Script script(cx, stripRemainder(readFile(path)));
+        lulzJS::Script script(cx, path, lulzJS::Script::Text);
         script.execute();
 
         if (!JS_IsExceptionPending(cx)) {
@@ -436,7 +439,8 @@ __Core_include (JSContext* cx, std::string path)
         printf("(object) path: %s\n", path);
         #endif
 
-        if (!fileExists(path)) {
+        struct stat test;
+        if (stat(path.c_str(), &test)) {
             #ifdef DEBUG
             printf("(object) %s not found.\n", path);
             #endif
@@ -444,17 +448,17 @@ __Core_include (JSContext* cx, std::string path)
         }
 
         void* handle = dlopen(path.c_str(), RTLD_LAZY|RTLD_GLOBAL);
-        char* error  = dlerror();
+        const char* error  = dlerror();
 
         if (error) {
-            fprintf(stderr, "%s\n", error);
+            std::cerr << error << std::endl;
             return JS_FALSE;
         }
 
         JSBool (*exec)(JSContext*) = (JSBool (*)(JSContext*)) dlsym(handle, "exec");
 
-        if(!(*exec)(cx)) {
-            fprintf(stderr, "The initialization of the module failed.\n");
+        if (!(*exec)(cx)) {
+            std::cerr << "The initialization of the module failed." << std::endl;
             return JS_FALSE;
         }
     }
@@ -463,9 +467,7 @@ __Core_include (JSContext* cx, std::string path)
         printf("(module) path: %s\n", path);
         #endif
 
-        std::string newPath = path + "/init.js";
-
-        if (!__Core_include(cx, newPath)) {
+        if (!__Core_include(cx, path + "/init.js")) {
             return JS_FALSE;
         }
     }

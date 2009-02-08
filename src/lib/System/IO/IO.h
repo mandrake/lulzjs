@@ -21,8 +21,8 @@
 
 #include "lulzjs.h"
 
-extern JSBool exec (JSContext* cx);
-extern JSBool IO_initialize (JSContext* cx);
+extern "C" JSBool exec (JSContext* cx);
+JSBool IO_initialize (JSContext* cx);
 
 static JSClass IO_class = {
     "IO", 0,

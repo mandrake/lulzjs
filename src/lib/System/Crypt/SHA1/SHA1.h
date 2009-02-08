@@ -23,11 +23,11 @@
 #include "lulzjs.h"
 #include <stdint.h>
 
-extern JSBool exec (JSContext* cx);
-extern JSBool SHA1_initialize (JSContext* cx);
+extern "C" JSBool exec (JSContext* cx);
+JSBool SHA1_initialize (JSContext* cx);
 
-extern JSBool SHA1_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-extern void   SHA1_finalize (JSContext* cx, JSObject* object); 
+JSBool SHA1_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+void   SHA1_finalize (JSContext* cx, JSObject* object); 
 
 static JSClass SHA1_class = {
     "SHA1", JSCLASS_HAS_PRIVATE,
@@ -37,7 +37,7 @@ static JSClass SHA1_class = {
 
 #include "private.h"
 
-extern JSBool SHA1_toString (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool SHA1_toString (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
 static JSFunctionSpec SHA1_methods[] = {
     {"toString", SHA1_toString, 0, 0, 0},

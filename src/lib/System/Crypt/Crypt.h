@@ -21,8 +21,8 @@
 
 #include "lulzjs.h"
 
-extern JSBool exec (JSContext* cx);
-extern JSBool Crypt_initialize (JSContext* cx);
+extern "C" JSBool exec (JSContext* cx);
+JSBool Crypt_initialize (JSContext* cx);
 
 static JSClass Crypt_class = {
     "Crypt", 0,

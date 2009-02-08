@@ -85,236 +85,18 @@ js_eval (JSContext* cx, const char* string)
     return ret;
 }
 
-namespace lulzJS {
-
-Script::Script (void)
+char*
+js_strdup (JSContext* cx, const char* string)
 {
-    _cx         = NULL;
-    _bytecode   = NULL;
-    _length     = 0;
-    _script     = NULL;
-    _loaded     = false;
-    _compiled   = false;
-    _executable = false;
-}
+    char* newString = (char*) JS_malloc(cx, strlen(string)*sizeof(char)+1);
 
-Script::Script (JSContext* cx, const char* bytecode, uint32 length)
-{
-    _cx         = cx;
-    _bytecode   = strdup(bytecode);
-    _length     = length;
-    _script     = NULL;
-    _loaded     = true;
-    _compiled   = true;
-    _executable = false;
-}
-
-Script::Script (JSContext* cx, JSScript* script)
-{
-    _cx         = cx;
-    _bytecode   = NULL;
-    _length     = 0;
-    _script     = script;
-    _loaded     = true;
-    _compiled   = false;
-    _executable = true;
-}
-
-Script::Script (JSContext* cx, std::string source)
-{
-    _cx         = cx;
-    _bytecode   = NULL;
-    _length     = 0;
-    _script     = JS_CompileScript(cx, JS_GetGlobalObject(cx), source.c_str(), source.length(), "lulzJS", 1);
-    _loaded     = true;
-    _compiled   = false;
-    _executable = true;
-}
-
-Script::Script (JSContext* cx, std::string path, int mode)
-{
-    _cx         = cx;
-    _bytecode   = NULL;
-    _length     = 0;
-    _script     = NULL;
-    _loaded     = false;
-    _compiled   = false;
-    _executable = false;
-
-    this->load(path, mode);
-}
-
-Script::~Script (void)
-{
-    if (_bytecode) {
-        free(_bytecode);
+    size_t i;
+    for (i = 0; i < strlen(string); i++) {
+        newString[i] = string[i];
     }
+    newString[i] = '\0';
 
-    if (_script) {
-        JS_DestroyScript(_cx, _script);
-    }
-}
-
-bool
-Script::save (std::string path, int mode)
-{
-    switch (mode) {
-        case Text: {
-            return false;
-        } break;
-
-        case Bytecode: {
-            if (!_compiled) {
-                return false;
-            }
-
-            std::ofstream file(path.c_str(), std::ios_base::binary|std::ios_base::out);
-            if (file.is_open()) {
-                file.write(_bytecode, _length);
-                file.close();
-
-                return true;
-            }
-            
-            return false;
-        } break;
-    }
-
-    return false;
-}
-
-bool
-Script::load (std::string path, int mode)
-{
-    if (_loaded) {
-        return false;
-    }
-
-    switch (mode) {
-        case Text: {
-            struct stat fileStat;
-            if (!stat(path.c_str(), &fileStat)) {
-                std::ifstream file(path.c_str());
-
-                char* source = new char[fileStat.st_size+1];
-                file.read(source, fileStat.st_size);
-                _script = JS_CompileScript(_cx, JS_GetGlobalObject(_cx), source, strlen(source), path.c_str(), 1);
-                delete [] source;
-
-                file.close();
-
-                _loaded     = true;
-                _executable = true;
-                return true;
-            }
-
-            return false;
-        } break;
-
-        case Bytecode: {
-            struct stat fileStat;
-            if (!stat(path.c_str(), &fileStat)) {
-                std::ifstream file(path.c_str(), std::ios_base::binary|std::ios_base::in);
-        
-                _length   = fileStat.st_size;
-                _bytecode = new char[_length];
-                file.read(_bytecode, _length);
-                file.close();
-
-                _loaded   = true;
-                _compiled = true;
-                return true;
-            }
-
-            return false;
-        } break;
-    }
-
-    return false;
-}
-
-void
-Script::compile (void)
-{
-    if (_compiled) {
-        return;
-    }
-
-    JSXDRState* xdr = JS_XDRNewMem(_cx, JSXDR_ENCODE);
-    char* bytes;
-
-    if (JS_XDRScript(xdr, &_script)) {
-        bytes     = (char*) JS_XDRMemGetData(xdr, &_length);
-        _bytecode = new char[_length];
-        memcpy(_bytecode, bytes, _length);
-        _compiled = true;
-    }
-    JS_XDRDestroy(xdr);
-}
-
-void
-Script::decompile (void)
-{
-    JSXDRState* xdr = JS_XDRNewMem(_cx, JSXDR_DECODE);
-    JS_XDRMemSetData(xdr, _bytecode, _length);
-
-    if (JS_XDRScript(xdr, &_script)) {
-        JS_XDRMemSetData(xdr, NULL, 0);
-    }
-
-    JS_XDRDestroy(xdr);
-}
-
-jsval
-Script::execute (void)
-{
-    if (!_executable && _compiled) {
-        if (_compiled) {
-            this->decompile();
-        }
-        else {
-            return false;
-        }
-    }
-    
-    jsval ret = JSVAL_VOID;
-    JS_ExecuteScript(_cx, JS_GetGlobalObject(_cx), _script, &ret);
-    return ret;
-}
-
-JSBool
-Script::isBytecode (const char* bytecode)
-{
-    char magic[9]      = {0};
-    char magicCheck[9] = {0};
-    sprintf(magic,      "%8x", JSXDR_MAGIC_SCRIPT_CURRENT);
-    sprintf(magicCheck, "%8x", *((unsigned int*) bytecode));
-
-    return strcmp(magic, magicCheck) == 0;
-}
-
-JSBool
-Script::isBytecode (std::ifstream file)
-{
-    bool result = false;
-
-    if (file.is_open()) {    
-        file.seekg(0, std::ios_base::beg);
-        std::ifstream::pos_type begin_pos = file.tellg();
-        file.seekg(0, std::ios_base::end);
-
-        if ((file.tellg() - begin_pos) > 3) {
-            file.seekg(0, std::ios_base::beg);
-            char* bytecode = new char[4];
-            file.read(bytecode, 4);
-            result = Script::isBytecode(bytecode);
-            delete [] bytecode;
-        }
-    }
-
-    return result;
-}
-
+    return newString;
 }
 
 JSBool
@@ -458,5 +240,260 @@ Compile_save (JSContext* cx, JSScript* script, const char* path)
     JS_free(cx, compiled);
 
     return JS_TRUE;
+}
+
+namespace lulzJS {
+
+Script::Script (void)
+{
+    _cx         = NULL;
+    _bytecode   = NULL;
+    _length     = 0;
+    _script     = NULL;
+    _loaded     = false;
+    _compiled   = false;
+    _executable = false;
+}
+
+Script::Script (JSContext* cx, const char* bytecode, uint32 length)
+{
+    _cx         = cx;
+    _bytecode   = strdup(bytecode);
+    _length     = length;
+    _script     = NULL;
+    _loaded     = true;
+    _compiled   = true;
+    _executable = false;
+}
+
+Script::Script (JSContext* cx, JSScript* script)
+{
+    _cx         = cx;
+    _bytecode   = NULL;
+    _length     = 0;
+    _script     = script;
+    _loaded     = true;
+    _compiled   = false;
+    _executable = true;
+}
+
+Script::Script (JSContext* cx, std::string source)
+{
+    _cx         = cx;
+    _bytecode   = NULL;
+    _length     = 0;
+    _source     = source;
+    _stripShebang();
+    _script     = JS_CompileScript(cx, JS_GetGlobalObject(cx), _source.c_str(), _source.length(), "lulzJS", 1);
+    _loaded     = true;
+    _compiled   = false;
+    _executable = true;
+}
+
+Script::Script (JSContext* cx, std::string path, int mode)
+{
+    _cx         = cx;
+    _bytecode   = NULL;
+    _length     = 0;
+    _script     = NULL;
+    _loaded     = false;
+    _compiled   = false;
+    _executable = false;
+
+    this->load(path, mode);
+}
+
+Script::~Script (void)
+{
+    if (_bytecode) {
+        free(_bytecode);
+    }
+
+    if (_script) {
+        JS_DestroyScript(_cx, _script);
+    }
+}
+
+bool
+Script::save (std::string path, int mode)
+{
+    switch (mode) {
+        case Text: {
+            return false;
+        } break;
+
+        case Bytecode: {
+            if (!_compiled) {
+                return false;
+            }
+
+            std::ofstream file(path.c_str(), std::ios_base::binary|std::ios_base::out);
+            if (file.is_open()) {
+                file.write(_bytecode, _length);
+                file.close();
+
+                return true;
+            }
+            
+            return false;
+        } break;
+    }
+
+    return false;
+}
+
+bool
+Script::load (std::string path, int mode)
+{
+    if (_loaded) {
+        return false;
+    }
+
+    _filename = path;
+
+    switch (mode) {
+        case Text: {
+            struct stat fileStat;
+            if (!stat(path.c_str(), &fileStat)) {
+                std::ifstream file(path.c_str());
+
+                char* source = new char[fileStat.st_size+1];
+                file.read(source, fileStat.st_size);
+                source[fileStat.st_size] = '\0';
+                _script = JS_CompileScript(_cx, JS_GetGlobalObject(_cx), source, strlen(source), path.c_str(), 1);
+                _source = source;
+                delete [] source;
+
+                file.close();
+                _stripShebang();
+
+                _loaded     = true;
+                _executable = true;
+                return true;
+            }
+
+            return false;
+        } break;
+
+        case Bytecode: {
+            struct stat fileStat;
+            if (!stat(path.c_str(), &fileStat)) {
+                std::ifstream file(path.c_str(), std::ios_base::binary|std::ios_base::in);
+        
+                _length   = fileStat.st_size;
+                _bytecode = (char*) malloc(_length*sizeof(char));
+                file.read(_bytecode, _length);
+                file.close();
+
+                _loaded   = true;
+                _compiled = true;
+                return true;
+            }
+
+            return false;
+        } break;
+    }
+
+    return false;
+}
+
+void
+Script::compile (void)
+{
+    if (_compiled) {
+        return;
+    }
+
+    JSXDRState* xdr = JS_XDRNewMem(_cx, JSXDR_ENCODE);
+    char* bytes;
+
+    if (JS_XDRScript(xdr, &_script)) {
+        bytes     = (char*) JS_XDRMemGetData(xdr, &_length);
+        _bytecode = (char*) malloc(_length*sizeof(char));
+        memcpy(_bytecode, bytes, _length);
+        _compiled = true;
+    }
+    JS_XDRDestroy(xdr);
+}
+
+void
+Script::decompile (void)
+{
+    JSXDRState* xdr = JS_XDRNewMem(_cx, JSXDR_DECODE);
+    JS_XDRMemSetData(xdr, _bytecode, _length);
+
+    if (JS_XDRScript(xdr, &_script)) {
+        JS_XDRMemSetData(xdr, NULL, 0);
+    }
+
+    JS_XDRDestroy(xdr);
+}
+
+jsval
+Script::execute (void)
+{
+    if (!_executable) {
+        if (_compiled) {
+            this->decompile();
+        }
+        else if (!_source.empty()) {
+            _script = JS_CompileScript(_cx, JS_GetGlobalObject(_cx), _source.c_str(), _source.length(), _filename.c_str(), 1);
+            _executable = true;
+        }
+    }
+
+    if (!_script) {
+        return JSVAL_VOID;
+    }
+    
+    jsval ret = JSVAL_VOID;
+    JS_ExecuteScript(_cx, JS_GetGlobalObject(_cx), _script, &ret);
+    return ret;
+}
+
+JSBool
+Script::isBytecode (const char* bytecode)
+{
+    char magic[9]      = {0};
+    char magicCheck[9] = {0};
+    sprintf(magic,      "%8x", JSXDR_MAGIC_SCRIPT_CURRENT);
+    sprintf(magicCheck, "%8x", *((unsigned int*) bytecode));
+
+    return strcmp(magic, magicCheck) == 0;
+}
+
+JSBool
+Script::isBytecode (std::ifstream* file)
+{
+    bool result = false;
+
+    if (file->is_open()) {
+        file->seekg(0, std::ios_base::beg);
+        std::ifstream::pos_type begin_pos = file->tellg();
+        file->seekg(0, std::ios_base::end);
+
+        if ((file->tellg() - begin_pos) > 3) {
+            file->seekg(0, std::ios_base::beg);
+            char* bytecode = new char[4];
+            file->read(bytecode, 4);
+            result = Script::isBytecode(bytecode);
+            delete [] bytecode;
+        }
+    }
+    delete file;
+
+    return result;
+}
+
+void
+Script::_stripShebang (void)
+{
+    size_t eol = _source.find_first_of("\n");
+
+    if (_source[0] == '#' && _source.find_first_of("!") < eol) {
+        _source = _source.substr(eol+1);
+    }
+}
+
 }
 

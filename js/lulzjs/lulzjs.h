@@ -46,6 +46,9 @@ jsdouble js_parseFloat (JSContext* cx, jsval number);
 jsval js_eval (JSContext* cx, const char* string);
 #define JS_EVAL(cx, string) js_eval(cx, string)
 
+char* js_strdup (JSContext* cx, const char* string);
+#define JS_strdup(cx, string) js_strdup(cx, string)
+
 typedef struct {
     char*  bytecode;
     uint32 length;
@@ -90,18 +93,22 @@ class Script
 
     static JSScript* load (JSContext* cx, std::string path);
     static JSBool    isBytecode (const char* bytecode);
-    static JSBool    isBytecode (std::ifstream file);
+    static JSBool    isBytecode (std::ifstream* file);
 
   private:
-    JSContext* _cx;
-    char*      _bytecode;
-    uint32     _length;
-    JSScript*  _script;
-    char*      _filename;
+    JSContext*  _cx;
+    char*       _bytecode;
+    uint32      _length;
+    JSScript*   _script;
+    std::string _filename;
+    std::string _source;
 
     bool _loaded;
     bool _compiled;
     bool _executable;
+
+  private:
+    void _stripShebang (void);
 };
 
 }

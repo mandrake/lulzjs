@@ -21,8 +21,8 @@
 
 #include "lulzjs.h"
 
-extern JSBool exec (JSContext* cx);
-extern JSBool Console_initialize (JSContext* cx);
+extern "C" JSBool exec (JSContext* cx);
+JSBool Console_initialize (JSContext* cx);
 
 static JSClass Console_class = {
     "Console", 0,
@@ -30,9 +30,9 @@ static JSClass Console_class = {
     JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub
 };
 
-extern JSBool Console_write (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-extern JSBool Console_error (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-extern JSBool Console_readLine (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool Console_write (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool Console_error (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool Console_readLine (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
 static JSFunctionSpec Console_methods[] = {
     {"write",    Console_write,    0, 0, 0},
