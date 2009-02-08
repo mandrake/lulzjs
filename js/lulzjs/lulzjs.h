@@ -66,6 +66,8 @@ JSBool          Compile_save (JSContext* cx, JSScript* script, const char* path)
 }
 
 #ifdef __cplusplus
+#include <iostream>
+#include <string>
 #include <fstream>
 
 namespace lulzJS {

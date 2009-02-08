@@ -120,6 +120,10 @@ main (int argc, char *argv[])
         return 1;
     }
 
+    #ifdef DEBUG
+    JS_SetGCZeal(engine.context, 2);
+    #endif
+
     if (argc == 1) {
         Interactive(engine.context, engine.core);
     }

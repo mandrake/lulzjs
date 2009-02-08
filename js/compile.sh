@@ -8,7 +8,7 @@ if [ ! -x $(which autoconf-2.13) ]; then
 fi
 
 autoconf-2.13 || autoconf2.13
-CXXFLAGS=-Os ./configure --enable-thread --bindir=/usr/bin --libdir=/usr/lib --includedir=/usr/include
+CXXFLAGS=-Os ./configure --enable-threads --bindir=/usr/bin --libdir=/usr/lib --includedir=/usr/include
 make
 make install
 

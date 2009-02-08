@@ -33,6 +33,10 @@ Core_initialize (JSContext *cx, const char* script)
 
     JSObject* object = JS_NewObject(cx, &Core_class, NULL, NULL);
 
+    JSClass* lol = JS_GET_CLASS(cx, object);
+    printf("%ld => %s %d\n", lol, lol->name, lol->flags);
+    printf("%ld => %s %d\n", &Core_class, Core_class.name, Core_class.flags);
+
     if (object && JS_InitStandardClasses(cx, object)) {
         JS_DefineFunctions(cx, object, Core_methods);
 
@@ -389,7 +393,7 @@ __Core_include (JSContext* cx, std::string path)
 {
     if (__Core_isIncluded(path)) {
         #ifdef DEBUG
-        printf("(already included) %s\n", path);
+        std::cerr << "(already included) " << path << "." << std::endl;
         #endif
 
         return JS_TRUE;
@@ -400,7 +404,7 @@ __Core_include (JSContext* cx, std::string path)
 
         if (stat(path.c_str(), &pathStat) == -1) {
             #ifdef DEBUG
-            printf("(javascript) %s not found.\n", path);
+            std::cerr << "(javascript) " << path << "not found." << std::endl;
             #endif
             return JS_FALSE;
         }
@@ -420,7 +424,7 @@ __Core_include (JSContext* cx, std::string path)
         }
 
         #ifdef DEBUG
-        printf("(javascript) path: %s\n", path);
+        std::cerr << "(javascript) path: " << path << std::endl;
         #endif
 
         lulzJS::Script script(cx, path, lulzJS::Script::Text);
@@ -436,13 +440,13 @@ __Core_include (JSContext* cx, std::string path)
     }
     else if (path.substr(path.length()-3) == ".so") {
         #ifdef DEBUG
-        printf("(object) path: %s\n", path);
+        std::cerr << "(object) path: " << path << std::endl;
         #endif
 
         struct stat test;
         if (stat(path.c_str(), &test)) {
             #ifdef DEBUG
-            printf("(object) %s not found.\n", path);
+            std::cerr << "(object) " << path << " not found." << std::endl;
             #endif
             return JS_FALSE;
         }
@@ -464,7 +468,7 @@ __Core_include (JSContext* cx, std::string path)
     }
     else {
         #ifdef DEBUG
-        printf("(module) path: %s\n", path);
+        std::cerr << "(module) path: " << path << std::endl;
         #endif
 
         if (!__Core_include(cx, path + "/init.js")) {
