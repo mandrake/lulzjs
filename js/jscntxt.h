@@ -258,11 +258,8 @@ struct JSThread {
 extern void
 js_ThreadDestructorCB(void *ptr);
 
-extern JSBool
-js_SetContextThread(JSContext *cx);
-
 extern void
-js_ClearContextThread(JSContext *cx);
+js_InitContextThread(JSContext *cx, JSThread *thread);
 
 extern JSThread *
 js_GetCurrentThread(JSRuntime *rt);
@@ -1159,6 +1156,14 @@ js_InitThreadPrivateIndex(void (*ptr)(void *));
  */
 extern JSBool
 js_CleanupThreadPrivateData();
+
+/*
+ * Ensures the JSOPTION_XML and JSOPTION_ANONFUNFIX bits of cx->options are
+ * reflected in cx->version, since each bit must travel with a script that has
+ * it set.
+ */
+extern void
+js_SyncOptionsToVersion(JSContext *cx);
 
 /*
  * Common subroutine of JS_SetVersion and js_SetVersion, to update per-context

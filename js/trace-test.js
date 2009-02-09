@@ -4279,6 +4279,54 @@ function testDeepBail1() {
 }
 test(testDeepBail1);
 
+/* Array comprehension tests */
+
+function Range(start, stop) {
+    this.i = start;
+    this.stop = stop;
+}
+Range.prototype = {
+    __iterator__: function() this,
+    next: function() {
+        if (this.i >= this.stop)
+            throw StopIteration;
+        return this.i++;
+    }
+};
+
+function range(start, stop) {
+    return new Range(start, stop);
+}
+
+function testArrayComp1() {
+    return [a for (a in range(0, 10))].join('');
+}
+testArrayComp1.expected='0123456789';
+test(testArrayComp1);
+
+function testArrayComp2() {
+    return [a + b for (a in range(0, 5)) for (b in range(0, 5))].join('');
+}
+testArrayComp2.expected='0123412345234563456745678';
+test(testArrayComp2);
+
+function testSwitchUndefined()
+{
+  var x = undefined;
+  var y = 0;
+  for (var i = 0; i < 5; i++)
+  {
+    switch (x)
+    {
+      default:
+        y++;
+    }
+  }
+  return y;
+}
+testSwitchUndefined.expected = 5;
+test(testSwitchUndefined);
+
 /*****************************************************************************
  *                                                                           *
  *  _____ _   _  _____ ______ _____ _______                                  *

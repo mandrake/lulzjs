@@ -1,4 +1,4 @@
-/* -*- Mode: C; tab-width: 8; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+/* -*- Mode: C; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
  * vim: set ts=8 sw=4 et tw=80:
  *
  * ***** BEGIN LICENSE BLOCK *****
@@ -61,6 +61,7 @@
 #include "jsnum.h"
 #include "jsobj.h"
 #include "jsopcode.h"
+#include "jspubtd.h"
 #include "jsscan.h"
 #include "jsscope.h"
 #include "jsscript.h"
@@ -172,7 +173,7 @@ js_GetCurrentThread(JSRuntime *rt)
         memset(thread->scriptsToGC, 0, sizeof thread->scriptsToGC);
 
         /*
-         * js_SetContextThread initializes the remaining fields as necessary.
+         * js_InitContextThread initializes the remaining fields as necessary.
          */
     }
     return thread;
@@ -180,18 +181,14 @@ js_GetCurrentThread(JSRuntime *rt)
 
 /*
  * Sets current thread as owning thread of a context by assigning the
- * thread-private info to the context. If the current thread doesn't have
- * private JSThread info, create one.
+ * thread-private info to the context.
  */
-JSBool
-js_SetContextThread(JSContext *cx)
+void
+js_InitContextThread(JSContext *cx, JSThread *thread)
 {
-    JSThread *thread = js_GetCurrentThread(cx->runtime);
-
-    if (!thread) {
-        JS_ReportOutOfMemory(cx);
-        return JS_FALSE;
-    }
+    JS_ASSERT(CURRENT_THREAD_IS_ME(thread));
+    JS_ASSERT(!cx->thread);
+    JS_ASSERT(cx->requestDepth == 0);
 
     /*
      * Clear caches on each transition from 0 to 1 context active on the
@@ -205,28 +202,43 @@ js_SetContextThread(JSContext *cx)
 #endif
     }
 
-    /* Assert that the previous cx->thread called JS_ClearContextThread(). */
-    JS_ASSERT(!cx->thread || cx->thread == thread);
-    if (!cx->thread)
-        JS_APPEND_LINK(&cx->threadLinks, &thread->contextList);
+    JS_APPEND_LINK(&cx->threadLinks, &thread->contextList);
     cx->thread = thread;
-    return JS_TRUE;
-}
-
-/* Remove the owning thread info of a context. */
-void
-js_ClearContextThread(JSContext *cx)
-{
-    /*
-     * If cx is associated with a thread, this must be called only from that
-     * thread.  If not, this is a harmless no-op.
-     */
-    JS_ASSERT(cx->thread == js_GetCurrentThread(cx->runtime) || !cx->thread);
-    JS_REMOVE_AND_INIT_LINK(&cx->threadLinks);
-    cx->thread = NULL;
 }
 
 #endif /* JS_THREADSAFE */
+
+/*
+ * JSOPTION_XML and JSOPTION_ANONFUNFIX must be part of the JS version
+ * associated with scripts, so in addition to storing them in cx->options we
+ * duplicate them in cx->version (script->version, etc.) and ensure each bit
+ * remains synchronized between the two through these two functions.
+ */
+void
+js_SyncOptionsToVersion(JSContext* cx)
+{
+    if (cx->options & JSOPTION_XML)
+        cx->version |= JSVERSION_HAS_XML;
+    else
+        cx->version &= ~JSVERSION_HAS_XML;
+    if (cx->options & JSOPTION_ANONFUNFIX)
+        cx->version |= JSVERSION_ANONFUNFIX;
+    else
+        cx->version &= ~JSVERSION_ANONFUNFIX;
+}
+
+inline void
+js_SyncVersionToOptions(JSContext* cx)
+{
+    if (cx->version & JSVERSION_HAS_XML)
+        cx->options |= JSOPTION_XML;
+    else
+        cx->options &= ~JSOPTION_XML;
+    if (cx->version & JSVERSION_ANONFUNFIX)
+        cx->options |= JSOPTION_ANONFUNFIX;
+    else
+        cx->options &= ~JSOPTION_ANONFUNFIX;
+}
 
 void
 js_OnVersionChange(JSContext *cx)
@@ -242,6 +254,7 @@ void
 js_SetVersion(JSContext *cx, JSVersion version)
 {
     cx->version = version;
+    js_SyncVersionToOptions(cx);
     js_OnVersionChange(cx);
 }
 
@@ -251,30 +264,54 @@ js_NewContext(JSRuntime *rt, size_t stackChunkSize)
     JSContext *cx;
     JSBool ok, first;
     JSContextCallback cxCallback;
+#ifdef JS_THREADSAFE
+    JSThread *thread = js_GetCurrentThread(rt);
 
-    cx = (JSContext *) malloc(sizeof *cx);
+    if (!thread)
+        return NULL;
+#endif
+
+    /*
+     * We need to initialize the new context fully before adding it to the
+     * runtime list. After that it can be accessed from another thread via
+     * js_ContextIterator.
+     */
+    cx = (JSContext *) calloc(1, sizeof *cx);
     if (!cx)
         return NULL;
-    memset(cx, 0, sizeof *cx);
 
     cx->runtime = rt;
     js_InitOperationLimit(cx);
     cx->debugHooks = &rt->globalDebugHooks;
 #if JS_STACK_GROWTH_DIRECTION > 0
-    cx->stackLimit = (jsuword)-1;
+    cx->stackLimit = (jsuword) -1;
 #endif
     cx->scriptStackQuota = JS_DEFAULT_SCRIPT_STACK_QUOTA;
 #ifdef JS_THREADSAFE
     cx->gcLocalFreeLists = (JSGCFreeListSet *) &js_GCEmptyFreeListSet;
-    JS_INIT_CLIST(&cx->threadLinks);
-    js_SetContextThread(cx);
+    js_InitContextThread(cx, thread);
 #endif
+    JS_STATIC_ASSERT(JSVERSION_DEFAULT == 0);
+    JS_ASSERT(cx->version == JSVERSION_DEFAULT);
+    VOUCH_DOES_NOT_REQUIRE_STACK();
+    JS_INIT_ARENA_POOL(&cx->stackPool, "stack", stackChunkSize, sizeof(jsval),
+                       &cx->scriptStackQuota);
+
+    JS_INIT_ARENA_POOL(&cx->tempPool, "temp",
+                       1024,  /* FIXME: bug 421435 */
+                       sizeof(jsdouble), &cx->scriptStackQuota);
+
+    js_InitRegExpStatics(cx);
+    JS_ASSERT(cx->resolveFlags == 0);
 
     JS_LOCK_GC(rt);
     for (;;) {
         first = (rt->contextList.next == &rt->contextList);
         if (rt->state == JSRTS_UP) {
             JS_ASSERT(!first);
+
+            /* Ensure that it is safe to update rt->contextList below. */
+            js_WaitForGC(rt);
             break;
         }
         if (rt->state == JSRTS_DOWN) {
@@ -286,26 +323,6 @@ js_NewContext(JSRuntime *rt, size_t stackChunkSize)
     }
     JS_APPEND_LINK(&cx->link, &rt->contextList);
     JS_UNLOCK_GC(rt);
-
-    /*
-     * First we do the infallible, every-time per-context initializations.
-     * Should a later, fallible initialization (js_InitRegExpStatics, e.g.,
-     * or the stuff under 'if (first)' below) fail, at least the version
-     * and arena-pools will be valid and safe to use (say, from the last GC
-     * done by js_DestroyContext).
-     */
-    cx->version = JSVERSION_DEFAULT;
-    VOUCH_DOES_NOT_REQUIRE_STACK();
-    JS_INIT_ARENA_POOL(&cx->stackPool, "stack", stackChunkSize, sizeof(jsval),
-                       &cx->scriptStackQuota);
-
-    JS_INIT_ARENA_POOL(&cx->tempPool, "temp",
-                       1024,  /* FIXME: bug 421435 */
-                       sizeof(jsdouble), &cx->scriptStackQuota);
-
-    js_InitRegExpStatics(cx);
-
-    cx->resolveFlags = 0;
 
     /*
      * If cx is the first context on this runtime, initialize well-known atoms,
@@ -358,6 +375,26 @@ js_NewContext(JSRuntime *rt, size_t stackChunkSize)
 #if defined DEBUG && defined XP_UNIX
 # include <stdio.h>
 
+class AutoFile {
+public:
+    AutoFile() : mFp(NULL) {}
+
+    ~AutoFile() {
+        if (mFp)
+            fclose(mFp);
+    }
+
+    FILE *open(const char *fname, const char *mode) {
+        return mFp = fopen(fname, mode);
+    }
+    operator FILE *() {
+        return mFp;
+    }
+
+private:
+    FILE *mFp;
+};
+
 static void
 DumpEvalCacheMeter(JSContext *cx)
 {
@@ -371,18 +408,18 @@ DumpEvalCacheMeter(JSContext *cx)
     };
     JSEvalCacheMeter *ecm = &JS_CACHE_LOCUS(cx)->evalCacheMeter;
 
-    static FILE *fp;
+    static AutoFile fp;
     if (!fp) {
-        fp = fopen("/tmp/evalcache.stats", "w");
+        fp.open("/tmp/evalcache.stats", "w");
         if (!fp)
             return;
     }
 
     fprintf(fp, "eval cache meter (%p):\n",
 #ifdef JS_THREADSAFE
-            cx->thread
+            (void *) cx->thread
 #else
-            cx->runtime
+            (void *) cx->runtime
 #endif
             );
     for (uintN i = 0; i < JS_ARRAY_LENGTH(table); ++i) {
@@ -408,6 +445,9 @@ js_DestroyContext(JSContext *cx, JSDestroyContextMode mode)
     JSLocalRootStack *lrs;
     JSLocalRootChunk *lrc;
 
+#ifdef JS_THREADSAFE
+    JS_ASSERT(CURRENT_THREAD_IS_ME(cx->thread));
+#endif
     rt = cx->runtime;
 
     if (mode != JSDCM_NEW_FAILED) {
@@ -425,16 +465,21 @@ js_DestroyContext(JSContext *cx, JSDestroyContextMode mode)
         }
     }
 
-    /* Remove cx from context list first. */
     JS_LOCK_GC(rt);
     JS_ASSERT(rt->state == JSRTS_UP || rt->state == JSRTS_LAUNCHING);
+#ifdef JS_THREADSAFE
+    /*
+     * Typically we are called outside a request, so ensure that the GC is not
+     * running before removing the context from rt->contextList, see bug 477021.
+     */
+    if (cx->requestDepth == 0)
+        js_WaitForGC(rt);
+    js_RevokeGCLocalFreeLists(cx);
+#endif
     JS_REMOVE_LINK(&cx->link);
     last = (rt->contextList.next == &rt->contextList);
     if (last)
         rt->state = JSRTS_LANDING;
-#ifdef JS_THREADSAFE
-    js_RevokeGCLocalFreeLists(cx);
-#endif
     JS_UNLOCK_GC(rt);
 
     if (last) {
@@ -475,10 +520,6 @@ js_DestroyContext(JSContext *cx, JSDestroyContextMode mode)
      * js_DestroyContext that was not last might be waiting in the GC for our
      * request to end.  We'll let it run below, just before we do the truly
      * final GC and then free atom state.
-     *
-     * At this point, cx must be inaccessible to other threads.  It's off the
-     * rt->contextList, and it should not be reachable via any object private
-     * data structure.
      */
     while (cx->requestDepth != 0)
         JS_EndRequest(cx);
@@ -540,7 +581,13 @@ js_DestroyContext(JSContext *cx, JSDestroyContextMode mode)
     }
 
 #ifdef JS_THREADSAFE
-    js_ClearContextThread(cx);
+    /*
+     * Since cx is not on rt->contextList, it cannot be accessed by the GC
+     * running on another thread. Thus, compared with JS_ClearContextThread,
+     * we can safely unlink cx from from JSThread.contextList without taking
+     * the GC lock.
+     */
+    JS_REMOVE_LINK(&cx->threadLinks);
 #endif
 
     /* Finally, free cx itself. */

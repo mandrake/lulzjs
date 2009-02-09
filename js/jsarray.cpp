@@ -2137,11 +2137,34 @@ array_push1_dense(JSContext* cx, JSObject* obj, jsval v, jsval *rval)
     return IndexToValue(cx, obj->fslots[JSSLOT_ARRAY_LENGTH], rval);
 }
 
+JSBool JS_FASTCALL
+js_ArrayCompPush(JSContext *cx, JSObject *obj, jsval v)
+{
+    JS_ASSERT(OBJ_IS_DENSE_ARRAY(cx, obj));
+    uint32_t length = (uint32_t) obj->fslots[JSSLOT_ARRAY_LENGTH];
+    JS_ASSERT(length <= ARRAY_DENSE_LENGTH(obj));
+
+    if (length == ARRAY_DENSE_LENGTH(obj)) {
+        if (length >= ARRAY_INIT_LIMIT) {
+            JS_ReportErrorNumberUC(cx, js_GetErrorMessage, NULL,
+                                   JSMSG_ARRAY_INIT_TOO_BIG);
+            return JS_FALSE;
+        }
+
+        if (!ResizeSlots(cx, obj, length, length + ARRAY_GROWBY))
+            return JS_FALSE;
+    }
+    obj->fslots[JSSLOT_ARRAY_LENGTH] = length + 1;
+    obj->fslots[JSSLOT_ARRAY_COUNT]++;
+    obj->dslots[length] = v;
+    return JS_TRUE;
+}
+
 #ifdef JS_TRACER
 static jsval FASTCALL
 Array_p_push1(JSContext* cx, JSObject* obj, jsval v)
 {
-    if (OBJ_IS_DENSE_ARRAY(cx, obj) 
+    if (OBJ_IS_DENSE_ARRAY(cx, obj)
         ? array_push1_dense(cx, obj, v, &v)
         : array_push_slowly(cx, obj, 1, &v, &v)) {
         return v;
@@ -2206,7 +2229,6 @@ array_pop_dense(JSContext *cx, JSObject* obj, jsval *vp)
         return JS_FALSE;
     obj->fslots[JSSLOT_ARRAY_LENGTH] = index;
     return JS_TRUE;
-    
 }
 
 #ifdef JS_TRACER
@@ -2232,7 +2254,7 @@ array_pop(JSContext *cx, uintN argc, jsval *vp)
     obj = JS_THIS_OBJECT(cx, vp);
     if (!obj)
         return JS_FALSE;
-    if (OBJ_IS_DENSE_ARRAY(cx, obj)) 
+    if (OBJ_IS_DENSE_ARRAY(cx, obj))
         return array_pop_dense(cx, obj, vp);
     return array_pop_slowly(cx, obj, vp);
 }
@@ -3416,3 +3438,4 @@ JS_DEFINE_CALLINFO_2(extern, OBJECT, js_FastNewArray, CONTEXT, OBJECT,          
 JS_DEFINE_CALLINFO_3(extern, OBJECT, js_NewUninitializedArray, CONTEXT, OBJECT, UINT32,       0, 0)
 JS_DEFINE_CALLINFO_3(extern, OBJECT, js_FastNewArrayWithLength, CONTEXT, OBJECT, UINT32,      0, 0)
 JS_DEFINE_CALLINFO_3(extern, OBJECT, js_Array_1str, CONTEXT, OBJECT, STRING,                  0, 0)
+JS_DEFINE_CALLINFO_3(extern, BOOL,   js_ArrayCompPush, CONTEXT, OBJECT, JSVAL,                0, 0)

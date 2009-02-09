@@ -4027,41 +4027,44 @@ LeaveTree(InterpState& state, VMSideExit* lr)
     int32_t bs = cx->builtinStatus;
     cx->builtinStatus = 0;
     bool bailed = innermost->exitType == STATUS_EXIT && (bs & JSBUILTIN_BAILED);
-    if (bailed)
-        JS_TRACE_MONITOR(cx).prohibitRecording = false;
-    if (bailed && !(bs & JSBUILTIN_ERROR)) {
+    if (bailed) {
         /*
          * Deep-bail case.
          *
          * A _FAIL native already called LeaveTree. We already reconstructed
          * the interpreter stack, in pre-call state, with pc pointing to the
          * CALL/APPLY op, for correctness. Then we continued in native code.
-         * The native succeeded (no exception or error). After it returned, the
-         * trace stored the return value (at the top of the native stack) and
-         * then immediately flunked the guard on cx->builtinStatus.
-         *
-         * Now LeaveTree has been called again from the tail of
-         * js_ExecuteTree. We are about to return to the interpreter. Adjust
-         * the top stack frame to resume on the next op.
          */
-        JS_ASSERT(*cx->fp->regs->pc == JSOP_CALL || *cx->fp->regs->pc == JSOP_APPLY);
-        uintN argc = GET_ARGC(cx->fp->regs->pc);
-        cx->fp->regs->pc += JSOP_CALL_LENGTH;
-        cx->fp->regs->sp -= argc + 1;
-        JS_ASSERT_IF(!cx->fp->imacpc,
-                     cx->fp->slots + cx->fp->script->nfixed +
-                     js_ReconstructStackDepth(cx, cx->fp->script, cx->fp->regs->pc) ==
-                     cx->fp->regs->sp);
+        if (!(bs & JSBUILTIN_ERROR)) {
+            /*
+             * The native succeeded (no exception or error). After it returned, the
+             * trace stored the return value (at the top of the native stack) and
+             * then immediately flunked the guard on cx->builtinStatus.
+             *
+             * Now LeaveTree has been called again from the tail of
+             * js_ExecuteTree. We are about to return to the interpreter. Adjust
+             * the top stack frame to resume on the next op.
+             */
+            JS_ASSERT(*cx->fp->regs->pc == JSOP_CALL || *cx->fp->regs->pc == JSOP_APPLY);
+            uintN argc = GET_ARGC(cx->fp->regs->pc);
+            cx->fp->regs->pc += JSOP_CALL_LENGTH;
+            cx->fp->regs->sp -= argc + 1;
+            JS_ASSERT_IF(!cx->fp->imacpc,
+                         cx->fp->slots + cx->fp->script->nfixed +
+                         js_ReconstructStackDepth(cx, cx->fp->script, cx->fp->regs->pc) ==
+                         cx->fp->regs->sp);
 
-        /*
-         * The return value was not available when we reconstructed the stack,
-         * but we have it now. Box it.
-         */
-        uint8* typeMap = getStackTypeMap(innermost);
-        NativeToValue(cx,
-                      cx->fp->regs->sp[-1],
-                      typeMap[innermost->numStackSlots - 1],
-                      (jsdouble *) state.sp + innermost->sp_adj / sizeof(jsdouble) - 1);
+            /*
+             * The return value was not available when we reconstructed the stack,
+             * but we have it now. Box it.
+             */
+            uint8* typeMap = getStackTypeMap(innermost);
+            NativeToValue(cx,
+                          cx->fp->regs->sp[-1],
+                          typeMap[innermost->numStackSlots - 1],
+                          (jsdouble *) state.sp + innermost->sp_adj / sizeof(jsdouble) - 1);
+        }
+        JS_TRACE_MONITOR(cx).prohibitRecording = false;
         return;
     }
 
@@ -4966,7 +4969,7 @@ TraceRecorder::switchop()
               BRANCH_EXIT);
     } else if (JSVAL_TAG(v) == JSVAL_BOOLEAN) {
         guard(true,
-              addName(lir->ins2(LIR_eq, v_ins, lir->insImm(JSVAL_TO_BOOLEAN(v))),
+              addName(lir->ins2(LIR_eq, v_ins, lir->insImm(JSVAL_TO_PUBLIC_PSEUDO_BOOLEAN(v))),
                       "guard(switch on boolean)"),
               BRANCH_EXIT);
     } else {
@@ -5527,7 +5530,10 @@ TraceRecorder::test_property_cache(JSObject* obj, LIns* obj_ins, JSObject*& obj2
     JSAtom* atom;
     JSPropCacheEntry* entry;
     PROPERTY_CACHE_TEST(cx, pc, aobj, obj2, entry, atom);
-    if (atom) {
+    if (!atom) {
+        // Null atom means that obj2 is locked and must now be unlocked.
+        JS_UNLOCK_OBJ(cx, obj2);
+    } else {
         // Miss: pre-fill the cache for the interpreter, as well as for our needs.
         // FIXME: 452357 - correctly propagate exceptions into the interpreter from
         // js_FindPropertyHelper, js_LookupPropertyWithFlags, and elsewhere.
@@ -6426,6 +6432,13 @@ TraceRecorder::record_JSOP_PRIMTOP()
 {
     // Either this opcode does nothing or we couldn't have traced here, because
     // we'd have thrown an exception -- so do nothing if we actually hit this.
+    return true;
+}
+
+JS_REQUIRES_STACK bool
+TraceRecorder::record_JSOP_OBJTOP()
+{
+    // See the comment in record_JSOP_PRIMTOP.
     return true;
 }
 
@@ -8960,7 +8973,21 @@ TraceRecorder::record_JSOP_YIELD()
 JS_REQUIRES_STACK bool
 TraceRecorder::record_JSOP_ARRAYPUSH()
 {
-    return false;
+    uint32_t slot = GET_UINT16(cx->fp->regs->pc);
+    JS_ASSERT(cx->fp->script->nfixed <= slot);
+    JS_ASSERT(cx->fp->slots + slot < cx->fp->regs->sp - 1);
+    jsval &arrayval = cx->fp->slots[slot];
+    JS_ASSERT(JSVAL_IS_OBJECT(arrayval));
+    JS_ASSERT(OBJ_IS_DENSE_ARRAY(cx, JSVAL_TO_OBJECT(arrayval)));
+    LIns *array_ins = get(&arrayval);
+    jsval &elt = stackval(-1);
+    LIns *elt_ins = get(&elt);
+    box_jsval(elt, elt_ins);
+
+    LIns *args[] = { elt_ins, array_ins, cx_ins };
+    LIns *ok_ins = lir->insCall(&js_ArrayCompPush_ci, args);
+    guard(false, lir->ins_eq0(ok_ins), OOM_EXIT);
+    return true;
 }
 
 JS_REQUIRES_STACK bool
@@ -9359,7 +9386,6 @@ InitIMacroCode()
         return false;                                                         \
     }
 
-UNUSED(135)
 UNUSED(203)
 UNUSED(204)
 UNUSED(205)

@@ -6435,6 +6435,14 @@ js_Interpret(JSContext *cx)
             }
           END_CASE(JSOP_PRIMTOP)
 
+          BEGIN_CASE(JSOP_OBJTOP)
+            lval = FETCH_OPND(-1);
+            if (JSVAL_IS_PRIMITIVE(lval)) {
+                js_ReportValueError(cx, GET_UINT16(regs.pc), -1, lval, NULL);
+                goto error;
+            }
+          END_CASE(JSOP_OBJTOP)
+
           BEGIN_CASE(JSOP_INSTANCEOF)
             rval = FETCH_OPND(-1);
             if (JSVAL_IS_PRIMITIVE(rval) ||
@@ -6832,23 +6840,8 @@ js_Interpret(JSContext *cx)
             JS_ASSERT(slot < script->nslots);
             lval = fp->slots[slot];
             obj  = JSVAL_TO_OBJECT(lval);
-            JS_ASSERT(OBJ_GET_CLASS(cx, obj) == &js_ArrayClass);
             rval = FETCH_OPND(-1);
-
-            /*
-             * We know that the array is created with only a 'length' private
-             * data slot at JSSLOT_ARRAY_LENGTH, and that previous iterations
-             * of the comprehension have added the only properties directly in
-             * the array object.
-             */
-            i = obj->fslots[JSSLOT_ARRAY_LENGTH];
-            if (i == ARRAY_INIT_LIMIT) {
-                JS_ReportErrorNumberUC(cx, js_GetErrorMessage, NULL,
-                                       JSMSG_ARRAY_INIT_TOO_BIG);
-                goto error;
-            }
-            id = INT_TO_JSID(i);
-            if (!OBJ_DEFINE_PROPERTY(cx, obj, id, rval, NULL, NULL, JSPROP_ENUMERATE, NULL))
+            if (!js_ArrayCompPush(cx, obj, rval))
                 goto error;
             regs.sp--;
           END_CASE(JSOP_ARRAYPUSH)
@@ -6899,7 +6892,6 @@ js_Interpret(JSContext *cx)
           L_JSOP_DEFXMLNS:
 # endif
 
-          L_JSOP_UNUSED135:
           L_JSOP_UNUSED203:
           L_JSOP_UNUSED204:
           L_JSOP_UNUSED205:
