@@ -120,7 +120,7 @@ main (int argc, char *argv[])
         return 1;
     }
 
-    #ifdef DEBUG
+    #ifdef GCBOOM
     JS_SetGCZeal(engine.context, 2);
     #endif
 
@@ -176,6 +176,9 @@ initEngine (int argc, int offset, char *argv[])
 
     if ((engine.runtime = JS_NewRuntime(8L * 1024L * 1024L))) {
         if ((engine.context = JS_NewContext(engine.runtime, 8192))) {
+            JS_BeginRequest(engine.context);
+            JS_EnterLocalRootScope(engine.context);
+
             JS_SetOptions(engine.context, JSOPTION_VAROBJFIX);
             JS_SetErrorReporter(engine.context, reportError);
 
@@ -195,6 +198,9 @@ initEngine (int argc, int offset, char *argv[])
                             1, &property, &rval);
                     }
                 }
+
+                JS_LeaveLocalRootScope(engine.context);
+                JS_EndRequest(engine.context);
 
                 engine.error = JS_FALSE;
                 return engine;

@@ -284,7 +284,10 @@ Script::Script (JSContext* cx, std::string source)
     _length     = 0;
     _source     = source;
     _stripShebang();
+    JS_BeginRequest(_cx);
     _script     = JS_CompileScript(cx, JS_GetGlobalObject(cx), _source.c_str(), _source.length(), "lulzJS", 1);
+    JS_AddRoot(_cx, _script);
+    JS_EndRequest(_cx);
     _loaded     = true;
     _compiled   = false;
     _executable = true;
@@ -310,7 +313,10 @@ Script::~Script (void)
     }
 
     if (_script) {
+        JS_BeginRequest(_cx);
+        JS_RemoveRoot(_cx, _script);
         JS_DestroyScript(_cx, _script);
+        JS_EndRequest(_cx);
     }
 }
 
@@ -361,7 +367,9 @@ Script::load (std::string path, int mode)
                 file.read(source, fileStat.st_size);
                 source[fileStat.st_size] = '\0';
                 _source = source; _stripShebang();
+                JS_BeginRequest(_cx);
                 _script = JS_CompileScript(_cx, JS_GetGlobalObject(_cx), _source.c_str(), _source.length(), path.c_str(), 1);
+                JS_EndRequest(_cx);
                 delete [] source;
 
                 file.close();
@@ -403,6 +411,9 @@ Script::compile (void)
         return;
     }
 
+    JS_BeginRequest(_cx);
+    JS_EnterLocalRootScope(_cx);
+
     JSXDRState* xdr = JS_XDRNewMem(_cx, JSXDR_ENCODE);
     char* bytes;
 
@@ -413,30 +424,41 @@ Script::compile (void)
         _compiled = true;
     }
     JS_XDRDestroy(xdr);
+
+    JS_LeaveLocalRootScope(_cx);
+    JS_EndRequest(_cx);
 }
 
 void
 Script::decompile (void)
 {
+    JS_BeginRequest(_cx);
+    JS_EnterLocalRootScope(_cx);
+
     JSXDRState* xdr = JS_XDRNewMem(_cx, JSXDR_DECODE);
     JS_XDRMemSetData(xdr, _bytecode, _length);
 
     if (JS_XDRScript(xdr, &_script)) {
         JS_XDRMemSetData(xdr, NULL, 0);
     }
-
     JS_XDRDestroy(xdr);
+
+    JS_LeaveLocalRootScope(_cx);
+    JS_EndRequest(_cx);
 }
 
 jsval
 Script::execute (void)
 {
+    JS_BeginRequest(_cx);
+
     if (!_executable) {
         if (_compiled) {
             this->decompile();
         }
         else if (!_source.empty()) {
             _script = JS_CompileScript(_cx, JS_GetGlobalObject(_cx), _source.c_str(), _source.length(), _filename.c_str(), 1);
+            JS_AddRoot(_cx, _script);
             _executable = true;
         }
     }
@@ -447,6 +469,7 @@ Script::execute (void)
     
     jsval ret = JSVAL_VOID;
     JS_ExecuteScript(_cx, JS_GetGlobalObject(_cx), _script, &ret);
+    JS_EndRequest(_cx);
     return ret;
 }
 

@@ -29,16 +29,15 @@ JSBool      __Core_isIncluded (std::string path);
 JSObject*
 Core_initialize (JSContext *cx, const char* script)
 {
+    JS_BeginRequest(cx);
     JS_SetVersion(cx, JS_StringToVersion("1.8"));
 
     JSObject* object = JS_NewObject(cx, &Core_class, NULL, NULL);
 
-    JSClass* lol = JS_GET_CLASS(cx, object);
-    printf("%ld => %s %d\n", lol, lol->name, lol->flags);
-    printf("%ld => %s %d\n", &Core_class, Core_class.name, Core_class.flags);
-
     if (object && JS_InitStandardClasses(cx, object)) {
         JS_DefineFunctions(cx, object, Core_methods);
+
+        JS_EnterLocalRootScope(cx);
 
         // Properties
         jsval property;
@@ -60,6 +59,9 @@ Core_initialize (JSContext *cx, const char* script)
 
         property = STRING_TO_JSVAL(JS_NewString(cx, JS_strdup(cx, script), strlen(script)));
         JS_SetProperty(cx, object, "name", &property);
+
+        JS_LeaveLocalRootScope(cx);
+        JS_EndRequest(cx);
 
         if (__Core_include(cx, __LJS_LIBRARY_PATH__ "/Core"))
             return object;
