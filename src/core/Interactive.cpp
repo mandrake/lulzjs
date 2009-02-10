@@ -31,12 +31,14 @@ Interactive (JSContext* cx, JSObject* global)
     char* line;
     int lineNumber = 0;
 
-    int startline;
-    int lineno;
+    int  startline;
+    int  lineno;
 
     puts("lulzJS " __LJS_VERSION__ "\n");
 
     do {
+        JS_BeginRequest(cx);
+
         startline = lineno = 1;
         whole = NULL;
 
@@ -95,6 +97,8 @@ Interactive (JSContext* cx, JSObject* global)
         }
         
         free(whole);
+
+        JS_EndRequest(cx);
     } while (!exit);
 }
 
