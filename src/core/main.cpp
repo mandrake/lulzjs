@@ -214,9 +214,7 @@ initEngine (int argc, int offset, char *argv[])
 JSBool
 executeScript (JSContext* cx, std::string file)
 {
-    JSBool    returnValue;
-    jsval     rval;
-    JSObject* global = JS_GetGlobalObject(cx);
+    JSBool returnValue;
 
     if (lulzJS::Script::isBytecode(new std::ifstream(file.c_str()))) {
         lulzJS::Script script(cx, file, lulzJS::Script::Bytecode);

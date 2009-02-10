@@ -34,7 +34,7 @@ Interactive (JSContext* cx, JSObject* global)
     int  startline;
     int  lineno;
 
-    puts("lulzJS " __LJS_VERSION__ "\n");
+    std::cout << "lulzJS " << __LJS_VERSION__ << std::endl << std::endl;
 
     do {
         JS_BeginRequest(cx);
@@ -49,7 +49,7 @@ Interactive (JSContext* cx, JSObject* global)
             // is quit exit the interactive mode.
             if (startline == lineno) {
                 if (line == NULL || strcmp(line, "quit") == 0) {
-                    puts("GTFO");
+                    std::cout << "GTFO" << std::endl;
                     return;
                 }
             }
@@ -86,10 +86,10 @@ Interactive (JSContext* cx, JSObject* global)
                 strResult = JS_ValueToString(cx, result);
 
                 if (strResult) {
-                    char* str = JS_GetStringBytes(strResult);
+                    std::string str = JS_GetStringBytes(strResult);
 
-                    if (strcmp(str, "undefined") != 0) {
-                        printf("%s\n", JS_GetStringBytes(strResult));
+                    if (str != "undefined") {
+                        std::cout << "=> " << JS_GetStringBytes(strResult) << std::endl;
                     }
                 }
             }
