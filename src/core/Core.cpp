@@ -250,6 +250,7 @@ Core_exec (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
         return JS_FALSE;
     }
     
+    jsrefcount req = JS_SuspendRequest(cx);
     if ((pipe = popen(command, "r")) == NULL) {
         JS_ReportError(cx, "Command not found");
         return JS_FALSE;
@@ -267,6 +268,7 @@ Core_exec (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     }
     output[length-1] = '\0';
     pclose(pipe);
+    JS_ResumeRequest(cx, req);
 
     *rval = STRING_TO_JSVAL(JS_NewString(cx, output, length));
 

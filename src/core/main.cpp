@@ -130,7 +130,11 @@ main (int argc, char *argv[])
     else if (oneliner) {
         lulzJS::Script script(engine.context, oneliner);
 
+        JS_BeginRequest(engine.context);
+
         jsval ret = script.execute();
+        JS_AddRoot(engine.context, &ret);
+
         if (JS_IsExceptionPending(engine.context)) {
             JS_ReportPendingException(engine.context);
             return EXIT_FAILURE;
@@ -139,6 +143,9 @@ main (int argc, char *argv[])
         if (!JSVAL_IS_VOID(ret)) {
             std::cout << JS_GetStringBytes(JS_ValueToString(engine.context, ret)) << std::endl;
         }
+
+        JS_RemoveRoot(engine.context, &ret);
+        JS_EndRequest(engine.context);
     }
     else if (compile) {
         lulzJS::Script script(engine.context, inFile, lulzJS::Script::Text);

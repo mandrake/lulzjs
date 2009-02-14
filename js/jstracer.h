@@ -207,6 +207,8 @@ public:
 
 enum ExitType {
     BRANCH_EXIT,
+    CASE_EXIT,          // Exit at a tableswitch via a numbered case
+    DEFAULT_EXIT,       // Exit at a tableswitch via default
     LOOP_EXIT,
     NESTED_EXIT,
     MISMATCH_EXIT,
@@ -296,6 +298,7 @@ public:
         branchCount(0),
         unstableExits(NULL)
             {}
+    ~TreeInfo();
 
     inline unsigned nGlobalTypes() {
         return typeMap.length() - nStackTypes;
@@ -440,6 +443,9 @@ class TraceRecorder : public avmplus::GCObject {
 
     JS_REQUIRES_STACK bool ifop();
     JS_REQUIRES_STACK bool switchop();
+#ifdef NANOJIT_IA32
+    JS_REQUIRES_STACK nanojit::LIns* tableswitch();
+#endif
     JS_REQUIRES_STACK bool inc(jsval& v, jsint incr, bool pre = true);
     JS_REQUIRES_STACK bool inc(jsval& v, nanojit::LIns*& v_ins, jsint incr, bool pre = true);
     JS_REQUIRES_STACK bool incProp(jsint incr, bool pre = true);
