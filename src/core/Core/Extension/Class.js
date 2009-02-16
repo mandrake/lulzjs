@@ -16,16 +16,92 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-Object.extend(Class.Methods, {
-    addGetters: function (obj) {
-        for (let [name, getter] in obj) {
-            this.prototype.__defineGetter__(name, getter);
+Class = {
+    create: function () {
+        arguments      = Object.toArray(arguments);
+        var parent     = (Object.is(arguments[0], Function) ? arguments.shift() : null);
+        var properties = arguments.shift();
+
+        if (Object.is(properties[0], Function)) {
+            parent = properties.shift();
         }
+      
+        function klass() {
+            this.initialize.apply(this, arguments);
+        }
+    
+        Object.extend(klass, Class.Methods);
+        klass.superclass = parent;
+        klass.subclasses = new Array;
+    
+        if (parent) {
+            var subclass       = Function.empty.clone();
+            subclass.prototype = parent.prototype;
+            klass.prototype    = new subclass;
+            parent.subclasses.push(klass);
+        }
+
+        klass.prototype.initialize = (Object.is(properties.constructor, Function)
+            ? properties.constructor
+            : Function.empty.clone());
+    
+        klass.addMethods(properties.methods);
+        klass.addStaticMethods(properties.static);
+        klass.addAttributes(properties.attributes);
+      
+        klass.prototype.constructor = klass;
+        return klass;
     },
 
-    addSetters: function (obj) {
-        for (let [name, setter] in obj) {
-            this.prototype.__defineSetter__(name, setter);
+    Methods: {
+        addMethods: function (source) {
+            if (!source) return;
+
+            var ancestor = this.superclass && this.superclass.prototype;
+    
+            for (let property in source) {
+                let value = source[property];
+
+                if (ancestor && Object.is(value, Function) && value.argumentNames().first() == "$super") {
+                    let method = value;
+
+                    value = (function (m) {
+                        return function () {
+                            return ancestor[m].apply(this, arguments); 
+                        };
+                    })(property).wrap(method);
+
+                    value.valueOf  = method.valueOf.bind(method);
+                    value.toString = method.toString.bind(method);
+                }
+
+                this.prototype[property] = value;
+            }
+        },
+
+        addStaticMethods: function (source) {
+            if (!source) return;
+
+            for (let property in source) {
+                this[property] = source[property];
+            }
+    
+            return this;
+        },
+
+        addAttributes: function (source) {
+            if (!source) return;
+
+            for (let attribute in source) {
+                if (source[attribute].get) {
+                    this.prototype.__defineGetter__(attribute, source[attribute].get);
+                }
+                if (source[attribute].set) {
+                    this.prototype.__defineSetter__(attribute, source[attribute].set);
+                }
+            }
+
+            return this;
         }
     }
-});
+};

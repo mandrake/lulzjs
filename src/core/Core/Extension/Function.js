@@ -16,6 +16,10 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-Object.extend(Function, {
-    empty: function () {}
+Function.empty = function () {};
+
+Object.extend(Function.prototype, {
+    clone: function () {
+        return eval(this.toString().replace(/function .*?\(/, 'function ('));
+    }
 });
