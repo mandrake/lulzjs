@@ -469,6 +469,7 @@ Script::execute (void)
     
     jsval ret = JSVAL_VOID;
     JS_ExecuteScript(_cx, JS_GetGlobalObject(_cx), _script, &ret);
+
     JS_EndRequest(_cx);
     return ret;
 }

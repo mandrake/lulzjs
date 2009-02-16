@@ -44,6 +44,19 @@ Object.extend(String.prototype, {
 
         return str.join('');
     },
+    
+    commonChars: function (string) {
+        var common = new Array;
+        
+        for (let i = 0; i < this.length; i++) {
+            let char = this.charAt(i);
+            if (string.indexOf(char) != -1 && common.indexOf(char) == -1) {
+                common.push(char);
+            }
+        }
+
+        return common;
+    },
 
     format: function(template) {
         var formatted = this;
