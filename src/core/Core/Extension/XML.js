@@ -16,10 +16,8 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require("Object.js");
-require("Class.js");
-require("Function.js");
-require("String.js");
-require("XML.js");
-require("random.js");
-
+Object.extend(XML, {
+    clean: function (text) {
+        return text.replace(/^<\?xml\s+version\s*=\s*(["'])[^\1]+\1[^?]*\?>/, '');
+    }
+};
