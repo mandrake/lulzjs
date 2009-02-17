@@ -17,16 +17,16 @@
 ****************************************************************************/
 
 System.Net.Protocol.HTTP.Response = Class.create({
-    __type__: "HTTPResponse",
-
-    initialize: function (answer, headers, content) {
+    constructor: function (answer, headers, content) {
         this.answer  = answer;
         this.headers = headers;
         this.content = content;
     },
 
-    getHeader: function (header) {
-        return this.headers[header];
-    },
+    methods: {
+        getHeader: function (header) {
+            return this.headers[header];
+        }
+    }
 });
 

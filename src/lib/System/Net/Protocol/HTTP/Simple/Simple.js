@@ -18,7 +18,7 @@
 
 System.Net.Protocol.HTTP.Simple = {
     Get: function (url) {
-        return new System.Net.Protocol.HTTP.Request(url).response.content
+        return new System.Net.Protocol.HTTP.Request(url).receive();
     },
 
     Post: function (url, params, options) {
@@ -26,7 +26,7 @@ System.Net.Protocol.HTTP.Simple = {
 
         return new System.Net.Protocol.HTTP.Request(url, Object.extend({
             params: params
-        }, options)).response.content;
+        }, options)).receive();
     }
 };
 

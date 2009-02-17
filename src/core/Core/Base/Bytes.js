@@ -17,48 +17,58 @@
 ****************************************************************************/
 
 Program.Bytes = Class.create({
-    initialize: function (base) {
-        if (!Object.is(base, Array)) {
+    constructor: function (base) {
+        if (!Object.is(base, Array) || !base) {
             throw "You have to pass an array.";
         }
 
-        this.array = base;
+        this.array = (base ? base : new Array);
     },
 
-    get length() {
-        return (this.array) ? this.array.length : 0;
-    },
+    methods: {
+        append: function (bytes) {
+            this.array.concat(bytes);
+        },
 
-    byteAt: function (index) {
-        if (index >= this.array.length) {
-            throw "Index out of range.";
-        }
-
-        return this.array[index];
-    },
-
-    toArray: function () {
-        return this.array;
-    },
-
-    toString: function () {
-        var str = new String;
-
-        for (var i = 0; i < this.array.length; i++) {
-            str += String.fromCharCode(this.array[i]);
-        }
-
-        return str;
-    },
+        byteAt: function (index) {
+            if (index >= this.array.length) {
+                throw "Index out of range.";
+            }
     
-    inspect: function () {
-        var str = new String;
-
-        for (var i = 0; i < this.array.length; i++) {
-            str += "\\x"+this.array[i].toPaddedString(2, 16);
+            return this.array[index];
+        },
+    
+        toArray: function () {
+            return this.array;
+        },
+    
+        toString: function () {
+            var str = new String;
+    
+            for (var i = 0; i < this.array.length; i++) {
+                str += String.fromCharCode(this.array[i]);
+            }
+    
+            return str;
+        },
+        
+        inspect: function () {
+            var str = new String;
+    
+            for (var i = 0; i < this.array.length; i++) {
+                str += "\\x"+this.array[i].toPaddedString(2, 16);
+            }
+    
+            return str;
         }
+    },
 
-        return str;
+    attributes: {
+        length: {
+            get: function () {
+                return this.array.length;
+            }
+        }
     }
 });
 

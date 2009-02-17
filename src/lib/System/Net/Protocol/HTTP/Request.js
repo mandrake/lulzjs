@@ -17,9 +17,7 @@
 ****************************************************************************/
 
 System.Net.Protocol.HTTP.Request = Class.create({
-    __type__: "HTTPRequest",
-
-    initialize: function (url, options) {
+    constructor: function (url, options) {
         if (!url) {
             throw "You have to pass at least a url.";
         }
@@ -63,145 +61,191 @@ System.Net.Protocol.HTTP.Request = Class.create({
             throw "Couldn't connect to the host.";
         }
 
-        switch (this.options.method.toUpperCase()) {
-            case "GET" : this.response = this.__get(); break;
-            case "POST": this.response = this.__post(); break;
-            case "HEAD": this.response = this.__head(); break;
-        }
+        this.response = this._initializeConnection[this.options.method.toUpperCase()].apply(this);
     },
 
-    __get: function () {
-        this.socket.sendLine([
-            "GET {0} HTTP/1.1".format([this.options.page]),
-            "Host: {0}".format([this.options.host]),
-        ].concat(this.getRequestHeadersArray()).concat([""]));
+    methods: {
+        receive: function (length) {
+            if (this.options.method.toUpperCase() == "HEAD") {
+                return null;
+            }
+    
+            var content;
+            if (this.response.headers["Content-Length"]) {
+                if (this.response.content.length == this.response.headers["Content-Length"].toInt()) {
+                    return null;
+                }
+    
+                if (this.response.headers["Content-Type"].match(/^text/)) {
+                    return this.response.content += this.socket.receive(length
+                        ? length
+                        : this.response.headers["Content-Length"].toInt()
+                    );
+                }
+                else {
+                    return this.response.content.append(this.socket.receiveBytes(length
+                        ? length
+                        : this.response.headers["Content-Length"].toInt())
+                    );
+                }
+            }
+            else {
+                if (this.response.headers["Transfer-Encoding"] == "chunked") {
+                    let tmp = this.readChunked(length);
+    
+                    if (!tmp) {
+                        return null;
+                    }
+                    
+                    if (this.response.headers["Content-Type"].match(/^text/)) {
+                        return this.response.content += tmp.toString();
+                    }
+                    else {
+                        return this.response.content.append(tmp)
+                    }
+                }
+            }
+        },
+    
+        _initializeConnection: {
+            GET: function () {
+                this.socket.sendLine([
+                    "GET {0} HTTP/1.1".format([this.options.page]),
+                    "Host: {0}".format([this.options.host]),
+                ].concat(this.getRequestHeadersArray()).concat([""]));
+            
+                var answer = System.Net.Protocol.HTTP.parseResponse(this.socket.receiveLine());
+    
+                var headers = '';
+                var line;
+                while (line = this.socket.receiveLine()) {
+                    headers += line+"\n";
+                }
+                headers = System.Net.Protocol.HTTP.parseHeaders(headers);
+
+                var content = (headers["Content-Type"].match(/^text/)
+                    ? new String
+                    : new Bytes);
+    
+                return new System.Net.Protocol.HTTP.Response(answer, headers, content);
+            },
+    
+            POST: function () {
+                var params = System.Net.Protocol.HTTP.getTextParams(this.options.params);
         
-        var answer = System.Net.Protocol.HTTP.parseResponse(this.socket.receiveLine());
+                this.socket.sendLine([
+                    "POST {0} HTTP/1.1".format([this.options.page]),
+                    "Host: {0}".format([this.options.host]),
+                ].concat(this.getRequestHeadersArray()).concat(["Content-Length: "+params.length, "", params]));
+        
+                var answer = System.Net.Protocol.HTTP.parseResponse(this.socket.receiveLine());
+        
+                var headers = '';
+                var line;
+                while (line = this.socket.receiveLine()) {
+                    headers += line+"\n";
+                }
+                headers = System.Net.Protocol.HTTP.parseHeaders(headers);
 
-        var headers = '';
-        var line;
-        while (line = this.socket.receiveLine()) {
-            headers += line+"\n";
-        }
-        headers = System.Net.Protocol.HTTP.parseHeaders(headers);
-
-        var content;
-        if (headers["Content-Length"]) {
-            if (headers["Content-Type"].match(/^text/)) {
-                content = this.socket.receive(headers["Content-Length"].toInt());
+                var content = (headers["Content-Type"].match(/^text/)
+                    ? new String
+                    : new Bytes);
+        
+                return new System.Net.Protocol.HTTP.Response(answer, headers, content);
+            },
+        
+            HEAD: function () {
+                this.socket.sendLine([
+                    "HEAD {0} HTTP/1.1".format([this.options.page]),
+                    "Host: {0}".format([this.options.host]),
+                ].concat(this.getRequestHeadersArray()).concat([""]));
+        
+                var answer = System.Net.Protocol.HTTP.parseResponse(this.socket.receiveLine());
+        
+                var headers = '';
+                var line;
+                while (line = this.socket.receiveLine()) {
+                    headers += line+"\n";
+                }
+                headers = System.Net.Protocol.HTTP.parseHeaders(headers);
+        
+                return new System.Net.Protocol.HTTP.Response(answer, headers);
             }
-            else {
-                content = this.socket.receiveBytes(headers["Content-Length"].toInt());
+        },
+    
+        setDefaultHeaders: function (headers) {
+            if (Object.is(headers, Array)) {
+                if (headers.length % 2) {
+                    throw "The array has a odd length.";
+                }
+    
+                var headerz = headers;
+                headers     = new Object;
+                for (var i = 0; i < headerz.length; i+=2) {
+                    headers[headerz[i]] = headerz[i+1];
+                }
             }
-        }
-        else {
-            if (headers["Transfer-Encoding"] == "chunked") {
-                content = this.readChunked();
+    
+            this.options.requestHeaders = {
+                'Connection'  : 'close',
+                'User-Agent'  : 'lulzJS/'+__VERSION__,
+                'Content-Type': this.options.contentType
+            };
+    
+            Object.extend(this.options.requestHeaders, headers);
+        },
+    
+        getRequestHeadersArray: function () {
+            var headerz = [];
+    
+            for (var header in this.options.requestHeaders) {
+                headerz.push("{name}: {value}".format({
+                    name: header,
+                    value: this.options.requestHeaders[header]
+                }));
             }
-        }
-
-        return new System.Net.Protocol.HTTP.Response(answer, headers, content);
-    },
-
-    __post: function () {
-        var params = System.Net.Protocol.HTTP.getTextParams(this.options.params);
-
-        this.socket.sendLine([
-            "POST {0} HTTP/1.1".format([this.options.page]),
-            "Host: {0}".format([this.options.host]),
-        ].concat(this.getRequestHeadersArray()).concat(["Content-Length: "+params.length, "", params]));
-
-        var answer = System.Net.Protocol.HTTP.parseResponse(this.socket.receiveLine());
-
-        var headers = '';
-        var line;
-        while (line = this.socket.receiveLine()) {
-            headers += line+"\n";
-        }
-        headers = System.Net.Protocol.HTTP.parseHeaders(headers);
-
-        var content;
-        if (headers["Content-Length"]) {
-            if (headers["Content-Type"].match(/^text/)) {
-                content = this.socket.receive(headers["Content-Length"].toInt());
+    
+            return headerz;
+        },
+    
+        readChunked: function (length) {
+            var ret = new String;
+    
+            if (!length) {
+                let read;
+                while (read = this.socket.receiveLine().toInt(16)) {
+                    ret += this.socket.receive(read);
+                    this.socket.receiveLine()
+                }
+                return ret;
             }
-            else {
-                content = this.socket.receiveBytes(headers["Content-Length"].toInt());
+    
+            if (!this.chunk) {
+                this.chunk = {
+                    length: 0,
+                    read  : 0
+                };
             }
-        }
-        else {
-            if (headers["Transfer-Encoding"]) {
-                content = this.readChunked();
+    
+            while (this.chunk.length) {
+                if (this.chunk.length == this.chunk.read) {
+                    this.socket.receiveLine();
+                    this.chunk.length = this.socket.receiveLine().toInt(16);
+                    this.chunk.read   = 0;
+                }
+    
+                if (length > this.chunk.length) {
+                    ret += this.socket.receive(this.chunk.length);
+                    length -= (this.chunk.read = this.chunk.length);
+                }
+                else {
+                    ret += this.socket.receive(length);
+                    this.chunk.read = length;
+                    break;
+                }
             }
+    
+            return ret;
         }
-
-        return new System.Net.Protocol.HTTP.Response(answer, headers, content);
-
-    },
-
-    __head: function () {
-        this.socket.sendLine([
-            "HEAD {0} HTTP/1.1".format([this.options.page]),
-            "Host: {0}".format([this.options.host]),
-        ].concat(this.getRequestHeadersArray()).concat([""]));
-
-        var answer = System.Net.Protocol.HTTP.parseResponse(this.socket.receiveLine());
-
-        var headers = '';
-        var line;
-        while (line = this.socket.receiveLine()) {
-            headers += line+"\n";
-        }
-        headers = System.Net.Protocol.HTTP.parseHeaders(headers);
-
-        return new System.Net.Protocol.HTTP.Response(answer, headers);
-
-    },
-
-    setDefaultHeaders: function (headers) {
-        if (Object.is(headers, Array)) {
-            if (headers.length % 2) {
-                throw "The array has a odd length.";
-            }
-
-            var headerz = headers;
-            headers     = new Object;
-            for (var i = 0; i < headerz.length; i+=2) {
-                headers[headerz[i]] = headerz[i+1];
-            }
-        }
-
-        this.options.requestHeaders = {
-            'Connection'  : 'close',
-            'User-Agent'  : 'lulzJS/'+__VERSION__,
-            'Content-Type': this.options.contentType
-        };
-
-        Object.extend(this.options.requestHeaders, headers);
-    },
-
-    getRequestHeadersArray: function () {
-        var headerz = [];
-
-        for (var header in this.options.requestHeaders) {
-            headerz.push("{name}: {value}".format({
-                name: header,
-                value: this.options.requestHeaders[header]
-            }));
-        }
-
-        return headerz;
-    },
-
-    readChunked: function () {
-        var ret = new String;
-
-        var length;
-        while (length = this.socket.receiveLine().toInt(16)) {
-            ret += this.socket.receive(length);
-            this.socket.receiveLine()
-        }
-
-        return ret;
     }
 });
