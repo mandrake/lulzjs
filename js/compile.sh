@@ -12,7 +12,7 @@ CXXFLAGS=-Os ./configure --with-system-nspr --enable-threadsafe --bindir=/usr/bi
 make
 make install
 
-g++ `js-config --cflags` -DXP_UNIX -DJS_THREADSAFE -fPIC -c lulzjs/lulzjs.cpp -o lulzjs.lo # -g3 -Wall
+g++ `js-config --cflags` -fPIC -c lulzjs/lulzjs.cpp -o lulzjs.lo # -g3 -Wall
 g++ `js-config --libs` -shared -Wl,-soname,liblulzjs.so -o liblulzjs.so lulzjs.lo -lc
 cp -f liblulzjs.so /usr/lib/
 cp -f lulzjs/lulzjs.h /usr/include/js

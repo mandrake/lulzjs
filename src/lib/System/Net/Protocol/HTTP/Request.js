@@ -62,6 +62,7 @@ System.Net.Protocol.HTTP.Request = Class.create({
         }
 
         this.response = this._initializeConnection[this.options.method.toUpperCase()].apply(this);
+        print("Content-Length: "+this.response.headers["Content-Length"]);
     },
 
     methods: {
@@ -209,12 +210,15 @@ System.Net.Protocol.HTTP.Request = Class.create({
         },
     
         readChunked: function (length) {
-            var ret = new String;
+            var text = this.response.headers["Content-Type"].match(/^text/);
+
+            var ret = text ? new String : new Bytes;
     
             if (!length) {
                 let read;
                 while (read = this.socket.receiveLine().toInt(16)) {
-                    ret += this.socket.receive(read);
+                    if (text) ret += this.socket.receive(read);
+                    else      ret.append(this.socket.receiveBytes(read));
                     this.socket.receiveLine()
                 }
                 return ret;
@@ -235,11 +239,13 @@ System.Net.Protocol.HTTP.Request = Class.create({
                 }
     
                 if (length > this.chunk.length) {
-                    ret += this.socket.receive(this.chunk.length);
+                    if (text) ret += this.socket.receive(this.chunk.length);
+                    else      ret.append(this.socket.receiveBytes(this.chunk.length));
                     length -= (this.chunk.read = this.chunk.length);
                 }
                 else {
-                    ret += this.socket.receive(length);
+                    if (text) ret += this.socket.receive(length);
+                    else      ret.append(this.socket.receiveBytes(length));
                     this.chunk.read = length;
                     break;
                 }
