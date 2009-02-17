@@ -27,7 +27,7 @@ Program.Bytes = Class.create({
 
     methods: {
         append: function (bytes) {
-            this.array.concat(bytes);
+            return this.array.concat(bytes);
         },
 
         byteAt: function (index) {

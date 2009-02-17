@@ -283,7 +283,7 @@ Socket_send (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rv
 JSBool
 Socket_receive (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval *rval)
 {
-    uint16 size;
+    int32 size;
     uint16 flags = 0;
 
     JS_BeginRequest(cx);
@@ -295,7 +295,7 @@ Socket_receive (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval 
 
     switch (argc) {
         case 2: JS_ValueToUint16(cx, argv[1], &flags);
-        case 1: JS_ValueToUint16(cx, argv[0], &size);
+        case 1: JS_ValueToInt32(cx, argv[0], &size);
     }
 
     SocketInformation* data = (SocketInformation*) JS_GetPrivate(cx, object);
@@ -315,20 +315,20 @@ Socket_receive (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval 
     unsigned offset = 0;
     int      tmp;
     while (offset < size) {
-         tmp = recv(data->socket, (string+offset), (size-offset)*sizeof(char), flags);
+        tmp = recv(data->socket, (string+offset), (size-offset)*sizeof(char), flags);
 
-         if (tmp == -1) {
+        if (tmp == -1) {
             JS_ReportError(cx, "An error occurred with the socket.");
             JS_free(cx, string);
             return JS_FALSE;
-         }
-         else if (tmp == 0) {
+        }
+        else if (tmp == 0) {
             jsConnected = JSVAL_FALSE;
             JS_SetProperty(cx, object, "connected", &jsConnected);
             break;
-         }
+        }
         
-         offset += tmp;
+        offset += tmp;
     }
     string[size] = '\0';
     JS_ResumeRequest(cx, req);
@@ -390,7 +390,7 @@ Socket_sendBytes (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsva
 JSBool
 Socket_receiveBytes (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval *rval)
 {
-    uint16 size;
+    int32 size;
     uint16 flags = 0;
 
     JS_BeginRequest(cx);
@@ -402,7 +402,7 @@ Socket_receiveBytes (JSContext *cx, JSObject *object, uintN argc, jsval *argv, j
 
     switch (argc) {
         case 2: JS_ValueToUint16(cx, argv[1], &flags);
-        case 1: JS_ValueToUint16(cx, argv[0], &size);
+        case 1: JS_ValueToInt32(cx, argv[0], &size);
     }
 
     SocketInformation* data = (SocketInformation*) JS_GetPrivate(cx, object);
@@ -421,20 +421,20 @@ Socket_receiveBytes (JSContext *cx, JSObject *object, uintN argc, jsval *argv, j
     unsigned offset = 0;
     int      tmp;
     while (offset < size) {
-         tmp = recv(data->socket, (string+offset), (size-offset)*sizeof(char), flags);
+        tmp = recv(data->socket, (string+offset), (size-offset)*sizeof(char), flags);
 
-         if (tmp == -1) {
+        if (tmp == -1) {
             JS_ReportError(cx, "An error occurred with the socket.");
             delete string;
             return JS_FALSE;
-         }
-         else if (tmp == 0) {
+        }
+        else if (tmp == 0) {
             jsConnected = JSVAL_FALSE;
             JS_SetProperty(cx, object, "connected", &jsConnected);
             break;
-         }
+        }
         
-         offset += tmp;
+        offset += tmp;
     }
     JS_ResumeRequest(cx, req);
 

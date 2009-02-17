@@ -62,7 +62,6 @@ System.Net.Protocol.HTTP.Request = Class.create({
         }
 
         this.response = this._initializeConnection[this.options.method.toUpperCase()].apply(this);
-        print("Content-Length: "+this.response.headers["Content-Length"]);
     },
 
     methods: {
@@ -70,7 +69,7 @@ System.Net.Protocol.HTTP.Request = Class.create({
             if (this.options.method.toUpperCase() == "HEAD") {
                 return null;
             }
-    
+
             var content;
             if (this.response.headers["Content-Length"]) {
                 if (this.response.content.length == this.response.headers["Content-Length"].toInt()) {
