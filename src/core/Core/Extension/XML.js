@@ -20,4 +20,4 @@ Object.extend(XML, {
     clean: function (text) {
         return text.replace(/^<\?xml\s+version\s*=\s*(["'])[^\1]+\1[^?]*\?>/, '');
     }
-};
+});
