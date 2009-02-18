@@ -16,35 +16,44 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-// Global library object
-require("System.so")
+Object.extend(System.IO.File, {
+    baseName: function (file) {
+        return (/([^\/]*)$/.exec(file))[1];
+    }
+});
 
-// Input output modules
-require("IO/IO.so")
+Object.extend(System.IO.File.prototype, {
+    writeLine: function (str) {
+        this.write(str+"\n");
+    },
 
-require(["IO/File/File.so", "IO/File/File.js"]);
-require(["IO/Directory/Directory.so", "IO/Directory/Directory.js"]);
+    readLine: function () {
+        if (this.isEnd())
+            return null;
 
-// Networking modules
-require("Net/Net.so");
+        var str = "";
+        var ch;
+        while ((ch = this.read(1)) != '\n' && !this.isEnd()) {
+            str += ch;
+        }
 
-require(["Net/Socket/Socket.so", "Net/Socket/Socket.js"]);
+        return str;
+    },
 
-require("Net/Ports/Ports.js");
+    readToEnd: function () {
+        var str = "";
 
-require("Net/Protocol/Protocol.so");
+        var line;
+        while ((line = this.readLine()) != null) {
+            str += line+"\n";
+        }
+        str = str.substr(0, str.length-1);
 
-require([
-    "Net/Protocol/HTTP/HTTP.so", "Net/Protocol/HTTP/HTTP.js",
-    "Net/Protocol/HTTP/Request.js", "Net/Protocol/HTTP/Response.js",
-    "Net/Protocol/HTTP/Client.js", "Net/Protocol/HTTP/Simple/Simple.js"
-]);
+        return str;
 
-// Crypt modules
-require("Crypt/Crypt.so");
+    },
 
-require(["Crypt/SHA1/SHA1.so", "Crypt/SHA1/SHA1.js"]);
-
-// Console module
-require(["Console/Console.so", "Console/Console.js"]);
-
+    readAll: function () {
+        return this.readToEnd().split('\n');
+    }
+});

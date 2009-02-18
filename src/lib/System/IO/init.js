@@ -21,6 +21,7 @@ require("System/System.so");
 require("IO.so");
 
 require(["File/File.so", "File/File.js"]);
+require(["Directory/Directory.so", "Directory/Directory.js"]);
 
 Program.IO = Program.System.IO;
 
