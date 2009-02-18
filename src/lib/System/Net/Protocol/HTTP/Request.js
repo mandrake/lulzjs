@@ -76,7 +76,7 @@ System.Net.Protocol.HTTP.Request = Class.create({
                     return null;
                 }
     
-                if (this.response.headers["Content-Type"].match(/^text/)) {
+                if (this.response.headers["Content-Type"].match(/^text/i)) {
                     return this.response.content += this.socket.receive(length
                         ? length
                         : this.response.headers["Content-Length"].toInt()
@@ -97,7 +97,7 @@ System.Net.Protocol.HTTP.Request = Class.create({
                         return null;
                     }
                     
-                    if (this.response.headers["Content-Type"].match(/^text/)) {
+                    if (this.response.headers["Content-Type"].match(/^text/i)) {
                         return this.response.content += tmp.toString();
                     }
                     else {
@@ -123,7 +123,11 @@ System.Net.Protocol.HTTP.Request = Class.create({
                 }
                 headers = System.Net.Protocol.HTTP.parseHeaders(headers);
 
-                var content = (headers["Content-Type"].match(/^text/)
+                if (!headers["Content-Type"]) {
+                    headers["Content-Type"] = "text/plain";
+                }
+
+                var content = (headers["Content-Type"].match(/^text/i)
                     ? new String
                     : new Bytes);
     
@@ -147,7 +151,11 @@ System.Net.Protocol.HTTP.Request = Class.create({
                 }
                 headers = System.Net.Protocol.HTTP.parseHeaders(headers);
 
-                var content = (headers["Content-Type"].match(/^text/)
+                if (!headers["Content-Type"]) {
+                    headers["Content-Type"] = "text/plain";
+                }
+
+                var content = (headers["Content-Type"].match(/^text/i)
                     ? new String
                     : new Bytes);
         
@@ -209,12 +217,11 @@ System.Net.Protocol.HTTP.Request = Class.create({
         },
     
         readChunked: function (length) {
-            var text = this.response.headers["Content-Type"].match(/^text/);
+            var text = this.response.headers["Content-Type"].match(/^text/i);
 
             var ret = text ? new String : new Bytes;
-    
+
             if (!length) {
-                let read;
                 while (read = this.socket.receiveLine().toInt(16)) {
                     if (text) ret += this.socket.receive(read);
                     else      ret.append(this.socket.receiveBytes(read));

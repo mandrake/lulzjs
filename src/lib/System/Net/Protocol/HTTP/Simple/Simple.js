@@ -17,8 +17,8 @@
 ****************************************************************************/
 
 System.Net.Protocol.HTTP.Simple = {
-    Get: function (url) {
-        return new System.Net.Protocol.HTTP.Request(url).receive();
+    Get: function (url, options) {
+        return new System.Net.Protocol.HTTP.Request(url, options).receive();
     },
 
     Post: function (url, params, options) {

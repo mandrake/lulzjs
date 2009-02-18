@@ -27,7 +27,11 @@ Class = {
         }
       
         function klass() {
-            this.initialize.apply(this, arguments);
+            if (this.initialize) {
+                return this.initialize.apply(this, arguments);
+            }
+
+            return null;
         }
     
         Object.extend(klass, Class.Methods);
