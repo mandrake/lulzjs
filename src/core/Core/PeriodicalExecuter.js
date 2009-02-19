@@ -16,70 +16,49 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-Abstract = { };
+var PeriodicalExecuter = Class.create({
+    constructor: function (callback, frequency) {
+        this.callback  = callback;
+        this.frequency = frequency;
+        this.executing = false;
 
-Try = {
-    these: function () {
-        var returnValue;
+        this.registerCallback();
+    },
 
-        for each (let lambda in arguments) {
+    methods: {
+        registerCallback: function () {
+            this.timer = setInterval(this.onTimerEvent.bind(this), this.frequency * 1000);
+        },
+
+        execute: function () {
+            this.callback(this);
+        },
+
+        stop: function () {
+            if (!this.timer) {
+                return;
+            }
+
             try {
-                returnValue = lambda();
-                break;
-            } catch (e) { }
-        }
+                this.executing = true;
+                this.execute();
+            }
+            finally {
+                this.executing = false;
+            }
+        },
 
-        return returnValue;
-    }
-}
-
-// Standard classes stuff
-require(["Object.so", "Object.js"]);
-require("Class.js");
-require("Function.js");
-require("Number.js");
-require("String.js");
-require("Array.js");
-require("Date.js");
-require("RegExp.js");
-require("XML.js");
-
-// Added stuff
-require("PeriodicalExecuter.js");
-require("Template.js");
-require("Enumerable.js");
-require("Hash.js");
-require("Range.js");
-
-// Important stuff
-require("Bytes.js");
-require("Thread");
-
-require("random.js");
-
-//Program.GCExecution = new PeriodicalExecuter(function(){Program.GC()}, 60);
-
-// Isolate the used variables.
-(function(){
-    // Include the environment paths in the current script.
-    var PATH = ENV("JSPATH");
-    if (PATH) {
-        let re = /([^:])+/g;
-    
-        let path;
-        while (path = re.exec(PATH)) {
-            __PATH__.push(path[0]);
+        onTimerEvent: function () {
+            if (!this.executing) {
+                try {
+                    this.executing = true;
+                    this.execute();
+                }
+                finally {
+                    this.executing = false;
+                }
+            }
         }
     }
+});
 
-    // Include the standards include following the environment variable.
-    var INCLUDE = ENV("JSINCLUDE");
-    if (INCLUDE) {
-        let re = /([^:])+/g;
-    
-        let file;
-        while (file = re.exec(INCLUDE)) {
-            include(file[0]);
-        }
-    }
-})();

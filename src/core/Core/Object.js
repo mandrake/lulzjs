@@ -115,14 +115,73 @@
         return obj.toArray ? obj.toArray() : null;
     };
 
+    function addMethods (object, source, flags) {
+        if (!object || !source) return;
+
+        flags = flags || Object.Flags.Default;
+
+        var ancestor = object.superclass
+            ? object.superclass && object.superclass.prototype
+            : undefined;
+        }
+
+        for (let property in source) {
+            let value = source[property];
+
+            if (ancestor && Object.is(value, Function) && value.argumentNames().first() == "$super") {
+                let method = value;
+
+                value = (function (m) {
+                    return function () {
+                        return ancestor[m].apply(this, arguments); 
+                    };
+                })(property).wrap(method);
+
+                value.valueOf  = method.valueOf.bind(method);
+                value.toString = method.toString.bind(method);
+            }
+
+            object.__defineFunction__(property, value, flags);
+        }
+    };
+
+   function addStatic (object, source, flags) {
+        if (!object || !source) return;
+        flags = flags || Object.Flags.Default;
+
+        for (let property in source) {
+            object.__defineProperty__(property, source[property], flags);
+        }
+
+        return this;
+    };
+
+    function addAttributes (object, source) {
+        if (!source) return;
+
+        for (let attribute in source) {
+            if (source[attribute].get) {
+                object.__defineGetter__(attribute, source[attribute].get);
+            }
+            if (source[attribute].set) {
+                object.__defineSetter__(attribute, source[attribute].set);
+            }
+        }
+
+        return this;
+    };
+
     extend(Object, {
-        extend : extend,
-        inspect: inspect,
-        toJSON : toJSON,
-        keys   : keys,
-        values : values,
-        clone  : clone,
-        is     : is,
-        toArray: toArray
-    });
+        extend :       extend,
+        addMethods:    addMethods,
+        addStatic:     addStatic,
+        addAttributes: addAttributes,
+        inspect:       inspect,
+        toJSON :       toJSON,
+        keys   :       keys,
+        values :       values,
+        clone  :       clone,
+        is     :       is,
+        toArray:       toArray
+    }, Object.Flags.None);
 })();

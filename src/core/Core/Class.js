@@ -49,8 +49,8 @@ Class = {
             ? properties.constructor
             : Function.empty.clone());
     
-        klass.addMethods(properties.methods);
-        klass.addStaticMethods(properties.static);
+        klass.addMethods(properties.methods, Object.Flags.None);
+        klass.addStaticMethods(properties.static, Object.Flags.None);
         klass.addAttributes(properties.attributes);
       
         klass.prototype.constructor = klass;
@@ -58,54 +58,16 @@ Class = {
     },
 
     Methods: {
-        addMethods: function (source) {
-            if (!source) return;
-
-            var ancestor = this.superclass && this.superclass.prototype;
-    
-            for (let property in source) {
-                let value = source[property];
-
-                if (ancestor && Object.is(value, Function) && value.argumentNames().first() == "$super") {
-                    let method = value;
-
-                    value = (function (m) {
-                        return function () {
-                            return ancestor[m].apply(this, arguments); 
-                        };
-                    })(property).wrap(method);
-
-                    value.valueOf  = method.valueOf.bind(method);
-                    value.toString = method.toString.bind(method);
-                }
-
-                this.prototype[property] = value;
-            }
+        addMethods: function (source, flags) {
+            return Object.addMethods(this.prototype, source, flags);
         },
 
-        addStaticMethods: function (source) {
-            if (!source) return;
-
-            for (let property in source) {
-                this[property] = source[property];
-            }
-    
-            return this;
+        addStatic: function (source, flags) {
+            return Object.addStatic(this, source, flags);
         },
 
         addAttributes: function (source) {
-            if (!source) return;
-
-            for (let attribute in source) {
-                if (source[attribute].get) {
-                    this.prototype.__defineGetter__(attribute, source[attribute].get);
-                }
-                if (source[attribute].set) {
-                    this.prototype.__defineSetter__(attribute, source[attribute].set);
-                }
-            }
-
-            return this;
+            return Object.addAttributes(this.prototype, source);
         }
     }
 };
