@@ -16,12 +16,14 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require("System/System.so");
+#ifndef _SYSTEM_FILESYSTEM_FILE_PRIVATE_H
+#define _SYSTEM_FILESYSTEM_FILE_PRIVATE_H
 
-require("IO.so");
+typedef struct {
+    char*       path;
+    FILE*       descriptor;
+    unsigned    mode;
+    struct stat desc;
+} FileInformation;
 
-require(["File/File.so", "File/File.js"]);
-require(["Directory/Directory.so", "Directory/Directory.js"]);
-
-Program.IO = Program.System.IO;
-
+#endif

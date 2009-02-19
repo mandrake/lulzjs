@@ -16,10 +16,35 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-Function.empty = function () {};
+#include "FileSystem.h"
 
-Object.extend(Function.prototype, {
-    clone: function () {
-        return eval(this.toString().replace(/function .*?\(/, 'function ('));
+JSBool exec (JSContext* cx) { return FileSystem_initialize(cx); }
+
+JSBool
+FileSystem_initialize (JSContext* cx)
+{
+    JS_BeginRequest(cx);
+
+    jsval jsParent   = JS_EVAL(cx, "System");
+    JSObject* parent = JSVAL_TO_OBJECT(jsParent);
+
+    JSObject* object = JS_DefineObject(
+        cx, parent,
+        FileSystem_class.name, &FileSystem_class, NULL, 
+        JSPROP_PERMANENT|JSPROP_READONLY|JSPROP_ENUMERATE);
+
+    if (object) {
+        JS_DefineFunctions(cx, object, FileSystem_methods);
+
+        jsval property;
+
+        property = INT_TO_JSVAL(EOF);
+        JS_SetProperty(cx, parent, "EOF", &property);
+
+        JS_EndRequest(cx);
+        return JS_TRUE;
     }
-});
+
+    return JS_FALSE;
+}
+

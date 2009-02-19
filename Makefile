@@ -28,7 +28,7 @@ CORE_LDFLAGS = ${LDFLAGS} -ldl -lreadline -lncurses
 ## LIB_CORE ##
 LIB_CORE_DIR = src/core/Core
 LIB_CORE = \
-	${LIB_CORE_DIR}/Base/Thread/Thread.o 
+	${LIB_CORE_DIR}/Object.o ${LIB_CORE_DIR}/Thread/Thread.o 
 
 LIB_CORE_CFLAGS  = ${CFLAGS}
 LIB_CORE_LDFLAGS = ${LDFLAGS} -lpthread
@@ -39,7 +39,7 @@ LIB_SYSTEM_DIR = src/lib/System
 LIB_SYSTEM = \
 	${LIB_SYSTEM_DIR}/System.o \
 	${LIB_SYSTEM_DIR}/Console/Console.o \
-	${LIB_SYSTEM_DIR}/IO/IO.o ${LIB_SYSTEM_DIR}/IO/File/File.o \
+	${LIB_SYSTEM_DIR}/FileSystem/FileSystem.o ${LIB_SYSTEM_DIR}/FileSystem/File/File.o ${LIB_SYSTEM_DIR}/FileSystem/Directory/Directory.o \
 	${LIB_SYSTEM_DIR}/Net/Net.o ${LIB_SYSTEM_DIR}/Net/Socket/Socket.o ${LIB_SYSTEM_DIR}/Net/Protocol/Protocol.o \
 	${LIB_SYSTEM_DIR}/Net/Protocol/HTTP/HTTP.o \
 	${LIB_SYSTEM_DIR}/Crypt/Crypt.o ${LIB_SYSTEM_DIR}/Crypt/SHA1/SHA1.o
@@ -74,18 +74,14 @@ libcore_install: libcore
 	mkdir -p ${LJS_LIBDIR}/Core/Base
 	mkdir -p ${LJS_LIBDIR}/Core/Base/Thread
 ########
-	cp -f  ${LIB_CORE_DIR}/init.js					${LJS_LIBDIR}/Core/init.js
+	cp -f  ${LIB_CORE_DIR}/init.js				${LJS_LIBDIR}/Core/init.js
 ########
-	cp -rf ${LIB_CORE_DIR}/Prototype/*				${LJS_LIBDIR}/Core/Prototype/
+	cp -r  ${LIB_CORE_DIR}/Object.o				${LJS_LIBDIR}/Core/Object.so
 ########
-	cp -rf ${LIB_CORE_DIR}/Extension/*				${LJS_LIBDIR}/Core/Extension/
+	cp -f  ${LIB_CORE_DIR}/Thread/init.js		${LJS_LIBDIR}/Core/Thread/init.js
+	cp -f  ${LIB_CORE_DIR}/Thread/Thread.o		${LJS_LIBDIR}/Core/Thread/Thread.so
 ########
-	cp -f  ${LIB_CORE_DIR}/Base/init.js				${LJS_LIBDIR}/Core/Base/init.js
-########
-	cp -f  ${LIB_CORE_DIR}/Base/Bytes.js			${LJS_LIBDIR}/Core/Base/Bytes.js
-########
-	cp -f  ${LIB_CORE_DIR}/Base/Thread/init.js		${LJS_LIBDIR}/Core/Base/Thread/init.js
-	cp -f  ${LIB_CORE_DIR}/Base/Thread/Thread.o		${LJS_LIBDIR}/Core/Base/Thread/Thread.so
+	cp -rf ${LIB_CORE_DIR}/*.js					${LJS_LIBDIR}/Core/
 	
 libsystem: $(LIB_SYSTEM)
 
@@ -97,8 +93,9 @@ libsystem_install: libsystem
 	mkdir -p ${LJS_LIBDIR}
 	mkdir -p ${LJS_LIBDIR}/System
 	mkdir -p ${LJS_LIBDIR}/System/Console
-	mkdir -p ${LJS_LIBDIR}/System/IO
-	mkdir -p ${LJS_LIBDIR}/System/IO/File
+	mkdir -p ${LJS_LIBDIR}/System/FileSystem
+	mkdir -p ${LJS_LIBDIR}/System/FileSystem/File
+	mkdir -p ${LJS_LIBDIR}/System/FileSystem/Directory
 	mkdir -p ${LJS_LIBDIR}/System/Net
 	mkdir -p ${LJS_LIBDIR}/System/Net/Socket
 	mkdir -p ${LJS_LIBDIR}/System/Net/Ports
@@ -111,12 +108,16 @@ libsystem_install: libsystem
 	cp -f ${LIB_SYSTEM_DIR}/init.js								${LJS_LIBDIR}/System/init.js
 	cp -f ${LIB_SYSTEM_DIR}/System.o							${LJS_LIBDIR}/System/System.so
 ########
-	cp -f ${LIB_SYSTEM_DIR}/IO/init.js							${LJS_LIBDIR}/System/IO/init.js
-	cp -f ${LIB_SYSTEM_DIR}/IO/IO.o								${LJS_LIBDIR}/System/IO/IO.so
+	cp -f ${LIB_SYSTEM_DIR}/FileSystem/init.js					${LJS_LIBDIR}/System/FileSystem/init.js
+	cp -f ${LIB_SYSTEM_DIR}/FileSystem/FileSystem.o				${LJS_LIBDIR}/System/FileSystem/FileSystem.so
 ########
-	cp -f ${LIB_SYSTEM_DIR}/IO/File/init.js						${LJS_LIBDIR}/System/IO/File/init.js
-	cp -f ${LIB_SYSTEM_DIR}/IO/File/File.o						${LJS_LIBDIR}/System/IO/File/File.so
-	cp -f ${LIB_SYSTEM_DIR}/IO/File/File.js						${LJS_LIBDIR}/System/IO/File/File.js
+	cp -f ${LIB_SYSTEM_DIR}/FileSystem/File/init.js				${LJS_LIBDIR}/System/FileSystem/File/init.js
+	cp -f ${LIB_SYSTEM_DIR}/FileSystem/File/File.o				${LJS_LIBDIR}/System/FileSystem/File/File.so
+	cp -f ${LIB_SYSTEM_DIR}/FileSystem/File/File.js				${LJS_LIBDIR}/System/FileSystem/File/File.js
+########
+	cp -f ${LIB_SYSTEM_DIR}/FileSystem/Directory/init.js		${LJS_LIBDIR}/System/FileSystem/Directory/init.js
+	cp -f ${LIB_SYSTEM_DIR}/FileSystem/Directory/Directory.o	${LJS_LIBDIR}/System/FileSystem/Directory/Directory.so
+	cp -f ${LIB_SYSTEM_DIR}/FileSystem/Directory/Directory.js	${LJS_LIBDIR}/System/FileSystem/Directory/Directory.js
 ########
 	cp -f ${LIB_SYSTEM_DIR}/Console/init.js						${LJS_LIBDIR}/System/Console/init.js
 	cp -f ${LIB_SYSTEM_DIR}/Console/Console.o					${LJS_LIBDIR}/System/Console/Console.so

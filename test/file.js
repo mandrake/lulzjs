@@ -1,5 +1,5 @@
 #! /usr/bin/ljs
 require("System/Console");
-require("System/IO/File");
+require("System/FileSystem/File");
 
-Console.writeLine(new File("file.js", "r").readToEnd());
+Console.writeLine(new File("file.js", File.Mode.Read).readToEnd());

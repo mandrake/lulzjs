@@ -16,10 +16,19 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-#ifndef _SYSTEM_IO_FILE_H
-#define _SYSTEM_IO_FILE_H
+#ifndef _SYSTEM_FILESYSTEM_FILE_H
+#define _SYSTEM_FILESYSTEM_FILE_H
+
+#undef  _GNU_SOURCE
+#undef  _FILE_OFFSET_BITS
+#define _GNU_SOURCE
+#define _FILE_OFFSET_BITS 64
 
 #include "lulzjs.h"
+
+const unsigned MODE_READ   = 0x02;
+const unsigned MODE_WRITE  = 0x04;
+const unsigned MODE_APPEND = 0x08;
 
 extern "C" JSBool exec (JSContext* cx);
 JSBool File_initialize (JSContext* cx);
@@ -35,6 +44,18 @@ static JSClass File_class = {
 
 #include "private.h"
 
+JSBool File_position_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
+JSBool File_position_set (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
+
+JSBool File_length_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
+
+static JSPropertySpec File_attributes[] = {
+    {"position", 0, 0, File_position_get, File_position_set},
+    {"length",   0, 0, File_length_get,     NULL},
+    {NULL}
+};
+
+JSBool File_open (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 JSBool File_close (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
 JSBool File_write (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
@@ -43,11 +64,8 @@ JSBool File_read (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsva
 JSBool File_writeBytes (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 JSBool File_readBytes (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
-JSBool File_isEnd (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-
-JSBool File_static_exists (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-
 static JSFunctionSpec File_methods[] = {
+    {"open",  File_open,  0, 0, 0},
     {"close", File_close, 0, 0, 0},
 
     {"write", File_write, 0, 0, 0},
@@ -55,13 +73,10 @@ static JSFunctionSpec File_methods[] = {
 
     {"writeBytes", File_writeBytes, 0, 0, 0},
     {"readBytes",  File_readBytes,  0, 0, 0},
-
-    {"isEnd", File_isEnd, 0, 0, 0},
     {NULL}
 };
 
 static JSFunctionSpec File_static_methods[] = {
-    {"exists", File_static_exists, 0, 0, 0},
     {NULL}
 };
 

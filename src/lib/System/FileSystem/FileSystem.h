@@ -16,6 +16,22 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require("Bytes.js");
-require("Thread");
+#ifndef _SYSTEM_FILESYSTEM_H
+#define _SYSTEM_FILESYSTEM_H
 
+#include "lulzjs.h"
+
+extern "C" JSBool exec (JSContext* cx);
+JSBool FileSystem_initialize (JSContext* cx);
+
+static JSClass FileSystem_class = {
+    "FileSystem", 0,
+    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
+    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub
+};
+
+static JSFunctionSpec FileSystem_methods[] = {
+    {NULL}
+};
+
+#endif

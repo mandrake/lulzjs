@@ -16,9 +16,45 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require("Prototype");
-require("Extension");
-require("Base");
+Abstract = { };
+
+Try = {
+    these: function () {
+        var returnValue;
+
+        for each (let lambda in arguments) {
+            try {
+                returnValue = lambda();
+                break;
+            } catch (e) { }
+        }
+
+        return returnValue;
+    }
+}
+
+// Standard classes stuff
+require(["Object.so", "Object.js"]);
+require("Class.js");
+require("Function.js");
+require("Number.js");
+require("String.js");
+require("Date.js");
+require("RegExp.js");
+require("XML.js");
+
+// Added stuff
+require("PeriodicalExecuter.js");
+require("Template.js");
+require("Enumerable.js");
+require("Hash.js");
+require("Range.js");
+
+// Important stuff
+require("Bytes.js");
+require("Thread");
+
+require("random.js");
 
 //Program.GCExecution = new PeriodicalExecuter(function(){Program.GC()}, 60);
 

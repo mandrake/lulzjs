@@ -16,13 +16,20 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-#ifndef _SYSTEM_IO_FILE_PRIVATE_H
-#define _SYSTEM_IO_FILE_PRIVATE_H
+#ifndef _SYSTEM_FILESYSTEM_DIRECTORY_PRIVATE_H
+#define _SYSTEM_FILESYSTEM_DIRECTORY_PRIVATE_H
 
 typedef struct {
-    char* path;
-    FILE* descriptor;
-    char* mode;
-} FileInformation;
+    long all;
+    long files;
+    long directories;
+} DirectoryPointers;
+
+typedef struct {
+    char*             path;
+    DIR*              descriptor;
+    struct stat       desc;
+    DirectoryPointers pointers;
+} DirectoryInformation;
 
 #endif

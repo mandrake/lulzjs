@@ -1,0 +1,128 @@
+/****************************************************************************
+* This file is part of lulzJS                                               *
+* Copyleft meh.                                                             *
+*                                                                           *
+* lulzJS is free software: you can redistribute it and/or modify            *
+* it under the terms of the GNU General Public License as published by      *
+* the Free Software Foundation, either version 3 of the License, or         *
+* (at your option) any later version.                                       *
+*                                                                           *
+* lulzJS is distributed in the hope that it will be useful.                 *
+* but WITHOUT ANY WARRANTY; without even the implied warranty o.            *
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See th.             *
+* GNU General Public License for more details.                              *
+*                                                                           *
+* You should have received a copy of the GNU General Public License         *
+* along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
+****************************************************************************/
+
+(function() {
+    function getClass (object) {
+        return Object.prototype.toString.call(object).match(
+            /\[object\s(.*)\]$/)[1];
+    };
+
+    function extend (destination, source, flags) {
+        flags = flags || Object.Flags.Default;
+
+        for (let property in source) {
+            destination.__defineProperty__(property, source[property], flags);
+        }
+
+        return destination;
+    };
+
+    function inspect (object) {
+        try {
+            if (object === undefined) return 'undefined';
+            if (object === null)      return 'null';
+
+            return object.inspect ? object.inspect() : object.toString();
+        }
+        catch (e) {
+            if (e instanceof RangeError) return '...';
+            throw e;
+        }
+    };
+
+    function toJSON (object) {
+        switch (typeof object) {
+            case 'undefined':
+            case 'function' :
+            case 'unknown'  : return;
+            case 'boolean'  : return object.toString();
+        }
+
+        if (object === null) return 'null';
+        if (object.toJSON)   return object.toJSON();
+
+        var results = new Array;
+        for (let property in object) {
+            let value = toJSON(object[property]);
+
+            if (value !== undefined) {
+                results.push(property.toJSON() + ": " + value);
+            }
+        }
+
+        return '{' + results.join(", ") + '}';
+    };
+
+    function keys (object) {
+        return [key for (key in object)];
+    };
+
+    function values (object) {
+        return [value for each (value in object)];
+    };
+
+    function clone (object, deep) {
+        deep        = deep || false;
+        returnValue = new Object;
+
+        if (deep) {
+            for (let key in object) {
+                returnValue[key] = object[key].clone 
+                    ? object[key].clone()
+                    : object[key];
+            }
+        }
+        else {
+            extend(returnValue, object);
+        }
+
+        return returnValue;
+    };
+
+    function is (obj, type) {
+        try {
+            if (typeof type == 'string') {
+                if (type.trim().match(/;|\(.*\)$/)) {
+                    throw "LOL HAX";
+                }
+
+                type = eval(type);
+            }
+
+            return obj instanceof type;
+        }
+        catch (e) {
+            return false;
+        }
+    };
+
+    function toArray (obj) {
+        return obj.toArray ? obj.toArray() : null;
+    };
+
+    extend(Object, {
+        extend : extend,
+        inspect: inspect,
+        toJSON : toJSON,
+        keys   : keys,
+        values : values,
+        clone  : clone,
+        is     : is,
+        toArray: toArray
+    });
+})();

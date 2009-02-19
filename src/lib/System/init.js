@@ -20,10 +20,10 @@
 require("System.so")
 
 // Input output modules
-require("IO/IO.so")
+require("FileSystem/FileSystem.so")
 
-require(["IO/File/File.so", "IO/File/File.js"]);
-require(["IO/Directory/Directory.so", "IO/Directory/Directory.js"]);
+require(["FileSystem/File/File.so", "FileSystem/File/File.js"]);
+require(["FileSystem/Directory/Directory.so", "FileSystem/Directory/Directory.js"]);
 
 // Networking modules
 require("Net/Net.so");

@@ -21,6 +21,9 @@
 JSBool
 js_ObjectIs (JSContext* cx, jsval check, const char* name)
 {
+    JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
+
     jsval jsObj; JS_GetProperty(cx, JS_GetGlobalObject(cx), "Object", &jsObj);
     JSObject* Obj = JSVAL_TO_OBJECT(jsObj);
 
@@ -30,12 +33,17 @@ js_ObjectIs (JSContext* cx, jsval check, const char* name)
     };
     jsval ret; JS_CallFunctionName(cx, Obj, "is", 2, newArgv, &ret);
 
+    JS_LeaveLocalRootScope(cx);
+    JS_EndRequest(cx);
     return JSVAL_TO_BOOLEAN(ret);
 }
 
 jsint
 js_parseInt (JSContext* cx, jsval number, int base)
 {
+    JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
+
     jsval ret;
 
     if (base >= 2 && base <= 36) {
@@ -52,12 +60,18 @@ js_parseInt (JSContext* cx, jsval number, int base)
     }
 
     jsint nret; JS_ValueToInt32(cx, ret, &nret);
+
+    JS_LeaveLocalRootScope(cx);
+    JS_EndRequest(cx);
     return nret;
 }
 
 jsdouble
 js_parseFloat (JSContext* cx, jsval number)
 {
+    JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
+
     jsval ret;
 
     jsval argv[] = {number};
@@ -68,13 +82,20 @@ js_parseFloat (JSContext* cx, jsval number)
     }
     
     jsdouble nret; JS_ValueToNumber(cx, ret, &nret);
+
+    JS_LeaveLocalRootScope(cx);
+    JS_EndRequest(cx);
     return nret;
 }
 
 jsval
 js_eval (JSContext* cx, const char* string)
 {
+    JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
+
     jsval ret;
+
     JS_EvaluateScript(cx, JS_GetGlobalObject(cx), string, strlen(string), "eval", 1, &ret);
 
     if (JS_IsExceptionPending(cx)) {
@@ -82,12 +103,16 @@ js_eval (JSContext* cx, const char* string)
         ret = JSVAL_VOID;
     }
 
+    JS_LeaveLocalRootScope(cx);
+    JS_EndRequest(cx);
     return ret;
 }
 
 char*
 js_strdup (JSContext* cx, const char* string)
 {
+    JS_EnterLocalRootScope(cx);
+
     char* newString = (char*) JS_malloc(cx, strlen(string)*sizeof(char)+1);
 
     size_t i;
@@ -95,6 +120,8 @@ js_strdup (JSContext* cx, const char* string)
         newString[i] = string[i];
     }
     newString[i] = '\0';
+
+    JS_LeaveLocalRootScope(cx);
 
     return newString;
 }
