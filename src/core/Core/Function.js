@@ -16,6 +16,11 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
+Object.extend(Function, {
+    empty: function () {},
+    K:     function (x) x
+}, Object.Flags.None);
+
 Object.extend(Function.prototype, (function() {
     var slice = Array.prototype.slice;
 
@@ -34,8 +39,6 @@ Object.extend(Function.prototype, (function() {
         array = slice.call(array, 0);
         return update(array, args);
     };
-
-    var empty = function () {};
 
     function argumentNames () {
         var names = this.toString().match(/\((.*?)\)/)[1].split(", ");
@@ -103,8 +106,6 @@ Object.extend(Function.prototype, (function() {
     };
 
     return {
-        empty: empty,
-
         argumentNames: argumentNames,
         bind         : bind,
         curry        : curry,

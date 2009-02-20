@@ -53,8 +53,8 @@ Class = {
             ? properties.constructor
             : Function.empty.clone());
     
-        klass.addMethods(properties.methods, Object.Flags.None);
-        klass.addStatic(properties.static, Object.Flags.None);
+        klass.addMethods(properties.methods);
+        klass.addStatic(properties.static);
         klass.addAttributes(properties.attributes);
       
         klass.prototype.constructor = klass;
@@ -63,14 +63,26 @@ Class = {
 
     Methods: {
         addMethods: function (source, flags) {
+            flags = (flags !== undefined
+                ? flags
+                : Object.Flags.None);
+
             return Object.addMethods(this.prototype, source, flags);
         },
 
         addStatic: function (source, flags) {
+            flags = (flags !== undefined
+                ? flags
+                : Object.Flags.None);
+
             return Object.addStatic(this, source, flags);
         },
 
-        addAttributes: function (source) {
+        addAttributes: function (source, flags) {
+            flags = (flags !== undefined
+                ? flags
+                : Object.Flags.None);
+
             return Object.addAttributes(this.prototype, source);
         }
     }
