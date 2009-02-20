@@ -30,8 +30,6 @@ function $A (iterable) {
             ? flags
             : Object.Flags.Default);
 
-        print(flags);
-
         for (let property in source) {
             destination.__defineProperty__(property, source[property], flags);
         }

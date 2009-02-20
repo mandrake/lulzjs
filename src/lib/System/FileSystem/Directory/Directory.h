@@ -22,6 +22,10 @@
 #include "lulzjs.h"
 #include <dirent.h>
 
+const int SEARCH_EVERYTHING  = 0x01;
+const int SEARCH_FILES       = 0x02;
+const int SEARCH_DIRECTORIES = 0x04;
+
 extern "C" JSBool exec (JSContext* cx);
 JSBool Directory_initialize (JSContext* cx);
 
@@ -34,14 +38,12 @@ static JSClass Directory_class = {
     JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, Directory_finalize
 };
 
-JSBool Directory_position_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
-JSBool Directory_position_set (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
-
+JSBool Directory_path_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
 JSBool Directory_length_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
 
 static JSPropertySpec Directory_attributes[] = {
-    {"position", 0, 0, Directory_position_get, Directory_position_set},
-    {"length",   0, 0, Directory_length_get,   NULL},
+    {"path",   0, 0, Directory_path_get,   NULL},
+    {"length", 0, 0, Directory_length_get, NULL},
     {NULL}
 };
 
@@ -50,15 +52,15 @@ static JSPropertySpec Directory_attributes[] = {
 JSBool Directory_open (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 JSBool Directory_close (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
-JSBool Directory_next (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-JSBool Directory_previous (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool Directory_readNext (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool Directory_readPrev (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
 static JSFunctionSpec Directory_methods[] = {
     {"open",  Directory_open,  0, 0, 0},
     {"close", Directory_close, 0, 0, 0},
 
-    {"next",     Directory_next, 0, 0, 0},
-    {"previous", Directory_previous, 0, 0, 0},
+    {"readNext", Directory_readNext, 0, 0, 0},
+    {"readPrev", Directory_readPrev, 0, 0, 0},
 
     {NULL}
 };

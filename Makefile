@@ -107,6 +107,7 @@ libsystem_install: libsystem
 ########
 	cp -f ${LIB_SYSTEM_DIR}/FileSystem/init.js					${LJS_LIBDIR}/System/FileSystem/init.js
 	cp -f ${LIB_SYSTEM_DIR}/FileSystem/FileSystem.o				${LJS_LIBDIR}/System/FileSystem/FileSystem.so
+	cp -f ${LIB_SYSTEM_DIR}/FileSystem/FileSystem.js			${LJS_LIBDIR}/System/FileSystem/FileSystem.js
 ########
 	cp -f ${LIB_SYSTEM_DIR}/FileSystem/File/init.js				${LJS_LIBDIR}/System/FileSystem/File/init.js
 	cp -f ${LIB_SYSTEM_DIR}/FileSystem/File/File.o				${LJS_LIBDIR}/System/FileSystem/File/File.so

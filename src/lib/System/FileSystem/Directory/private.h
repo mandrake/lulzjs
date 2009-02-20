@@ -26,7 +26,7 @@ typedef struct {
 } DirectoryPointers;
 
 typedef struct {
-    char*             path;
+    std::string       path;
     DIR*              descriptor;
     struct stat       desc;
     DirectoryPointers pointers;

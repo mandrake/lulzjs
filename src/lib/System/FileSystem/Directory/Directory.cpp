@@ -67,10 +67,8 @@ Directory_finalize (JSContext* cx, JSObject* object)
     DirectoryInformation* data = (DirectoryInformation*) JS_GetPrivate(cx, object);
 
     if (data) {
-        free(data->path);
-
-        if (data->directory) {
-            closedir(data->directory);
+        if (data->descriptor) {
+            closedir(data->descriptor);
         }
 
         delete data;
@@ -98,9 +96,9 @@ Directory_open (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval*
         return JS_FALSE;
     }
 
-    data->path = strdup(path);
+    data->path = path;
 
-    if (stat(data->path, &data->desc)) {
+    if (stat(data->path.c_str(), &data->desc)) {
         JS_ReportError(cx, "An error occurred while opening the file.");
         return JS_FALSE;
     }
@@ -114,7 +112,7 @@ Directory_open (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval*
     data->pointers.files       = 0;
     data->pointers.directories = 0;
 
-    data->descriptor = opendir(data->path);
+    data->descriptor = opendir(data->path.c_str());
     JS_SetPrivate(cx, object, data);
 
     if (!data->descriptor) {
@@ -130,10 +128,9 @@ Directory_close (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval
 
     DirectoryInformation* data = (DirectoryInformation*) JS_GetPrivate(cx, object);
 
-    if (data->directory) {
-        closedir(data->directory);
-        data->directory = NULL;
-        free(data->path);
+    if (data->descriptor) {
+        closedir(data->descriptor);
+        data->descriptor = NULL;
     }
 
     JS_EndRequest(cx);
@@ -141,23 +138,172 @@ Directory_close (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval
 }
 
 JSBool
-Directory_next (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval *rval)
+Directory_readNext (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval *rval)
 {
-    JSObject* type;
+    int lookFor = SEARCH_EVERYTHING;
 
     if (argc) {
-        JS_ValueToObject(cx, argv[0], &type);
+        if (JS_OBJECT_IS(cx, argv[0], "System.FileSystem.File")) {
+            lookFor = SEARCH_FILES;
+        }
+        if (JS_OBJECT_IS(cx, argv[0], "System.FileSystem.Directory")) {
+            lookFor = SEARCH_DIRECTORIES;
+        }
     }
 
     DirectoryInformation* data = (DirectoryInformation*) JS_GetPrivate(cx, object);
 
-    JS_EnterLocalRootScope(cx);
-    char* string = (char*) JS_malloc(cx, (size+1)*sizeof(char));
-    memset(string, 0, size+1);
-    fread(string, sizeof(char), size, data->descriptor);
-    *rval = STRING_TO_JSVAL(JS_NewString(cx, string, size));
-    JS_LeaveLocalRootScope(cx);
+    switch (lookFor) {
+        case SEARCH_EVERYTHING:
+        seekdir(data->descriptor, data->pointers.all);
+        break;
 
+        case SEARCH_FILES:
+        seekdir(data->descriptor, data->pointers.files);
+        break;
+
+        case SEARCH_DIRECTORIES:
+        seekdir(data->descriptor, data->pointers.directories);
+        break;
+    }
+
+    struct dirent* dir;
+    while (dir = readdir(data->descriptor)) {
+        std::string name = dir->d_name;
+        if (name == "." || name == "..") {
+            continue;
+        }
+
+        if (lookFor == SEARCH_EVERYTHING) {
+            data->pointers.all = telldir(data->descriptor);
+            break;
+        }
+        else if (lookFor == SEARCH_FILES && dir->d_type == DT_REG) {
+            data->pointers.files = telldir(data->descriptor);
+            break;
+        }
+        else if (lookFor == SEARCH_DIRECTORIES && dir->d_type == DT_DIR) {
+            data->pointers.directories = telldir(data->descriptor);
+            break;
+        }
+    }
+
+    if (!dir) {
+        *rval = JSVAL_NULL;
+        return JS_TRUE;
+    }
+
+    JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
+
+    std::string newPath = data->path + "/" + std::string(dir->d_name);
+    jsval newArgv[]     = {
+        STRING_TO_JSVAL(JS_NewString(cx, JS_strdup(cx, newPath.c_str()), newPath.size()))
+    };
+    
+    switch (dir->d_type) {
+        case DT_REG:
+        *rval = OBJECT_TO_JSVAL(JS_New(
+            cx, JSVAL_TO_OBJECT(JS_EVAL(cx, "System.FileSystem.File")),
+            1, newArgv
+        ));
+        break;
+
+        case DT_DIR:
+        *rval = OBJECT_TO_JSVAL(JS_New(
+            cx, JSVAL_TO_OBJECT(JS_EVAL(cx, "System.FileSystem.Directory")),
+            1, newArgv
+        ));
+        break;
+    }
+
+    JS_LeaveLocalRootScope(cx);
+    JS_EndRequest(cx);
+    return JS_TRUE;
+}
+
+JSBool
+Directory_readPrev (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval *rval)
+{
+    int lookFor = SEARCH_EVERYTHING;
+
+    if (argc) {
+        if (JS_OBJECT_IS(cx, argv[0], "System.FileSystem.File")) {
+            lookFor = SEARCH_FILES;
+        }
+        if (JS_OBJECT_IS(cx, argv[0], "System.FileSystem.Directory")) {
+            lookFor = SEARCH_DIRECTORIES;
+        }
+    }
+
+    DirectoryInformation* data = (DirectoryInformation*) JS_GetPrivate(cx, object);
+
+    switch (lookFor) {
+        case SEARCH_EVERYTHING:
+        seekdir(data->descriptor, data->pointers.all);
+        break;
+
+        case SEARCH_FILES:
+        seekdir(data->descriptor, data->pointers.files);
+        break;
+
+        case SEARCH_DIRECTORIES:
+        seekdir(data->descriptor, data->pointers.directories);
+        break;
+    }
+
+    struct dirent* dir;
+    while (dir = readdir(data->descriptor)) {
+        std::string name = dir->d_name;
+        if (name == "." || name == "..") {
+            continue;
+        }
+
+        if (lookFor == SEARCH_EVERYTHING) {
+            data->pointers.all = telldir(data->descriptor);
+            break;
+        }
+        else if (lookFor == SEARCH_FILES && dir->d_type == DT_REG) {
+            data->pointers.files = telldir(data->descriptor);
+            break;
+        }
+        else if (lookFor == SEARCH_DIRECTORIES && dir->d_type == DT_DIR) {
+            data->pointers.directories = telldir(data->descriptor);
+            break;
+        }
+    }
+
+    if (!dir) {
+        *rval = JSVAL_NULL;
+        return JS_TRUE;
+    }
+
+    JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
+
+    std::string newPath = data->path + "/" + std::string(dir->d_name);
+    jsval newArgv[]     = {
+        STRING_TO_JSVAL(JS_NewString(cx, JS_strdup(cx, newPath.c_str()), newPath.size()))
+    };
+    
+    switch (dir->d_type) {
+        case DT_REG:
+        *rval = OBJECT_TO_JSVAL(JS_New(
+            cx, JSVAL_TO_OBJECT(JS_EVAL(cx, "System.FileSystem.File")),
+            1, newArgv
+        ));
+        break;
+
+        case DT_DIR:
+        *rval = OBJECT_TO_JSVAL(JS_New(
+            cx, JSVAL_TO_OBJECT(JS_EVAL(cx, "System.FileSystem.Directory")),
+            1, newArgv
+        ));
+        break;
+    }
+
+    JS_LeaveLocalRootScope(cx);
+    JS_EndRequest(cx);
     return JS_TRUE;
 }
 

@@ -18,9 +18,11 @@
 
 require("System/System.so");
 
-require("System/IO/IO.so");
+require(["System/FileSystem/FileSystem.so", "System/FileSystem/FileSystem.js"]);
+
+require(["System/FileSystem/File/File.so", "System/FileSystem/File/File.js"])
 
 require(["Directory.so", "Directory.js"]);
 
-Program.Directory = Program.System.IO.Directory;
+Directory = System.FileSystem.Directory;
 

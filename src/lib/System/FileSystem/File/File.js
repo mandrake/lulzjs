@@ -16,13 +16,7 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-Object.extend(System.IO.File, {
-    baseName: function (file) {
-        return (/([^\/]*)$/.exec(file))[1];
-    }
-});
-
-Object.extend(System.IO.File.prototype, {
+Object.extend(System.FileSystem.File.prototype, {
     writeLine: function (str) {
         this.write(str+"\n");
     },
@@ -56,4 +50,4 @@ Object.extend(System.IO.File.prototype, {
     readAll: function () {
         return this.readToEnd().split('\n');
     }
-});
+}, Object.Flags.None);

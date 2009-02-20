@@ -36,11 +36,6 @@ FileSystem_initialize (JSContext* cx)
     if (object) {
         JS_DefineFunctions(cx, object, FileSystem_methods);
 
-        jsval property;
-
-        property = INT_TO_JSVAL(EOF);
-        JS_SetProperty(cx, parent, "EOF", &property);
-
         JS_EndRequest(cx);
         return JS_TRUE;
     }

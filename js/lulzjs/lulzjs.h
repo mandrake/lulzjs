@@ -34,6 +34,9 @@
 
 extern "C" {
 
+JSObject* js_new (JSContext* cx, JSObject* obj, uintN argc, jsval *argv);
+#define JS_New(cx, obj, argc, argv) js_new(cx, obj, argc, argv)
+
 JSBool js_ObjectIs (JSContext* cx, jsval check, const char* name);
 #define JS_OBJECT_IS(cx, check, name) js_ObjectIs(cx, check, name)
 

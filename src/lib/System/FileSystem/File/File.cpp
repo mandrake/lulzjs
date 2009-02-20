@@ -47,6 +47,9 @@ File_initialize (JSContext* cx)
             property = INT_TO_JSVAL(MODE_APPEND);
             JS_SetProperty(cx, Mode, "Append", &property);
 
+        property = INT_TO_JSVAL(EOF);
+        JS_SetProperty(cx, object, "EndOfFile", &property);
+
         JS_LeaveLocalRootScope(cx);
         JS_EndRequest(cx);
         return JS_TRUE;

@@ -16,12 +16,9 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require("System/System.so");
-
-require(["FileSystem.so", "FileSystem.js"]);
-
-require(["File/File.so", "File/File.js"]);
-require(["Directory/Directory.so", "Directory/Directory.js"]);
-
-FileSystem = System.FileSystem;
+Object.extend(System.FileSystem, {
+    baseName: function (file) {
+        return (/([^\/]*)$/.exec(file))[1];
+    }
+}, Object.Flags.None);
 

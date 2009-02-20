@@ -18,6 +18,34 @@
 
 #include "lulzjs.h"
 
+JSObject*
+js_new (JSContext* cx, JSObject* obj, uintN argc, jsval *argv)
+{
+    JSObject* object;
+    jsval     property;
+
+    JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
+
+    JSClass* klass = JS_GET_CLASS(cx, obj);
+    object         = JS_NewObject(cx, klass, NULL, NULL);
+
+    JS_GetProperty(cx, obj, "prototype", &property);
+    if (!JSVAL_IS_VOID(property)) {
+        JS_SetPrototype(cx, object, JSVAL_TO_OBJECT(property));
+    }
+
+    JS_CallFunctionValue(cx, object, OBJECT_TO_JSVAL(obj), argc, argv, &property);
+    if (!JSVAL_IS_VOID(property)) {
+        object = JSVAL_TO_OBJECT(property);
+    }
+
+    JS_LeaveLocalRootScope(cx);
+    JS_EndRequest(cx);
+
+    return object;
+}
+
 JSBool
 js_ObjectIs (JSContext* cx, jsval check, const char* name)
 {
