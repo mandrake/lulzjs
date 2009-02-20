@@ -40,7 +40,8 @@ Range = Class.create(Enumerable, (function() {
         if (value < this.start) {
             return false;
         }
-        else if (this.exclusive) {
+        
+        if (this.exclusive) {
             return value < this.end;
         }
 
@@ -55,4 +56,4 @@ Range = Class.create(Enumerable, (function() {
             include: include
         }
     };
-})();
+})());

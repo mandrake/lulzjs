@@ -408,7 +408,7 @@ __Core_include (JSContext* cx, std::string path)
 
         if (stat(path.c_str(), &pathStat) == -1) {
             #ifdef DEBUG
-            std::cerr << "(javascript) " << path << "not found." << std::endl;
+            std::cerr << "(javascript) " << path << " not found." << std::endl;
             #endif
             return JS_FALSE;
         }
@@ -466,6 +466,10 @@ __Core_include (JSContext* cx, std::string path)
         JSBool (*exec)(JSContext*) = (JSBool (*)(JSContext*)) dlsym(handle, "exec");
 
         if (exec == NULL || !(*exec)(cx)) {
+            #ifdef DEBUG
+            std::cerr << "Couldn't retrieve the symbol." << std::endl;
+            #endif
+
             std::cerr << "The initialization of the module failed." << std::endl;
             return JS_FALSE;
         }

@@ -17,7 +17,7 @@
 ****************************************************************************/
 
 Object.extend(RegExp, {
-    escape = function (str) {
+    escape: function (str) {
         return String(str).replace(/([.*+?^=!:${}()|[\]\/\\])/g, '\\$1');
     }
 }, Object.Flags.None);

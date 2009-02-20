@@ -22,8 +22,8 @@ Class = {
         var parent     = (Object.is(arguments[0], Function) ? arguments.shift() : null);
         var properties = arguments.shift();
 
-        if (Object.is(properties[0], Function)) {
-            parent = properties.shift();
+        if (!Object.is(properties, Object)) {
+            throw new Error("You have to pass the class description.");
         }
       
         function klass() {
@@ -39,6 +39,10 @@ Class = {
         klass.subclasses = new Array;
     
         if (parent) {
+            if (!parent.subclasses) {
+                parent.subclasses = new Array;
+            }
+
             var subclass       = Function.empty.clone();
             subclass.prototype = parent.prototype;
             klass.prototype    = new subclass;
@@ -50,7 +54,7 @@ Class = {
             : Function.empty.clone());
     
         klass.addMethods(properties.methods, Object.Flags.None);
-        klass.addStaticMethods(properties.static, Object.Flags.None);
+        klass.addStatic(properties.static, Object.Flags.None);
         klass.addAttributes(properties.attributes);
       
         klass.prototype.constructor = klass;

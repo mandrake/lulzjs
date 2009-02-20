@@ -35,27 +35,13 @@ Try = {
 
 // Standard classes stuff
 require(["Object.so", "Object.js"]);
-require("Class.js");
-require("Function.js");
-require("Number.js");
-require("String.js");
-require("Array.js");
-require("Date.js");
-require("RegExp.js");
-require("XML.js");
 
-// Added stuff
-require("PeriodicalExecuter.js");
-require("Template.js");
-require("Enumerable.js");
-require("Hash.js");
-require("Range.js");
-
-// Important stuff
-require("Bytes.js");
-require("Thread");
-
-require("random.js");
+require([
+    "Class.js", "Function.js", "Date.js", "RegExp.js",
+    "PeriodicalExecuter.js", "String.js", "Template.js", "Enumerable.js",
+    "Array.js", "Hash.js", "Number.js", "Range.js",
+    "XML.js", "Bytes.js", "Thread", "random.js"
+]);
 
 //Program.GCExecution = new PeriodicalExecuter(function(){Program.GC()}, 60);
 

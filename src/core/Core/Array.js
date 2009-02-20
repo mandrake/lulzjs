@@ -16,24 +16,7 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-function $A (iterable) {
-    if (!iterable) {
-        return [];
-    }
-    
-    if (iterable.toArray) {
-        return iterable.toArray();
-    }
-
-    var length  = iteralble.length || 0;
-    var results = new Array(length);
-
-    while (length--) {
-        results[length] = iterable[length];
-    }
-
-    return results;
-}
+Program.$A = Object.toArray();
 
 function $w (string) {
     if (!Object.is(string, String)) {
@@ -113,6 +96,10 @@ Array.__defineProperty__("from", $A, Object.Flags.None);
         return this.length;
     };
 
+    function inspect () {
+        return '[' + this.map(Object.inspect).join(", ") + ']';
+    };
+
     function toJSON () {
         var results = [];
 
@@ -136,15 +123,14 @@ Array.__defineProperty__("from", $A, Object.Flags.None);
         compact:   compact,
         flatten:   flatten,
         without:   without,
-        reduce:    reduce,
         uniq:      uniq,
-        intersect: intersect
+        intersect: intersect,
         clone:     clone,
         toArray:   clone,
         inspect:   inspect,
         toJSON:    toJSON
     }, Object.Flags.None);
 
-    arrayProto.__defineGetter__("size", size);
+    arrayProto.__defineAttributes__("size", {get: size});
 })();
 

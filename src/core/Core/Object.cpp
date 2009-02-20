@@ -18,8 +18,11 @@
 
 #include "lulzjs.h"
 
+extern "C" JSBool exec (JSContext* cx);
 JSBool Object_initialize (JSContext* cx);
+
 JSBool Object_defineProperty (JSContext* cx, JSObject* object, uintN argc, jsval *argv, jsval* rval);
+JSBool Object_defineAttributes (JSContext* cx, JSObject* object, uintN argc, jsval *argv, jsval* rval);
 
 JSBool exec (JSContext* cx) { return Object_initialize(cx); }
 
@@ -27,6 +30,7 @@ JSBool
 Object_initialize (JSContext* cx)
 {
     JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
 
     JSObject* Object      = JSVAL_TO_OBJECT(JS_EVAL(cx, "Object"));
     JSObject* ObjectProto = JSVAL_TO_OBJECT(JS_EVAL(cx, "Object.prototype"));
@@ -57,11 +61,11 @@ Object_initialize (JSContext* cx)
 
     JS_DefineFunction(
         cx, ObjectProto, 
-        "__defineFunction__", Object_defineProperty,
+        "__defineAttributes__", Object_defineAttributes,
         0, 0
     );
 
-
+    JS_LeaveLocalRootScope(cx);
     JS_EndRequest(cx);
     return JS_TRUE;
 }
@@ -89,6 +93,49 @@ Object_defineProperty (JSContext* cx, JSObject* object, uintN argc, jsval *argv,
     }
 
     JS_DefineProperty(cx, object, name, value, NULL, NULL, attrs);
+
+    JS_LeaveLocalRootScope(cx);
+    JS_EndRequest(cx);
+    return JS_TRUE;
+}
+
+JSBool
+Object_defineAttributes (JSContext* cx, JSObject* object, uintN argc, jsval *argv, jsval* rval)
+{
+    char*     name   = NULL;
+    JSObject* value;
+    uint16    attrs = 0;
+
+    if (argc < 2) {
+        JS_ReportError(cx, "Not enough parameters.");
+        return JS_FALSE;
+    }
+
+    JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
+
+    name = JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
+    JS_ValueToObject(cx, argv[1], &value);
+
+    JSObject* getter;
+    JSObject* setter;
+
+    if (argc == 3) {
+        JS_ValueToUint16(cx, argv[2], &attrs);
+    }
+
+    jsval property;
+    JS_GetProperty(cx, value, "get", &property);
+    JS_ValueToObject(cx, property, &getter);
+    JS_GetProperty(cx, value, "set", &property);
+    JS_ValueToObject(cx, property, &setter);
+
+    if (getter && JS_ObjectIsFunction(cx, getter)) {
+        JS_DefineProperty(cx, object, name, JSVAL_VOID, (JSPropertyOp) getter, NULL, attrs|JSPROP_GETTER);
+    }
+    if (setter && JS_ObjectIsFunction(cx, setter)) {
+        JS_DefineProperty(cx, object, name, JSVAL_VOID, NULL, (JSPropertyOp) setter, attrs|JSPROP_SETTER);
+    }
 
     JS_LeaveLocalRootScope(cx);
     JS_EndRequest(cx);

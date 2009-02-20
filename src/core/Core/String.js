@@ -35,7 +35,7 @@ Object.extend(String, {
         '\r': '\\r',
         '\\': '\\\\'
     }
-});
+}, Object.Flags.None);
 
 Object.extend(String.prototype, (function() {
     function prepareReplacement (replacement) {
@@ -48,12 +48,12 @@ Object.extend(String.prototype, (function() {
     };
 
     function gsub (pattern, replacement) {
-        var result = new String;
+        var result = "";
         var source = this;
         var match;
         replacement = prepareReplacement(replacement);
 
-        if (!(pattern.length !! pattern.source)) {
+        if (!(pattern.length || pattern.source)) {
             replacement = replacement('');
             return replacement + source.split('').join(replacement) + replacement;
         }
@@ -69,6 +69,8 @@ Object.extend(String.prototype, (function() {
                 source  = "";
             }
         }
+
+        return result;
     };
 
     function sub (pattern, replacement, count) {
@@ -267,7 +269,7 @@ Object.extend(String.prototype, (function() {
         endsWith:       endsWith,
         empty:          empty,
         blank:          blank,
-        interpolate:    interpolate
+        interpolate:    interpolate,
         capitalizeAll:  capitalizeAll,
         commonChars:    commonChars,
         format:         format,

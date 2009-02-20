@@ -16,6 +16,9 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
+function $A (iterable) {
+}
+
 (function() {
     function getClass (object) {
         return Object.prototype.toString.call(object).match(
@@ -23,7 +26,11 @@
     };
 
     function extend (destination, source, flags) {
-        flags = flags || Object.Flags.Default;
+        flags = (typeof flags == 'number'
+            ? flags
+            : Object.Flags.Default);
+
+        print(flags);
 
         for (let property in source) {
             destination.__defineProperty__(property, source[property], flags);
@@ -112,7 +119,22 @@
     };
 
     function toArray (obj) {
-        return obj.toArray ? obj.toArray() : null;
+        if (!obj) {
+            return [];
+        }
+        
+        if (obj.toArray) {
+            return obj.toArray();
+        }
+    
+        var length  = obj.length || 0;
+        var results = new Array(length);
+    
+        while (length--) {
+            results[length] = obj[length];
+        }
+    
+        return results;
     };
 
     function addMethods (object, source, flags) {
@@ -123,7 +145,6 @@
         var ancestor = object.superclass
             ? object.superclass && object.superclass.prototype
             : undefined;
-        }
 
         for (let property in source) {
             let value = source[property];
@@ -141,13 +162,15 @@
                 value.toString = method.toString.bind(method);
             }
 
-            object.__defineFunction__(property, value, flags);
+            object.__defineProperty__(property, value, flags);
         }
     };
 
    function addStatic (object, source, flags) {
         if (!object || !source) return;
-        flags = flags || Object.Flags.Default;
+        flags = (typeof flags == 'number'
+            ? flags
+            : Object.Flags.Default);
 
         for (let property in source) {
             object.__defineProperty__(property, source[property], flags);
@@ -156,16 +179,14 @@
         return this;
     };
 
-    function addAttributes (object, source) {
+    function addAttributes (object, source, flags) {
         if (!source) return;
+        flags = (typeof flags == 'number'
+            ? flags
+            : Object.Flags.None);
 
         for (let attribute in source) {
-            if (source[attribute].get) {
-                object.__defineGetter__(attribute, source[attribute].get);
-            }
-            if (source[attribute].set) {
-                object.__defineSetter__(attribute, source[attribute].set);
-            }
+            object.__defineAttributes__(attribute, source[attribute], flags)
         }
 
         return this;

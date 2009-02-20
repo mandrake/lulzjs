@@ -69,10 +69,7 @@ $(LIB_CORE): $(LIB_CORE:.o=.cpp)
 libcore_install: libcore
 	mkdir -p ${LJS_LIBDIR}
 	mkdir -p ${LJS_LIBDIR}/Core
-	mkdir -p ${LJS_LIBDIR}/Core/Prototype
-	mkdir -p ${LJS_LIBDIR}/Core/Extension
-	mkdir -p ${LJS_LIBDIR}/Core/Base
-	mkdir -p ${LJS_LIBDIR}/Core/Base/Thread
+	mkdir -p ${LJS_LIBDIR}/Core/Thread
 ########
 	cp -f  ${LIB_CORE_DIR}/init.js				${LJS_LIBDIR}/Core/init.js
 ########
@@ -81,7 +78,7 @@ libcore_install: libcore
 	cp -f  ${LIB_CORE_DIR}/Thread/init.js		${LJS_LIBDIR}/Core/Thread/init.js
 	cp -f  ${LIB_CORE_DIR}/Thread/Thread.o		${LJS_LIBDIR}/Core/Thread/Thread.so
 ########
-	cp -rf ${LIB_CORE_DIR}/*.js					${LJS_LIBDIR}/Core/
+	cp -r  ${LIB_CORE_DIR}/*.js					${LJS_LIBDIR}/Core/
 	
 libsystem: $(LIB_SYSTEM)
 
