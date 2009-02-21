@@ -5,7 +5,7 @@ CXX        = g++
 BINDIR     = /usr/bin
 LJS_LIBDIR = /usr/lib/lulzjs
 CFLAGS     = -D__LJS_LIBRARY_PATH__="\"${LJS_LIBDIR}\"" -D__LJS_VERSION__="\"${VERSION}\"" $(shell js-config --cflags) -I./src/core -I./src/lib 
-LDFLAGS    = $(shell js-config --libs) -llulzjs
+LDFLAGS    = $(shell js-config --libs | sed 's/-dynamic.*/-lm/') -llulzjs
 
 ifdef DEBUG
 CFLAGS += -g3 -DWORKING -Wall
@@ -21,7 +21,7 @@ endif
 
 ## CORE ##
 CORE_DIR     = src/core
-CORE         = ${CORE_DIR}/main.o ${CORE_DIR}/Core.o ${CORE_DIR}/Interactive.o 
+CORE         = ${CORE_DIR}/main.cpp ${CORE_DIR}/Core.cpp ${CORE_DIR}/Interactive.cpp
 CORE_CFLAGS  = ${CFLAGS}
 CORE_LDFLAGS = ${LDFLAGS} -ldl -lreadline -lncurses
 
@@ -31,7 +31,7 @@ LIB_CORE = \
 	${LIB_CORE_DIR}/Object.o ${LIB_CORE_DIR}/Thread/Thread.o 
 
 LIB_CORE_CFLAGS  = ${CFLAGS}
-LIB_CORE_LDFLAGS = ${LDFLAGS} -lpthread
+LIB_CORE_LDFLAGS = ${LDFLAGS} -dynamiclib
 
 ## LIB_SYSTEM ##
 
@@ -45,16 +45,12 @@ LIB_SYSTEM = \
 	${LIB_SYSTEM_DIR}/Crypt/Crypt.o ${LIB_SYSTEM_DIR}/Crypt/SHA1/SHA1.o
 
 LIB_SYSTEM_CFLAGS  = ${CFLAGS}
-LIB_SYSTEM_LDFLAGS = ${LDFLAGS}
+LIB_SYSTEM_LDFLAGS = ${LDFLAGS} -dynamiclib
 
 all: ljs libcore libsystem
 
-ljs: $(CORE)
-	${CXX} ${CORE_LDFLAGS} ${CORE} -o ljs
-
-$(CORE): $(CORE:.o=.cpp)
-	${CXX} ${CORE_CFLAGS} -c $*.cpp -o $*.o
-
+ljs:
+	${CXX} ${CORE_LDFLAGS} ${CORE_CFLAGS} ${CORE} -o ljs
 
 core_install:
 	mkdir -p ${LJS_LIBDIR}
