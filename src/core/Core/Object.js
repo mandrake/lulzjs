@@ -16,9 +16,6 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-function $A (iterable) {
-}
-
 (function() {
     function getClass (object) {
         return Object.prototype.toString.call(object).match(

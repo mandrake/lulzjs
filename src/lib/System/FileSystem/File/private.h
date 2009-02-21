@@ -20,7 +20,7 @@
 #define _SYSTEM_FILESYSTEM_FILE_PRIVATE_H
 
 typedef struct {
-    char*       path;
+    std::string path;
     FILE*       descriptor;
     unsigned    mode;
     struct stat desc;

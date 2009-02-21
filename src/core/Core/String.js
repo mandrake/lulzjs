@@ -17,8 +17,6 @@
 ****************************************************************************/
 
 Object.extend(String, {
-    JSONFilter: /^\/\*-secure-([\s\S]*)\*\/\s*$/,
-
     interpret: function (value) {
         return value == null ? '' : String(value);
     },
@@ -48,6 +46,7 @@ Object.extend(String.prototype, (function() {
     };
 
     function gsub (pattern, replacement) {
+        pattern    = eval(pattern.toString().replace(/\/(.*)g(.*)/, '/$1$2'));
         var result = "";
         var source = this;
         var match;
@@ -137,7 +136,7 @@ Object.extend(String.prototype, (function() {
     };
 
     function unfilterJSON (filter) {
-        return this.sub(filter || String.JSONFilter, '#{1}');
+        return this.sub(filter || Object.JSONFilter, '#{1}');
     };
 
     function isJSON () {

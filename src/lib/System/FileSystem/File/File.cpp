@@ -85,8 +85,6 @@ File_finalize (JSContext* cx, JSObject* object)
     FileInformation* data = (FileInformation*) JS_GetPrivate(cx, object);
 
     if (data) {
-        free(data->path);
-
         if (data->descriptor) {
             fclose(data->descriptor);
         }
@@ -95,6 +93,23 @@ File_finalize (JSContext* cx, JSObject* object)
     }
 
     JS_EndRequest(cx);
+}
+
+JSBool
+File_path_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
+{
+    FileInformation* data = (FileInformation*) JS_GetPrivate(cx, obj);
+
+    JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
+
+    *vp = STRING_TO_JSVAL(JS_NewString(
+        cx, JS_strdup(cx, data->path.c_str()), data->path.length()
+    ));
+
+    JS_LeaveLocalRootScope(cx);
+    JS_EndRequest(cx);
+    return JS_TRUE;
 }
 
 // FIXME: I can't use 64 bit descriptors because javascript is fail
@@ -176,11 +191,11 @@ File_open (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval
         return JS_FALSE;
     }
 
-    data->path = strdup(filename);
+    data->path = filename;
     data->mode = mode;
 
-    if (stat(data->path, &data->desc)) {
-        JS_ReportError(cx, "An error occurred while opening the file.");
+    if (stat(data->path.c_str(), &data->desc)) {
+        JS_ReportError(cx, "The file couldn't be found.");
         return JS_FALSE;
     }
 
@@ -203,7 +218,7 @@ File_open (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval
         realMode = "ab+";
         break;
     }
-    data->descriptor = fopen64(data->path, realMode.c_str());
+    data->descriptor = fopen64(data->path.c_str(), realMode.c_str());
 
     JS_EndRequest(cx);
     return JS_TRUE;
@@ -219,7 +234,7 @@ File_close (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rva
     if (data->descriptor) {
         fclose(data->descriptor);
         data->descriptor = NULL;
-        free(data->path);
+        data->path       = "";
     }
     else {
         JS_ReportError(cx, "You have to open a file first.");

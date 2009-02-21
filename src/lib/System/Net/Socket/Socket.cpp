@@ -314,7 +314,7 @@ Socket_receive (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval 
     jsrefcount req = JS_SuspendRequest(cx);
     unsigned offset = 0;
     int      tmp;
-    while (offset < size) {
+    while (offset < (unsigned) size) {
         tmp = recv(data->socket, (string+offset), (size-offset)*sizeof(char), flags);
 
         if (tmp == -1) {
@@ -420,7 +420,7 @@ Socket_receiveBytes (JSContext *cx, JSObject *object, uintN argc, jsval *argv, j
     jsrefcount req = JS_SuspendRequest(cx);
     unsigned offset = 0;
     int      tmp;
-    while (offset < size) {
+    while (offset < (unsigned) size) {
         tmp = recv(data->socket, (string+offset), (size-offset)*sizeof(char), flags);
 
         if (tmp == -1) {
@@ -443,7 +443,7 @@ Socket_receiveBytes (JSContext *cx, JSObject *object, uintN argc, jsval *argv, j
     JSObject* array = JS_NewArrayObject(cx, 0, NULL);
 
     unsigned i;
-    for (i = 0; i < size; i++) {
+    for (i = 0; i < (unsigned) size; i++) {
         jsval val = INT_TO_JSVAL(string[i]);
         JS_SetElement(cx, array, i, &val);
     }
