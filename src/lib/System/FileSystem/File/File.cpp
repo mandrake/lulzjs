@@ -218,7 +218,7 @@ File_open (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval
         realMode = "ab+";
         break;
     }
-    data->descriptor = fopen64(data->path.c_str(), realMode.c_str());
+    data->descriptor = fopen(data->path.c_str(), realMode.c_str());
 
     JS_EndRequest(cx);
     return JS_TRUE;
