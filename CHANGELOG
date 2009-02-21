@@ -2,6 +2,12 @@
   - Added js bytecode compilation, it automatically saves the pcode.
   - Added the compile function
   - Fixed some major bugs in the Socket object.
+  - Moved the IO stuff to FileSystem, because it's better.
+  - Added some awesome stuff like Object.__defineProperty__ and Object.__defineAttributes__
+    that get JSPROP_* values as arguments to set functions and property to not enumerate and
+    stuff.
+  - Rewrote the whole Framework, so now Prototype is removed :) Thank you anyway guys <3
+  - Fixed lot of stuff in the HTTP protocol.
 
 0.1.7:
   - Added Bytes object to store bytes.

@@ -31,7 +31,7 @@ LIB_CORE = \
 	${LIB_CORE_DIR}/Object.o ${LIB_CORE_DIR}/Thread/Thread.o 
 
 LIB_CORE_CFLAGS  = ${CFLAGS}
-LIB_CORE_LDFLAGS = ${LDFLAGS} -dynamiclib
+LIB_CORE_LDFLAGS = ${LDFLAGS}
 
 ## LIB_SYSTEM ##
 
@@ -45,7 +45,7 @@ LIB_SYSTEM = \
 	${LIB_SYSTEM_DIR}/Crypt/Crypt.o ${LIB_SYSTEM_DIR}/Crypt/SHA1/SHA1.o
 
 LIB_SYSTEM_CFLAGS  = ${CFLAGS}
-LIB_SYSTEM_LDFLAGS = ${LDFLAGS} -dynamiclib
+LIB_SYSTEM_LDFLAGS = ${LDFLAGS}
 
 all: ljs libcore libsystem
 
@@ -60,7 +60,7 @@ libcore: $(LIB_CORE)
 
 $(LIB_CORE): $(LIB_CORE:.o=.cpp)
 	${CXX} ${LIB_CORE_CFLAGS} -fPIC -c $*.cpp -o $*.lo
-	${CXX} ${LIB_CORE_LDFLAGS} -shared -o $*.o $*.lo -lc
+	${CXX} ${LIB_CORE_LDFLAGS} -dynamiclib -shared -o $*.o $*.lo -lc
 
 libcore_install: libcore
 	mkdir -p ${LJS_LIBDIR}
@@ -80,7 +80,7 @@ libsystem: $(LIB_SYSTEM)
 
 $(LIB_SYSTEM): $(LIB_SYSTEM:.o=.cpp)
 	${CXX} ${LIB_SYSTEM_CFLAGS} -fPIC -c $*.cpp -o $*.lo
-	${CXX} ${LIB_SYSTEM_LDFLAGS} -shared -o $*.o $*.lo -lc
+	${CXX} ${LIB_SYSTEM_LDFLAGS} -dynamiclib -shared -o $*.o $*.lo -lc
 
 libsystem_install: libsystem
 	mkdir -p ${LJS_LIBDIR}
