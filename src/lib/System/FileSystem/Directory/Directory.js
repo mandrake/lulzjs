@@ -28,42 +28,28 @@ Object.extend(System.FileSystem.Directory.prototype, (function() {
     var File      = System.FileSystem.File;
     var Directory = System.FileSystem.Directory;
 
-    function readNext (type) {
-        if (type == File) {
-            this.position = this.positions.files+1;
-
-            while (this.next) {
-                if (Object.is(this.current, File)) {
-                    this.positions.files = this.position;
-                    return this.current;
-                }
-                this.position++;
-            }
+    function _init () {
+        for (let i = 0; i < this.length; i++) {
+            this.__defineGetter__(i, new Function("return this.fileAt("+i+")"));
         }
-        else if (type == Directory) {
-            this.position = this.positions.directories+1;
-
-            while (this.next) {
-                if (Object.is(this.current, Directory)) {
-                    this.positions.directories = this.position;
-                    return this.current;
-                }
-                this.position++;
-            }
-        }
-        else {
-            this.position = this.positions.all+1;
-
-            while (this.next) {
-                this.positions.all = this.position;
-                return this.current;
-            }
+    };
+    
+    function fileAt (index) {
+        if (index < 0 || index >= this.length) {
+            throw new Error("The index is too large or negative.");
         }
 
-        return null;
-    }
+        var tmpPosition = this.position;
+        this.position   = index;
+        var tmp         = this.current;
+        this.position   = tmpPosition;
+
+        return tmp;
+
+    };
 
     return {
-        readNext: readNext
+        _init:        _init,
+        fileAt:       fileAt,
     };
 })(), Object.Flags.None);

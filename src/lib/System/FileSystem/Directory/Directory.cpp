@@ -140,6 +140,11 @@ Directory_position_set (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
 
     int position; JS_ValueToInt32(cx, *vp, &position);
 
+    if (position < 0) {
+        JS_ReportError(cx, "You can't set to negative values.");
+        return JS_FALSE;
+    }
+
     if ((unsigned) position >= data->pointers.size()) {
         JS_ReportError(cx, "The Directory has less elements.");
         return JS_FALSE;
@@ -360,6 +365,9 @@ Directory_open (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval*
 
         position = telldir(data->descriptor);
     }
+
+    jsval ret;
+    JS_CallFunctionName(cx, object, "_init", 0, NULL, &ret);
 
     return JS_TRUE;
 }
