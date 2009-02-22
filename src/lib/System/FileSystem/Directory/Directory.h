@@ -20,6 +20,7 @@
 #define _SYSTEM_FILESYSTEM_DIRECTORY_H
 
 #include "lulzjs.h"
+#include <vector>
 #include <dirent.h>
 
 const int SEARCH_EVERYTHING  = 0x01;
@@ -38,12 +39,25 @@ static JSClass Directory_class = {
     JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, Directory_finalize
 };
 
+JSBool Directory_position_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
+JSBool Directory_position_set (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
+
+JSBool Directory_next_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
+JSBool Directory_current_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
+JSBool Directory_previous_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
+
 JSBool Directory_path_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
 JSBool Directory_length_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
 
 static JSPropertySpec Directory_attributes[] = {
     {"path",   0, 0, Directory_path_get,   NULL},
     {"length", 0, 0, Directory_length_get, NULL},
+
+    {"position", 0, 0, Directory_position_get, Directory_position_set},
+
+    {"next",     0, 0, Directory_next_get,     NULL},
+    {"current",  0, 0, Directory_current_get,  NULL},
+    {"previous", 0, 0, Directory_previous_get, NULL},
     {NULL}
 };
 
@@ -52,20 +66,17 @@ static JSPropertySpec Directory_attributes[] = {
 JSBool Directory_open (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 JSBool Directory_close (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
-JSBool Directory_readNext (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-JSBool Directory_readPrev (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool Directory_static_create (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
 static JSFunctionSpec Directory_methods[] = {
     {"open",  Directory_open,  0, 0, 0},
     {"close", Directory_close, 0, 0, 0},
 
-    {"readNext", Directory_readNext, 0, 0, 0},
-    {"readPrev", Directory_readPrev, 0, 0, 0},
-
     {NULL}
 };
 
 static JSFunctionSpec Directory_static_methods[] = {
+    {"create", Directory_static_create, 0, 0, 0},
     {NULL}
 };
 

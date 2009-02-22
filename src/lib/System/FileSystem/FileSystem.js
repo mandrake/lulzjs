@@ -16,9 +16,25 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-Object.extend(System.FileSystem, {
-    baseName: function (file) {
+Object.extend(System.FileSystem, (function() {
+    function dirName (file) {
+        if (file.match(/(\/).*(\/)/)) {
+            return /^(.*?)\//.exec(file)[1];
+        }
+        else if (file.match(/\//)) {
+            return '/';
+        }
+        else {
+            return '.';
+        }
+    };
+
+    function baseName (file) {
         return (/([^\/]*)$/.exec(file))[1];
-    }
-}, Object.Flags.None);
+    };
+
+    return {
+        baseName: baseName
+    };
+})(), Object.Flags.None);
 

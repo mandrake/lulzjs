@@ -20,16 +20,12 @@
 #define _SYSTEM_FILESYSTEM_DIRECTORY_PRIVATE_H
 
 typedef struct {
-    long all;
-    long files;
-    long directories;
-} DirectoryPointers;
-
-typedef struct {
-    std::string       path;
-    DIR*              descriptor;
-    struct stat       desc;
-    DirectoryPointers pointers;
+    std::string         path;
+    DIR*                descriptor;
+    struct stat         desc;
+    long                position;
+    std::vector<long>   pointers;
+    bool                finished;
 } DirectoryInformation;
 
 #endif
