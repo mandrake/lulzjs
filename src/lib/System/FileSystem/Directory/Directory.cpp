@@ -140,7 +140,7 @@ Directory_position_set (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
 
     int position; JS_ValueToInt32(cx, *vp, &position);
 
-    if (position >= data->pointers.size()) {
+    if ((unsigned) position >= data->pointers.size()) {
         JS_ReportError(cx, "The Directory has less elements.");
         return JS_FALSE;
     }
@@ -160,7 +160,7 @@ Directory_next_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
         return JS_FALSE;
     }
 
-    if (data->position == data->pointers.size()-1) {
+    if ((unsigned) data->position == data->pointers.size()-1) {
         *vp = JSVAL_NULL;
         return JS_TRUE;
     }
@@ -306,11 +306,11 @@ Directory_open (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval*
     char* path;
 
     JS_BeginRequest(cx);
-
     if (argc != 1 || !JS_ConvertArguments(cx, argc, argv, "s", &path)) {
         JS_ReportError(cx, "Not enough parameters.");
         return JS_FALSE;
     }
+    JS_EndRequest(cx);
 
     DirectoryInformation* data = (DirectoryInformation*) JS_GetPrivate(cx, object);
 
@@ -334,8 +334,7 @@ Directory_open (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval*
     }
 
     data->pointers.clear();
-    data->pointers.push_back(data->position = 0);
-    data->finished    = false;
+    data->position = 0;
 
     data->descriptor = opendir(data->path.c_str());
     JS_SetPrivate(cx, object, data);
@@ -347,11 +346,19 @@ Directory_open (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval*
 
     struct dirent* dir;
     struct stat    file;
+
+    long position = 0;
     while ((dir = readdir(data->descriptor))) {
-        stat((data->path+dir->d_name).c_str(), &file);
-        if (S_ISREG(file.st_mode) || S_ISDIR(file.st_mode)) {
-            data->pointers.push_back(telldir(data->descriptor));
+        std::string name = dir->d_name;
+
+        if (name != "." && name != "..") {
+            stat((data->path+name).c_str(), &file);
+            if (S_ISREG(file.st_mode) || S_ISDIR(file.st_mode)) {
+                data->pointers.push_back(position);
+            }
         }
+
+        position = telldir(data->descriptor);
     }
 
     return JS_TRUE;

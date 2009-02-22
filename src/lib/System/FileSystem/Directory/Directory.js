@@ -16,3 +16,54 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
+Object.extend(System.FileSystem.Directory.prototype, {
+    positions: {
+        all:         0,
+        files:       0,
+        directories: 0
+    }
+}, Object.Flags.None);
+
+Object.extend(System.FileSystem.Directory.prototype, (function() {
+    var File      = System.FileSystem.File;
+    var Directory = System.FileSystem.Directory;
+
+    function readNext (type) {
+        if (type == File) {
+            this.position = this.positions.files+1;
+
+            while (this.next) {
+                if (Object.is(this.current, File)) {
+                    this.positions.files = this.position;
+                    return this.current;
+                }
+                this.position++;
+            }
+        }
+        else if (type == Directory) {
+            this.position = this.positions.directories+1;
+
+            while (this.next) {
+                if (Object.is(this.current, Directory)) {
+                    this.positions.directories = this.position;
+                    return this.current;
+                }
+                this.position++;
+            }
+        }
+        else {
+            this.position = this.positions.all+1;
+
+            while (this.next) {
+                this.positions.all = this.position;
+                return this.current;
+            }
+        }
+
+        return null;
+    }
+
+    return {
+        readNext: readNext
+    };
+})(), Object.Flags.None);
