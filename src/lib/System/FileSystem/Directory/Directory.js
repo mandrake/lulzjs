@@ -16,14 +16,6 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-Object.extend(System.FileSystem.Directory.prototype, {
-    positions: {
-        all:         0,
-        files:       0,
-        directories: 0
-    }
-}, Object.Flags.None);
-
 Object.extend(System.FileSystem.Directory.prototype, (function() {
     var File      = System.FileSystem.File;
     var Directory = System.FileSystem.Directory;

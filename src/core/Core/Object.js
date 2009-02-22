@@ -34,6 +34,61 @@
         return destination;
     };
 
+    function addMethods (object, source, flags) {
+        if (!object || !source) return;
+
+        flags = flags || Object.Flags.Default;
+
+        var ancestor = object.superclass
+            ? object.superclass && object.superclass.prototype
+            : undefined;
+
+        for (let property in source) {
+            let value = source[property];
+
+            if (ancestor && Object.is(value, Function) && value.argumentNames().first() == "$super") {
+                let method = value;
+
+                value = (function (m) {
+                    return function () {
+                        return ancestor[m].apply(this, arguments); 
+                    };
+                })(property).wrap(method);
+
+                value.valueOf  = method.valueOf.bind(method);
+                value.toString = method.toString.bind(method);
+            }
+
+            object.__defineProperty__(property, value, flags);
+        }
+    };
+
+   function addStatic (object, source, flags) {
+        if (!object || !source) return;
+        flags = (typeof flags == 'number'
+            ? flags
+            : Object.Flags.Default);
+
+        for (let property in source) {
+            object.__defineProperty__(property, source[property], flags);
+        }
+
+        return this;
+    };
+
+    function addAttributes (object, source, flags) {
+        if (!source) return;
+        flags = (typeof flags == 'number'
+            ? flags
+            : Object.Flags.None);
+
+        for (let attribute in source) {
+            object.__defineAttributes__(attribute, source[attribute], flags)
+        }
+
+        return this;
+    };
+
     function inspect (object) {
         try {
             if (object === undefined) return 'undefined';
@@ -118,7 +173,7 @@
             return [];
         }
         
-        if (obj.toArray) {
+        if (obj.toArray && obj.toArray != Object.prototype.toArray) {
             return obj.toArray();
         }
     
@@ -132,72 +187,73 @@
         return results;
     };
 
-    function addMethods (object, source, flags) {
-        if (!object || !source) return;
-
-        flags = flags || Object.Flags.Default;
-
-        var ancestor = object.superclass
-            ? object.superclass && object.superclass.prototype
-            : undefined;
-
-        for (let property in source) {
-            let value = source[property];
-
-            if (ancestor && Object.is(value, Function) && value.argumentNames().first() == "$super") {
-                let method = value;
-
-                value = (function (m) {
-                    return function () {
-                        return ancestor[m].apply(this, arguments); 
-                    };
-                })(property).wrap(method);
-
-                value.valueOf  = method.valueOf.bind(method);
-                value.toString = method.toString.bind(method);
-            }
-
-            object.__defineProperty__(property, value, flags);
-        }
-    };
-
-   function addStatic (object, source, flags) {
-        if (!object || !source) return;
-        flags = (typeof flags == 'number'
-            ? flags
-            : Object.Flags.Default);
-
-        for (let property in source) {
-            object.__defineProperty__(property, source[property], flags);
-        }
-
-        return this;
-    };
-
-    function addAttributes (object, source, flags) {
-        if (!source) return;
-        flags = (typeof flags == 'number'
-            ? flags
-            : Object.Flags.None);
-
-        for (let attribute in source) {
-            object.__defineAttributes__(attribute, source[attribute], flags)
-        }
-
-        return this;
-    };
-
     extend(Object, {
-        extend :       extend,
+        getClass:      getClass,   
+        extend:        extend,
         addMethods:    addMethods,
         addStatic:     addStatic,
         addAttributes: addAttributes,
         inspect:       inspect,
+        toJSON:        toJSON,
+        keys:          keys,
+        values:        values,
+        clone:         clone,
+        is:            is,
+        toArray:       toArray
+    }, Object.Flags.None);
+})();
+
+Object.extend(Object.prototype, (function() {
+    function extend (source, flags) {
+        return Object.extend(this, source, flags);
+    };
+
+    function addMethods (source, flags) {
+        Object.addMethods(this, source, flags);
+    };
+
+    function addStatic (source, flags) {
+        Object.addStatic(this, source, flags);
+    };
+
+    function addAttributes (source, flags) {
+        Object.addAttributes(this, source, flags);
+    };
+
+    function is (type) {
+        return Object.is(this, type);
+    };
+
+    function toArray () {
+        return Object.toArray(this);
+    };
+
+    function keys () {
+        return Object.keys(this);
+    };
+
+    function values () {
+        return Object.values(this);
+    };
+
+    function toJSON () {
+        return Object.toJSON(this);
+    };
+
+    function clone (deep) {
+        return Object.clone(this, deep);
+    };
+
+    return {
+        extend :       extend,
+        addMethods:    addMethods,
+        addStatic:     addStatic,
+        addAttributes: addAttributes,
         toJSON :       toJSON,
         keys   :       keys,
         values :       values,
         clone  :       clone,
         is     :       is,
         toArray:       toArray
-    }, Object.Flags.None);
-})();
+    };
+})(), Object.Flags.None);

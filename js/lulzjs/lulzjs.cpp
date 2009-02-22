@@ -136,24 +136,6 @@ js_eval (JSContext* cx, const char* string)
     return ret;
 }
 
-char*
-js_strdup (JSContext* cx, const char* string)
-{
-    JS_EnterLocalRootScope(cx);
-
-    char* newString = (char*) JS_malloc(cx, strlen(string)*sizeof(char)+1);
-
-    size_t i;
-    for (i = 0; i < strlen(string); i++) {
-        newString[i] = string[i];
-    }
-    newString[i] = '\0';
-
-    JS_LeaveLocalRootScope(cx);
-
-    return newString;
-}
-
 JSBool
 Compile_stringIsBytecode (const char* bytecode)
 {

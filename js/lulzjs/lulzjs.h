@@ -49,9 +49,6 @@ jsdouble js_parseFloat (JSContext* cx, jsval number);
 jsval js_eval (JSContext* cx, const char* string);
 #define JS_EVAL(cx, string) js_eval(cx, string)
 
-char* js_strdup (JSContext* cx, const char* string);
-#define JS_strdup(cx, string) js_strdup(cx, string)
-
 typedef struct {
     char*  bytecode;
     uint32 length;

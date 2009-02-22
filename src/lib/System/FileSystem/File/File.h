@@ -49,12 +49,13 @@ JSBool File_path_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
 JSBool File_position_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
 JSBool File_position_set (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
 
-JSBool File_length_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
+JSBool File_size_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
 
 static JSPropertySpec File_attributes[] = {
     {"path",     0, 0, File_path_get,     NULL},
     {"position", 0, 0, File_position_get, File_position_set},
-    {"length",   0, 0, File_length_get,   NULL},
+
+    {"size",   0, 0, File_size_get,   NULL},
     {NULL}
 };
 

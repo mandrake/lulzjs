@@ -154,7 +154,7 @@ File_position_set (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
 }
 
 JSBool
-File_length_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
+File_size_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
 {
     FileInformation* data = (FileInformation*) JS_GetPrivate(cx, obj);
 
