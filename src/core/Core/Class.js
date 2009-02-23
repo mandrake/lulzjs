@@ -19,10 +19,10 @@
 Class = {
     create: function () {
         arguments      = Object.toArray(arguments);
-        var parent     = (Object.is(arguments[0], Function) ? arguments.shift() : null);
+        var parent     = (arguments[0].is(Function) ? arguments.shift() : null);
         var properties = arguments.shift();
 
-        if (!Object.is(properties, Object)) {
+        if (!properties.is(Object)) {
             throw new Error("You have to pass the class description.");
         }
       
@@ -49,7 +49,7 @@ Class = {
             parent.subclasses.push(klass);
         }
 
-        klass.prototype.initialize = (Object.is(properties.constructor, Function)
+        klass.prototype.initialize = (properties.constructor.is(Function)
             ? properties.constructor
             : Function.empty.clone());
     

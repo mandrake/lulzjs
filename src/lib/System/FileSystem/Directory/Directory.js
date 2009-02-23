@@ -16,9 +16,12 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-Object.extend(System.FileSystem.Directory.prototype, (function() {
-    var File      = System.FileSystem.File;
-    var Directory = System.FileSystem.Directory;
+(function() {
+
+var File      = System.FileSystem.File;
+var Directory = System.FileSystem.Directory;
+
+Object.extend(Directory.prototype, (function() {
 
     function _init () {
         for (let i = 0; i < this.length; i++) {
@@ -37,11 +40,25 @@ Object.extend(System.FileSystem.Directory.prototype, (function() {
         this.position   = tmpPosition;
 
         return tmp;
-
     };
 
     return {
-        _init:        _init,
-        fileAt:       fileAt,
+        _init: _init,
     };
 })(), Object.Flags.None);
+
+Object.addAttributes(Directory.prototype, {
+    next: { get: function () {
+
+    }},
+
+    current: { get: function () {
+
+    }},
+
+    previous: { get: function () {
+
+    }},
+}, Object.Flags.None);
+
+})();

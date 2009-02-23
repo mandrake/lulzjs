@@ -19,7 +19,7 @@
 #include "lulzjs.h"
 
 JSObject*
-js_new (JSContext* cx, JSObject* obj, uintN argc, jsval *argv)
+js_CallFunctionWithNew (JSContext* cx, JSObject* obj, uintN argc, jsval *argv)
 {
     JSObject* object;
     jsval     property;

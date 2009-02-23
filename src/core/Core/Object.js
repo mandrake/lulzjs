@@ -94,7 +94,9 @@
             if (object === undefined) return 'undefined';
             if (object === null)      return 'null';
 
-            return object.inspect ? object.inspect() : object.toString();
+            return (object.inspect != Object.prototype.inspect)
+                ? object.inspect()
+                : object.toString();
         }
         catch (e) {
             if (e instanceof RangeError) return '...';
@@ -180,8 +182,8 @@
         var length  = obj.length || 0;
         var results = new Array(length);
     
-        while (length--) {
-            results[length] = obj[length];
+        for (let i = 0; i < length; i++) {
+            results[i] = obj[i];
         }
     
         return results;
@@ -228,6 +230,10 @@ Object.extend(Object.prototype, (function() {
         return Object.toArray(this);
     };
 
+    function inspect () {
+        return Object.inspect(this);
+    };
+
     function keys () {
         return Object.keys(this);
     };
@@ -254,6 +260,7 @@ Object.extend(Object.prototype, (function() {
         values :       values,
         clone  :       clone,
         is     :       is,
-        toArray:       toArray
+        toArray:       toArray,
+        inspect:       inspect,
     };
 })(), Object.Flags.None);

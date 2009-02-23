@@ -42,10 +42,6 @@ static JSClass Directory_class = {
 JSBool Directory_position_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
 JSBool Directory_position_set (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
 
-JSBool Directory_next_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
-JSBool Directory_current_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
-JSBool Directory_previous_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
-
 JSBool Directory_path_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
 JSBool Directory_length_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
 
@@ -54,10 +50,6 @@ static JSPropertySpec Directory_attributes[] = {
     {"length", 0, 0, Directory_length_get, NULL},
 
     {"position", 0, 0, Directory_position_get, Directory_position_set},
-
-    {"next",     0, 0, Directory_next_get,     NULL},
-    {"current",  0, 0, Directory_current_get,  NULL},
-    {"previous", 0, 0, Directory_previous_get, NULL},
     {NULL}
 };
 
@@ -65,6 +57,8 @@ static JSPropertySpec Directory_attributes[] = {
 
 JSBool Directory_open (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 JSBool Directory_close (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+
+JSBool Directory_fileAt (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
 JSBool Directory_static_create (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
