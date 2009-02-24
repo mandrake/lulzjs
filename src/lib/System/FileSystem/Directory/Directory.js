@@ -22,24 +22,12 @@ var File      = System.FileSystem.File;
 var Directory = System.FileSystem.Directory;
 
 Object.extend(Directory.prototype, (function() {
-
     function _init () {
+        this.extend(Enumerable, Object.Flags.None);
+
         for (let i = 0; i < this.length; i++) {
             this.__defineGetter__(i, new Function("return this.fileAt("+i+")"));
         }
-    };
-    
-    function fileAt (index) {
-        if (index < 0 || index >= this.length) {
-            throw new Error("The index is too large or negative.");
-        }
-
-        var tmpPosition = this.position;
-        this.position   = index;
-        var tmp         = this.current;
-        this.position   = tmpPosition;
-
-        return tmp;
     };
 
     return {
@@ -49,15 +37,19 @@ Object.extend(Directory.prototype, (function() {
 
 Object.addAttributes(Directory.prototype, {
     next: { get: function () {
-
+        return (this.position == this.length-1)
+            ? null
+            : this[this.position];
     }},
 
     current: { get: function () {
-
+        return this[this.position];
     }},
 
     previous: { get: function () {
-
+        return (this.position == 0)
+            ? null
+            : this[this.position];
     }},
 }, Object.Flags.None);
 

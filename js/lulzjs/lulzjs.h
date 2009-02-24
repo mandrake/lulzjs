@@ -34,8 +34,8 @@
 
 extern "C" {
 
-JSObject* js_CallFunctionWithNew (JSContext* cx, JSObject* obj, uintN argc, jsval *argv);
-#define JS_CallFunctionWithNew(cx, obj, argc, argv) js_CallFunctionWithNew(cx, obj, argc, argv)
+JSBool js_CallFunctionWithNew (JSContext* cx, JSObject* obj, uintN argc, jsval *argv, JSObject** newObj);
+#define JS_CallFunctionWithNew(cx, obj, argc, argv, newObj) js_CallFunctionWithNew(cx, obj, argc, argv, newObj)
 
 JSBool js_ObjectIs (JSContext* cx, jsval check, const char* name);
 #define JS_OBJECT_IS(cx, check, name) js_ObjectIs(cx, check, name)

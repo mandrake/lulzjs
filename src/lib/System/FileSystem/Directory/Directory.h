@@ -66,6 +66,7 @@ static JSFunctionSpec Directory_methods[] = {
     {"open",  Directory_open,  0, 0, 0},
     {"close", Directory_close, 0, 0, 0},
 
+    {"fileAt", Directory_fileAt, 0, 0, 0},
     {NULL}
 };
 

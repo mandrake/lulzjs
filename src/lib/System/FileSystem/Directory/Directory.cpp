@@ -163,8 +163,6 @@ Directory_position_set (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
     return JS_TRUE;
 }
 
-
-
 JSBool
 Directory_open (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
 {
@@ -267,10 +265,17 @@ Directory_fileAt (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* 
         JS_EndRequest(cx);
         return JS_FALSE;
     }
-
     jsrefcount req = JS_SuspendRequest(cx);
 
     DirectoryInformation* data = (DirectoryInformation*) JS_GetPrivate(cx, obj);
+
+    if (position < 0 || position > data->pointers.size()) {
+        JS_ReportError(cx, "The position is out of range.");
+
+        JS_ResumeRequest(cx, req);
+        JS_EndRequest(cx);
+        return JS_FALSE;
+    }
  
     if (!data->descriptor) {
         JS_ReportError(cx, "There is no opened directory.");
@@ -312,7 +317,11 @@ Directory_fileAt (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* 
         );
     }
 
-    *rval = (retObject ? OBJECT_TO_JSVAL(retObject) : JSVAL_NULL);
+    if (!retObject) {
+        return JS_FALSE;
+    }
+
+    *rval = OBJECT_TO_JSVAL(retObject);
  
     JS_LeaveLocalRootScope(cx);
     JS_EndRequest(cx);

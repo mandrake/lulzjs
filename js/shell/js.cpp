@@ -41,7 +41,6 @@
 /*
  * JS shell.
  */
-#include "jsstddef.h"
 #include <errno.h>
 #include <math.h>
 #include <stdio.h>
@@ -217,10 +216,10 @@ GetLine(FILE *file, const char * prompt)
         /*
          * We set it to zero to avoid complaining about inappropriate ioctl
          * for device in the case of EOF. Looks like errno == 251 if line is
-         * finished with EOF and errno == 25 if there is nothing left
-         * to read.
+         * finished with EOF and errno == 25 (EINVAL on Mac) if there is
+         * nothing left to read.
          */
-        if (errno == 251 || errno == 25)
+        if (errno == 251 || errno == 25 || errno == EINVAL)
             errno = 0;
         if (!linep)
             return NULL;
@@ -408,13 +407,12 @@ Process(JSContext *cx, JSObject *obj, char *filename, JSBool forceTTY)
         size_t len = 0; /* initialize to avoid warnings */
         do {
             ScheduleWatchdog(cx->runtime, -1);
-#ifdef JS_THREADSAFE
             jsrefcount rc = JS_SuspendRequest(cx);
-#endif
             gCanceled = false;
             errno = 0;
             char *line = GetLine(file, startline == lineno ? "js> " : "");
             if (!line) {
+                JS_ResumeRequest(cx, rc);
                 if (errno) {
                     JS_ReportError(cx, strerror(errno));
                     free(buffer);
@@ -438,6 +436,7 @@ Process(JSContext *cx, JSObject *obj, char *filename, JSBool forceTTY)
                     if (!newBuf) {
                         free(buffer);
                         free(line);
+                        JS_ResumeRequest(cx, rc);
                         JS_ReportOutOfMemory(cx);
                         return;
                     }
@@ -451,9 +450,7 @@ Process(JSContext *cx, JSObject *obj, char *filename, JSBool forceTTY)
                 free(line);
             }
             lineno++;
-#ifdef JS_THREADSAFE
             JS_ResumeRequest(cx, rc);
-#endif
             if (!ScheduleWatchdog(cx->runtime, gTimeoutInterval)) {
                 hitEOF = JS_TRUE;
                 break;
@@ -1405,7 +1402,7 @@ LineToPC(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     pc = JS_LineNumberToPC(cx, script, lineno);
     if (!pc)
         return JS_FALSE;
-    *rval = INT_TO_JSVAL(PTRDIFF(pc, script->code, jsbytecode));
+    *rval = INT_TO_JSVAL(pc - script->code);
     return JS_TRUE;
 }
 
@@ -1504,7 +1501,7 @@ SrcNotes(JSContext *cx, JSScript *script)
             }
         }
         fprintf(gOutFile, "%3u: %5u [%4u] %-8s",
-                (uintN) PTRDIFF(sn, notes, jssrcnote), offset, delta, name);
+                (uintN) (sn - notes), offset, delta, name);
         switch (type) {
           case SRC_SETLINE:
             fprintf(gOutFile, " lineno %u", (uintN) js_GetSrcNoteOffset(sn, 0));
@@ -1774,7 +1771,7 @@ DisassWithSrc(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
             }
 
             len = js_Disassemble1(cx, script, pc,
-                                  PTRDIFF(pc, script->code, jsbytecode),
+                                  pc - script->code,
                                   JS_TRUE, stdout);
             if (!len) {
                 ok = JS_FALSE;
@@ -2759,9 +2756,7 @@ EvalInContext(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
     }
     JS_SetOptions(scx, JS_GetOptions(cx));
 
-#ifdef JS_THREADSAFE
     JS_BeginRequest(scx);
-#endif
     src = JS_GetStringChars(str);
     srclen = JS_GetStringLength(str);
     lazy = JS_FALSE;
@@ -2804,9 +2799,7 @@ EvalInContext(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
     }
 
 out:
-#ifdef JS_THREADSAFE
     JS_EndRequest(scx);
-#endif
     WITH_LOCKED_CONTEXT_LIST(
         JS_DestroyContextNoGC(scx)
     );
@@ -4084,7 +4077,7 @@ my_ErrorReporter(JSContext *cx, const char *message, JSErrorReport *report)
             report->linebuf,
             (n > 0 && report->linebuf[n-1] == '\n') ? "" : "\n",
             prefix);
-    n = PTRDIFF(report->tokenptr, report->linebuf, char);
+    n = report->tokenptr - report->linebuf;
     for (i = j = 0; i < n; i++) {
         if (report->linebuf[i] == '\t') {
             for (k = (j + 8) & ~7; j < k; j++) {
@@ -4505,9 +4498,7 @@ main(int argc, char **argv, char **envp)
     if (!cx)
         return 1;
 
-#ifdef JS_THREADSAFE
     JS_BeginRequest(cx);
-#endif
 
     glob = JS_NewObject(cx, &global_class, NULL, NULL);
     if (!glob)
@@ -4602,9 +4593,7 @@ main(int argc, char **argv, char **envp)
     }
 #endif  /* JSDEBUGGER */
 
-#ifdef JS_THREADSAFE
     JS_EndRequest(cx);
-#endif
 
     WITH_LOCKED_CONTEXT_LIST( 
         JS_DestroyContext(cx)
