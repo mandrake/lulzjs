@@ -20,6 +20,8 @@ require("System/System.so");
 
 require(["FileSystem.so", "FileSystem.js"]);
 
+require("Permission/Permission.js");
+
 require(["File/File.so", "File/File.js"]);
 require(["Directory/Directory.so", "Directory/Directory.js"]);
 

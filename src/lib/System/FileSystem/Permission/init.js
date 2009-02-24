@@ -16,30 +16,11 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-Object.extend(System.FileSystem.File.prototype, {
-    writeLine: function (str) {
-        this.write(str+"\n");
-    },
+require("System/System.so");
 
-    readLine: function () {
-        if (this.position == System.FileSystem.File.EndOfFile)
-            return null;
+require(["System/FileSystem/FileSystem.so", "System/FileSystem/FileSystem.js"]);
 
-        var str = "";
-        var ch;
-        while ((ch = this.read(1)) != '\n' && !this.isEnd()) {
-            str += ch;
-        }
+require("Permission.js");
 
-        return str;
-    },
+Permission = Permission;
 
-    readToEnd: function () {
-        return this.read(this.size);
-
-    },
-
-    readAll: function () {
-        return this.readToEnd().split('\n');
-    }
-}, Object.Flags.None);

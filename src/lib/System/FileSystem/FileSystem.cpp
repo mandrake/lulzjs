@@ -35,11 +35,39 @@ FileSystem_initialize (JSContext* cx)
 
     if (object) {
         JS_DefineFunctions(cx, object, FileSystem_methods);
+        JS_DefineProperties(cx, object, FileSystem_attributes);
 
         JS_EndRequest(cx);
         return JS_TRUE;
     }
 
     return JS_FALSE;
+}
+
+JSBool
+FileSystem_umask_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
+{
+    mode_t mask = umask(0);
+    umask(mask);
+
+    char string[5];
+    snprintf(string, 5, "%04o", mask);
+
+    JS_BeginRequest(cx);
+    *vp = STRING_TO_JSVAL(JS_NewString(cx, JS_strdup(cx, string), strlen(string)));
+    JS_EndRequest(cx);
+    return JS_TRUE;
+}
+
+JSBool
+FileSystem_umask_set (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
+{
+    JS_BeginRequest(cx);
+    int mask; JS_ValueToInt32(cx, *vp, &mask);
+    JS_EndRequest(cx);
+
+    umask(mask);
+
+    return JS_TRUE;
 }
 

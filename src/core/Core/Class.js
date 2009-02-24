@@ -34,24 +34,25 @@ Class = {
             return null;
         }
     
-        Object.extend(klass, Class.Methods);
-        klass.superclass = parent;
-        klass.subclasses = new Array;
+        Object.extend(klass, Class.Methods, Object.Flags.None);
+        klass.__defineProperty__("superclass", parent, Object.Flags.None);
+        klass.__defineProperty__("subclasses", new Array, Object.Flags.None);
     
         if (parent) {
             if (!parent.subclasses) {
-                parent.subclasses = new Array;
+                parent.__defineProperty__("subclasses", new Array, Object.Flags.None);
             }
 
-            var subclass       = Function.empty.clone();
-            subclass.prototype = parent.prototype;
-            klass.prototype    = new subclass;
+            var subclass = Function.empty.clone();
+            subclass.__defineProperty__("prototype", parent.prototype, Object.Flags.None);
+            klass.__defineProperty__("prototype", new subclass, Object.Flags.None);
             parent.subclasses.push(klass);
         }
 
-        klass.prototype.initialize = (properties.constructor.is(Function)
+        klass.prototype.__defineProperty__("initialize", (properties.constructor.is(Function)
             ? properties.constructor
-            : Function.empty.clone());
+            : Function.empty.clone()),
+        Object.Flags.None);
     
         klass.addMethods(properties.methods);
         klass.addStatic(properties.static);

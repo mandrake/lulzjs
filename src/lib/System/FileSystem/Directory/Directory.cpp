@@ -86,8 +86,8 @@ Directory_path_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
 {
     DirectoryInformation* data = (DirectoryInformation*) JS_GetPrivate(cx, obj);
 
-    if (!data->descriptor) {
-        JS_ReportError(cx, "You have to open a directory first.");
+    if (data->path.empty()) {
+        JS_ReportError(cx, "There is no directory initialized.");
         return JS_FALSE;
     }
 
@@ -150,7 +150,7 @@ Directory_position_set (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
         )};
 
         JS_SetPendingException(cx, OBJECT_TO_JSVAL(JS_CallFunctionWithNew(
-            cx, JSVAL_TO_OBJECT(JS_EVAL(cx, "RangeError"), 1, argv))
+            cx, JSVAL_TO_OBJECT(JS_EVAL(cx, "RangeError")), 1, argv)
         ));
         return JS_FALSE;
     }
@@ -186,7 +186,7 @@ Directory_open (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval*
 
     data->path = (path[strlen(path)-1] == '/'
         ? path
-        : path + std::string("/"));
+        : std::string(path) + "/");
 
     if (stat(data->path.c_str(), &data->desc)) {
         JS_ReportError(cx, "The directory couldn't be found.");
@@ -202,18 +202,15 @@ Directory_open (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval*
     data->position = 0;
 
     data->descriptor = opendir(data->path.c_str());
-    JS_SetPrivate(cx, object, data);
 
     if (!data->descriptor) {
-        JS_ReportError(cx, "An error occurred while opening the directory.");
-        return JS_FALSE;
+        return JS_TRUE;
     }
 
     struct dirent* dir;
     struct stat    file;
 
     long position = 0;
-    long i = 0;
     while ((dir = readdir(data->descriptor))) {
         std::string name = dir->d_name;
 
@@ -221,8 +218,6 @@ Directory_open (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval*
             stat((data->path+name).c_str(), &file);
             if (S_ISREG(file.st_mode) || S_ISDIR(file.st_mode)) {
                 data->pointers.push_back(position);
-                std::cout << i << ": " << name << std::endl;
-                i++;
             }
         }
 
@@ -242,11 +237,84 @@ Directory_close (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval
 
     DirectoryInformation* data = (DirectoryInformation*) JS_GetPrivate(cx, object);
 
-    if (data->descriptor) {
-        closedir(data->descriptor);
-        data->descriptor = NULL;
+    if (data) {
+        if (data->descriptor) {
+            closedir(data->descriptor);
+            data->descriptor = NULL;
+        }
+
+        if (!data->path.empty()) {
+            data->path = "";
+        }
     }
 
+    JS_EndRequest(cx);
+    return JS_TRUE;
+}
+
+JSBool
+Directory_fileAt (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval)
+{
+    JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
+
+    int position;
+
+    if (argc != 1 || !JS_ConvertArguments(cx, argc, argv, "i", &position)) {
+        JS_ReportError(cx, "Not enough parameters.");
+
+        JS_LeaveLocalRootScope(cx);
+        JS_EndRequest(cx);
+        return JS_FALSE;
+    }
+
+    jsrefcount req = JS_SuspendRequest(cx);
+
+    DirectoryInformation* data = (DirectoryInformation*) JS_GetPrivate(cx, obj);
+ 
+    if (!data->descriptor) {
+        JS_ReportError(cx, "There is no opened directory.");
+
+        JS_ResumeRequest(cx, req);
+        JS_LeaveLocalRootScope(cx);
+        JS_EndRequest(cx);
+        return JS_FALSE;
+    }
+ 
+    struct dirent* dir;
+    struct stat file;
+    std::string path;
+ 
+    seekdir(data->descriptor, data->pointers[data->position]);
+    dir = readdir(data->descriptor);
+ 
+    path = data->path + dir->d_name;
+    stat(path.c_str(), &file);
+ 
+    JS_ResumeRequest(cx, req);
+
+    std::string newPath = data->path + dir->d_name;
+    jsval newArgv[] = {
+        STRING_TO_JSVAL(JS_NewString(cx, JS_strdup(cx, newPath.c_str()), newPath.length()))
+    };
+    
+    JSObject* retObject = NULL;
+    if (S_ISREG(file.st_mode)) {
+        retObject = JS_CallFunctionWithNew(
+            cx, JSVAL_TO_OBJECT(JS_EVAL(cx, "System.FileSystem.File")),
+            1, newArgv
+        );
+    }
+    else if (S_ISDIR(file.st_mode)) {
+        retObject = JS_CallFunctionWithNew(
+            cx, JSVAL_TO_OBJECT(JS_EVAL(cx, "System.FileSystem.Directory")),
+            1, newArgv
+        );
+    }
+
+    *rval = (retObject ? OBJECT_TO_JSVAL(retObject) : JSVAL_NULL);
+ 
+    JS_LeaveLocalRootScope(cx);
     JS_EndRequest(cx);
     return JS_TRUE;
 }

@@ -30,6 +30,14 @@ static JSClass FileSystem_class = {
     JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub
 };
 
+JSBool FileSystem_umask_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
+JSBool FileSystem_umask_set (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
+
+static JSPropertySpec FileSystem_attributes[] = {
+    {"umask", 0, 0, FileSystem_umask_get, FileSystem_umask_set},
+    {NULL}
+};
+
 static JSFunctionSpec FileSystem_methods[] = {
     {NULL}
 };

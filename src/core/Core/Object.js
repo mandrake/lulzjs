@@ -37,7 +37,9 @@
     function addMethods (object, source, flags) {
         if (!object || !source) return;
 
-        flags = flags || Object.Flags.Default;
+        flags = (flags !== undefined
+            ? flags
+            : Object.Flags.None);
 
         var ancestor = object.superclass
             ? object.superclass && object.superclass.prototype
@@ -55,8 +57,8 @@
                     };
                 })(property).wrap(method);
 
-                value.valueOf  = method.valueOf.bind(method);
-                value.toString = method.toString.bind(method);
+                value.__defineProperty__("valueOf",  method.valueOf.bind(method),  flags);
+                value.__defineProperty__("toString", method.toString.bind(method), flags);
             }
 
             object.__defineProperty__(property, value, flags);
@@ -65,9 +67,10 @@
 
    function addStatic (object, source, flags) {
         if (!object || !source) return;
-        flags = (typeof flags == 'number'
+
+        flags = (flags !== undefined
             ? flags
-            : Object.Flags.Default);
+            : Object.Flags.None);
 
         for (let property in source) {
             object.__defineProperty__(property, source[property], flags);
@@ -78,7 +81,8 @@
 
     function addAttributes (object, source, flags) {
         if (!source) return;
-        flags = (typeof flags == 'number'
+
+        flags = (flags !== undefined
             ? flags
             : Object.Flags.None);
 

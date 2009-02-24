@@ -83,22 +83,27 @@ Object.extend(Number.prototype, (function() {
         return Math.atan(this);
     };
 
+    function toBase (base) {
+        return this.toString(base).toUpperCase();
+    };
+
     return {
-        next          : next,
-        times         : times,
+        next:           next,
+        times:          times,
         toPaddedString: toPaddedString,
-        abs           : abs,
-        round         : round,
-        ceil          : ceil,
-        floor         : floor,
-        log           : log,
-        pow           : pow,
-        sqrt          : sqrt,
-        sin           : sin,
-        cos           : cos,
-        tan           : tan,
-        asin          : asin,
-        acos          : acos,
-        atan          : atan
+        abs:            abs,
+        round:          round,
+        ceil:           ceil,
+        floor:          floor,
+        log:            log,
+        pow:            pow,
+        sqrt:           sqrt,
+        sin:            sin,
+        cos:            cos,
+        tan:            tan,
+        asin:           asin,
+        acos:           acos,
+        atan:           atan,
+        toBase:         toBase,
     };
 })(), Object.Flags.None);

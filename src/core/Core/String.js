@@ -249,6 +249,10 @@ Object.extend(String.prototype, (function() {
         return parseFloat(this);
     };
 
+    function toBase (base) {
+        return this.toInt().toBase(base).toUpperCase();
+    };
+
     return {
         gsub:           gsub,
         sub:            sub,
@@ -274,7 +278,9 @@ Object.extend(String.prototype, (function() {
         format:         format,
         reverse:        reverse,
         toInt:          toInt,
-        toFloat:        toFloat
+        toFloat:        toFloat,
+        fromBase:       toInt,
+        toBase:         toBase,
     };
 })(), Object.Flags.None);
 

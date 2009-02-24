@@ -35,9 +35,10 @@ Object_initialize (JSContext* cx)
     JSObject* Object      = JSVAL_TO_OBJECT(JS_EVAL(cx, "Object"));
     JSObject* ObjectProto = JSVAL_TO_OBJECT(JS_EVAL(cx, "Object.prototype"));
 
+    jsval property;
+
     JSObject* Flags = JS_NewObject(cx, NULL, NULL, NULL);
-    jsval property  = OBJECT_TO_JSVAL(Flags);
-    JS_SetProperty(cx, Object, "Flags", &property);
+    JS_DefineProperty(cx, Object, "Flags", OBJECT_TO_JSVAL(Flags), NULL, NULL, JSPROP_READONLY);
         property = INT_TO_JSVAL(0);
         JS_SetProperty(cx, Flags, "None", &property);
         property = INT_TO_JSVAL(JSPROP_ENUMERATE);

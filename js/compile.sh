@@ -9,11 +9,11 @@ fi
 
 (autoconf-2.13 || autoconf2.13 || autoconf213) &> /dev/null
 
-CXXFLAGS=-Os ./configure --with-system-nspr --enable-threadsafe --bindir=/usr/bin --libdir=/usr/lib --includedir=/usr/include --enable-debug --enable-gczeal
+CXXFLAGS=-Os ./configure --with-system-nspr --enable-threadsafe --bindir=/usr/bin --libdir=/usr/lib --includedir=/usr/include # --enable-debug --enable-gczeal
 make
 make install
 
-g++ `js-config --cflags` -fPIC -c lulzjs/lulzjs.cpp -o lulzjs.lo -g3 -Wall
+g++ `js-config --cflags` -fPIC -c lulzjs/lulzjs.cpp -o lulzjs.lo # -g3 -Wall
 g++ `js-config --libs | sed 's/-dynamiclib.*/-dynamiclib -lm/'` -shared -o liblulzjs.so lulzjs.lo -lc
 cp -f liblulzjs.so /usr/lib/
 cp -f lulzjs/lulzjs.h /usr/include/js

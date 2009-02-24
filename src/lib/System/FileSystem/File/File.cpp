@@ -58,7 +58,6 @@ File_initialize (JSContext* cx)
     return JS_FALSE;
 }
 
-
 JSBool
 File_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
 {
