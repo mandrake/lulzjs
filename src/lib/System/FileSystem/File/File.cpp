@@ -174,11 +174,6 @@ File_open (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval
     char* filename;
     uint16 mode = MODE_READ;
 
-    if (argc != 1 || !JS_ConvertArguments(cx, argc, argv, "s", &filename)) {
-        JS_ReportError(cx, "Not enough parameters.");
-        return JS_FALSE;
-    }
-
     if (argc == 2) {
         JS_ValueToUint16(cx, argv[1], &mode);
     }

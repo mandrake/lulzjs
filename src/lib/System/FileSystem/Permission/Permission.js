@@ -22,15 +22,12 @@ var FileSystem = System.FileSystem;
 
 FileSystem.Permission = Class.create({
     constructor: function (perm) {
-        Object.extend(
-            this, System.FileSystem.Permission.parse(perm),
-            Object.Flags.None
-        );
+        var perms = System.FileSystem.Permission.parse(perm);
 
-        this[0] = this.bits;
-        this[1] = this.user;
-        this[2] = this.group;
-        this[3] = this.other;
+        this.__defineProperty__("permission", perms.permission, Object.Flags.None);
+        delete perms.permission;
+
+        Object.extend(this, perms);
     },
 
     methods: {
