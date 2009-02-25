@@ -19,42 +19,44 @@
 #include "lulzjs.h"
 
 JSBool
-js_CallFunctionWithNew (JSContext* cx, JSObject* obj, uintN argc, jsval *argv, JSObject** newObject)
+js_CallFunctionWithNew (JSContext* cx, jsval obj, uintN argc, jsval *argv, JSObject** newObject)
 {
     jsval property;
 
     JS_BeginRequest(cx);
     JS_EnterLocalRootScope(cx);
 
-    JSClass* klass = JS_GET_CLASS(cx, obj);
+    JSObject* classObj; JS_ValueToObject(cx, obj, &classObj);
+
+    JSClass* klass = JS_GET_CLASS(cx, classObj);
     *newObject     = JS_NewObject(cx, klass, NULL, NULL);
 
     if (!*newObject) {
         return JS_FALSE;
     }
 
-    if (!JS_GetProperty(cx, obj, "prototype", &property)) {
+    if (!JS_GetProperty(cx, classObj, "prototype", &property)) {
         return JS_FALSE;
     }
 
     if (!JSVAL_IS_VOID(property)) {
-        if (!JS_SetPrototype(cx, *object, JSVAL_TO_OBJECT(property))) {
+        if (!JS_SetPrototype(cx, *newObject, JSVAL_TO_OBJECT(property))) {
             return JS_FALSE;
         }
     }
 
-    if (!JS_CallFunctionValue(cx, *object, OBJECT_TO_JSVAL(obj), argc, argv, &property)) {
+    if (!JS_CallFunctionValue(cx, *newObject, obj, argc, argv, &property)) {
         return JS_FALSE;
     }
 
     if (!JSVAL_IS_VOID(property)) {
-        *object = JSVAL_TO_OBJECT(property);
+        *newObject = JSVAL_TO_OBJECT(property);
     }
 
     JS_LeaveLocalRootScope(cx);
     JS_EndRequest(cx);
 
-    return object;
+    return JS_TRUE;
 }
 
 JSBool

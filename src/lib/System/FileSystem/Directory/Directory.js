@@ -23,15 +23,20 @@ var Directory = System.FileSystem.Directory;
 
 Object.extend(Directory.prototype, (function() {
     function _init () {
-        this.extend(Enumerable, Object.Flags.None);
+        this.extend(Enumerable, Object.Flags.None, false);
 
         for (let i = 0; i < this.length; i++) {
             this.__defineGetter__(i, new Function("return this.fileAt("+i+")"));
         }
     };
 
+    function inspect () {
+        return "#<Directory:"+ this.toArray() +">"
+    };
+
     return {
-        _init: _init,
+        _init:   _init,
+        inspect: inspect,
     };
 })(), Object.Flags.None);
 

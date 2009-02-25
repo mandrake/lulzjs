@@ -149,9 +149,10 @@ Directory_position_set (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
             JS_NewString(cx, JS_strdup(cx, message), strlen(message))
         )};
 
-        JS_SetPendingException(cx, OBJECT_TO_JSVAL(JS_CallFunctionWithNew(
-            cx, JSVAL_TO_OBJECT(JS_EVAL(cx, "RangeError")), 1, argv)
-        ));
+        JSObject* exception; JS_CallFunctionWithNew(
+            cx, JS_EVAL(cx, "RangeError"), 1, argv, &exception
+        );
+        JS_SetPendingException(cx, OBJECT_TO_JSVAL(exception));
         return JS_FALSE;
     }
 
@@ -270,9 +271,19 @@ Directory_fileAt (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* 
     DirectoryInformation* data = (DirectoryInformation*) JS_GetPrivate(cx, obj);
 
     if (position < 0 || position > data->pointers.size()) {
-        JS_ReportError(cx, "The position is out of range.");
-
         JS_ResumeRequest(cx, req);
+
+        const char message[] = "The position is out of range.";
+        jsval argv[] = {STRING_TO_JSVAL(
+            JS_NewString(cx, JS_strdup(cx, message), strlen(message))
+        )};
+
+        JSObject* exception; JS_CallFunctionWithNew(
+            cx, JS_EVAL(cx, "RangeError"), 1, argv, &exception
+        );
+        JS_SetPendingException(cx, OBJECT_TO_JSVAL(exception));
+
+        JS_LeaveLocalRootScope(cx);
         JS_EndRequest(cx);
         return JS_FALSE;
     }
@@ -304,20 +315,16 @@ Directory_fileAt (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* 
     };
     
     JSObject* retObject = NULL;
+    jsval     classObj;
     if (S_ISREG(file.st_mode)) {
-        retObject = JS_CallFunctionWithNew(
-            cx, JSVAL_TO_OBJECT(JS_EVAL(cx, "System.FileSystem.File")),
-            1, newArgv
-        );
+        classObj = JS_EVAL(cx, "System.FileSystem.File");
     }
     else if (S_ISDIR(file.st_mode)) {
-        retObject = JS_CallFunctionWithNew(
-            cx, JSVAL_TO_OBJECT(JS_EVAL(cx, "System.FileSystem.Directory")),
-            1, newArgv
-        );
+        classObj = JS_EVAL(cx, "System.FileSystem.Directory");
     }
 
-    if (!retObject) {
+    if (!JS_CallFunctionWithNew(cx, classObj, 1, newArgv, &retObject)) {
+        JS_ReportError(cx, "Something went wrong with the objects.");
         return JS_FALSE;
     }
 

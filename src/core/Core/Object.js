@@ -22,12 +22,20 @@
             /\[object\s(.*)\]$/)[1];
     };
 
-    function extend (destination, source, flags) {
+    function extend (destination, source, flags, overwrite) {
         flags = (typeof flags == 'number'
             ? flags
             : Object.Flags.Default);
 
+        overwrite = (overwrite === undefined)
+            ? true
+            : overwrite;
+
         for (let property in source) {
+            if (!overwrite && destination[property] !== undefined) {
+                continue;
+            }
+
             destination.__defineProperty__(property, source[property], flags);
         }
 
@@ -95,10 +103,11 @@
 
     function inspect (object) {
         try {
-            if (object === undefined) return 'undefined';
-            if (object === null)      return 'null';
+            if (object === undefined)   return 'undefined';
+            if (object === null)        return 'null';
+            if (typeof object == 'xml') return "XML:\n"+object.toXMLString();
 
-            return (object.inspect != Object.prototype.inspect)
+            return (object.inspect && object.inspect != Object.prototype.inspect)
                 ? object.inspect()
                 : object.toString();
         }
@@ -210,8 +219,8 @@
 })();
 
 Object.extend(Object.prototype, (function() {
-    function extend (source, flags) {
-        return Object.extend(this, source, flags);
+    function extend (source, flags, overwrite) {
+        return Object.extend(this, source, flags, overwrite);
     };
 
     function addMethods (source, flags) {
