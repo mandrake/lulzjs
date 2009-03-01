@@ -26,20 +26,18 @@ File_initialize (JSContext* cx)
     JS_BeginRequest(cx);
     JS_EnterLocalRootScope(cx);
 
-    jsval jsParent   = JS_EVAL(cx, "System.FileSystem");
-    JSObject* parent = JSVAL_TO_OBJECT(jsParent);
+    JSObject* parent = JSVAL_TO_OBJECT(JS_EVAL(cx, "System.FileSystem"));
 
     JSObject* object = JS_InitClass(
         cx, parent, NULL, &File_class,
-        File_constructor, 2, File_attributes, File_methods, NULL, File_static_methods
+        File_constructor, 1, File_attributes, File_methods, NULL, File_static_methods
     );
 
     if (object) {
         jsval property;
 
         JSObject* Mode = JS_NewObject(cx, NULL, NULL, NULL);
-        property       = OBJECT_TO_JSVAL(Mode);
-        JS_SetProperty(cx, object, "Mode", &property);
+        JS_DefineProperty(cx, object, "Mode", OBJECT_TO_JSVAL(Mode), NULL, NULL, JSPROP_READONLY);
             property = INT_TO_JSVAL(MODE_READ);
             JS_SetProperty(cx, Mode, "Read", &property);
             property = INT_TO_JSVAL(MODE_WRITE);
@@ -47,8 +45,10 @@ File_initialize (JSContext* cx)
             property = INT_TO_JSVAL(MODE_APPEND);
             JS_SetProperty(cx, Mode, "Append", &property);
 
-        property = INT_TO_JSVAL(EOF);
-        JS_SetProperty(cx, object, "EndOfFile", &property);
+        JS_DefineProperty(cx, object, "End", INT_TO_JSVAL(EOF), NULL, NULL, JSPROP_READONLY);
+
+        property = INT_TO_JSVAL(666);
+        JS_SetProperty(cx, object, "hell", &property);
 
         JS_LeaveLocalRootScope(cx);
         JS_EndRequest(cx);
@@ -215,30 +215,29 @@ File_open (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval
         return JS_FALSE;
     }
 
-    if (mode == MODE_NONE) {
-        JS_LeaveLocalRootScope(cx);
-        JS_EndRequest(cx);
-        return JS_TRUE;
-    }
+    if (mode != MODE_NONE) {
+        std::string realMode;
+        switch (mode) {
+            case MODE_READ: 
+            realMode = "rb+";
+            break;
 
-    std::string realMode;
-    switch (mode) {
-        case MODE_READ: 
-        realMode = "rb+";
-        break;
-
-        case MODE_WRITE:
-        realMode = "wb+";
-        break;
+            case MODE_WRITE:
+            realMode = "wb+";
+            break;
         
-        case MODE_APPEND:
-        realMode = "ab+";
-        break;
+            case MODE_APPEND:
+            realMode = "ab+";
+            break;
+        }
+        data->descriptor = fopen(data->path.c_str(), realMode.c_str());
     }
-    data->descriptor = fopen(data->path.c_str(), realMode.c_str());
 
     JS_LeaveLocalRootScope(cx);
     JS_EndRequest(cx);
+
+    *rval = OBJECT_TO_JSVAL(object);
+
     return JS_TRUE;
 }
 

@@ -167,7 +167,7 @@ Directory_position_set (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
     JS_LeaveLocalRootScope(cx);
     JS_EndRequest(cx);
 
-    seekdir(data->descriptor, data->pointers[data->position = position]);
+    seekdir(data->descriptor, data->pointers[(data->position = position)]);
 
     return JS_TRUE;
 }
@@ -205,9 +205,6 @@ Directory_open (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval*
         return JS_FALSE;
     }
 
-    data->pointers.clear();
-    data->position = 0;
-
     data->descriptor = opendir(data->path.c_str());
 
     if (!data->descriptor) {
@@ -234,6 +231,8 @@ Directory_open (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval*
     jsval ret;
     JS_CallFunctionName(cx, object, "_init", 0, NULL, &ret);
 
+    *rval = OBJECT_TO_JSVAL(object);
+
     return JS_TRUE;
 }
 
@@ -248,10 +247,10 @@ Directory_close (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval
         if (data->descriptor) {
             closedir(data->descriptor);
             data->descriptor = NULL;
-        }
-
-        if (!data->path.empty()) {
-            data->path = "";
+            data->path       = "";
+            data->position   = 0;
+            data->pointers.clear();
+            memset(&data->desc, 0, sizeof(struct stat));
         }
     }
 
