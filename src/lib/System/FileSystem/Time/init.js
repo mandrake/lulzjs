@@ -18,13 +18,9 @@
 
 require("System/System.so");
 
-require(["FileSystem.so", "FileSystem.js"]);
+require(["System/FileSystem/FileSystem.so", "System/FileSystem/FileSystem.js"]);
 
-require("Permission/Permission.js");
-require("Time/Time.js");
+require("Time.js");
 
-require(["File/File.so", "File/File.js"]);
-require(["Directory/Directory.so", "Directory/Directory.js"]);
-
-FileSystem = System.FileSystem;
+Time = System.FileSystem.Time;
 

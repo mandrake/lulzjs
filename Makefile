@@ -90,6 +90,7 @@ libsystem_install: libsystem
 	mkdir -p ${LJS_LIBDIR}/System/FileSystem/File
 	mkdir -p ${LJS_LIBDIR}/System/FileSystem/Directory
 	mkdir -p ${LJS_LIBDIR}/System/FileSystem/Permission
+	mkdir -p ${LJS_LIBDIR}/System/FileSystem/Time
 	mkdir -p ${LJS_LIBDIR}/System/Net
 	mkdir -p ${LJS_LIBDIR}/System/Net/Socket
 	mkdir -p ${LJS_LIBDIR}/System/Net/Ports
@@ -116,6 +117,9 @@ libsystem_install: libsystem
 ########
 	cp -f ${LIB_SYSTEM_DIR}/FileSystem/Permission/init.js		${LJS_LIBDIR}/System/FileSystem/Permission/init.js
 	cp -f ${LIB_SYSTEM_DIR}/FileSystem/Permission/Permission.js	${LJS_LIBDIR}/System/FileSystem/Permission/Permission.js
+########
+	cp -f ${LIB_SYSTEM_DIR}/FileSystem/Time/init.js				${LJS_LIBDIR}/System/FileSystem/Time/init.js
+	cp -f ${LIB_SYSTEM_DIR}/FileSystem/Time/Time.js				${LJS_LIBDIR}/System/FileSystem/Time/Time.js
 ########
 	cp -f ${LIB_SYSTEM_DIR}/Console/init.js						${LJS_LIBDIR}/System/Console/init.js
 	cp -f ${LIB_SYSTEM_DIR}/Console/Console.o					${LJS_LIBDIR}/System/Console/Console.so

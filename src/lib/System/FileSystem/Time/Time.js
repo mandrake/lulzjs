@@ -16,15 +16,24 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require("System/System.so");
+(function() {
 
-require(["FileSystem.so", "FileSystem.js"]);
+var FileSystem = System.FileSystem;
 
-require("Permission/Permission.js");
-require("Time/Time.js");
+FileSystem.Time = Class.create({
+    constructor: function (access, modification, change) {
+        (this.access       = new Date()).setTime(access);
+        (this.modification = new Date()).setTime(modification);
+        (this.change       = new Date()).setTime(change);
+    },
 
-require(["File/File.so", "File/File.js"]);
-require(["Directory/Directory.so", "Directory/Directory.js"]);
+    methods: {
+        toString: function () {
+            return '#<Time: access="{0}", modification="{1}", change="{2}">'.format([
+                this.access, this.modification, this.change
+            ]);
+        },
+    },
+});
 
-FileSystem = System.FileSystem;
-
+})();

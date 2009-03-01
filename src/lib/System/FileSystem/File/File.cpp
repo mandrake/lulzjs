@@ -36,8 +36,10 @@ File_initialize (JSContext* cx)
     if (object) {
         jsval property;
 
+        JSObject* File = JSVAL_TO_OBJECT(JS_EVAL(cx, "System.FileSystem.File"));
+
         JSObject* Mode = JS_NewObject(cx, NULL, NULL, NULL);
-        JS_DefineProperty(cx, object, "Mode", OBJECT_TO_JSVAL(Mode), NULL, NULL, JSPROP_READONLY);
+        JS_DefineProperty(cx, File, "Mode", OBJECT_TO_JSVAL(Mode), NULL, NULL, JSPROP_READONLY);
             property = INT_TO_JSVAL(MODE_NONE);
             JS_SetProperty(cx, Mode, "None", &property);
             property = INT_TO_JSVAL(MODE_READ);
@@ -47,7 +49,7 @@ File_initialize (JSContext* cx)
             property = INT_TO_JSVAL(MODE_APPEND);
             JS_SetProperty(cx, Mode, "Append", &property);
 
-        JS_DefineProperty(cx, object, "End", INT_TO_JSVAL(EOF), NULL, NULL, JSPROP_READONLY);
+        JS_DefineProperty(cx, File, "End", INT_TO_JSVAL(EOF), NULL, NULL, JSPROP_READONLY);
 
         property = INT_TO_JSVAL(666);
         JS_SetProperty(cx, object, "hell", &property);
