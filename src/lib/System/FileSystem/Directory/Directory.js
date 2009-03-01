@@ -30,12 +30,6 @@ Object.extend(Directory.prototype, (function() {
         }
     };
 
-    function _each (iterator) {
-        for each (let val in this) {
-            iterator(val);
-        }
-    };
-
     function inspect () {
         return '#<Directory: path="{0}", length={1}, position={2}>'.format([
             this.path, this.length, this.position
@@ -44,7 +38,6 @@ Object.extend(Directory.prototype, (function() {
 
     return {
         _init:   _init,
-        _each:   _each,
         inspect: inspect,
     };
 })(), Object.Flags.None);

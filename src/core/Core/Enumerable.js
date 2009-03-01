@@ -260,6 +260,7 @@ Enumerable = (function() {
     };
 
     return {
+        _each:      Array.prototype.forEach,
         each:       each,
         eachSlice:  eachSlice,
         all:        all,

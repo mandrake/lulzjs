@@ -38,6 +38,8 @@ File_initialize (JSContext* cx)
 
         JSObject* Mode = JS_NewObject(cx, NULL, NULL, NULL);
         JS_DefineProperty(cx, object, "Mode", OBJECT_TO_JSVAL(Mode), NULL, NULL, JSPROP_READONLY);
+            property = INT_TO_JSVAL(MODE_NONE);
+            JS_SetProperty(cx, Mode, "None", &property);
             property = INT_TO_JSVAL(MODE_READ);
             JS_SetProperty(cx, Mode, "Read", &property);
             property = INT_TO_JSVAL(MODE_WRITE);
@@ -111,8 +113,29 @@ File_path_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
     return JS_TRUE;
 }
 
-// FIXME: I can't use 64 bit descriptors because javascript is fail
-//        on the number side :(
+JSBool
+File_path_set (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
+{
+    JSBool check = JS_TRUE;
+
+    JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
+
+    jsval argv[] = {*vp};
+    jsval ret;
+
+    JS_CallFunctionName(cx, obj, "close", 0, NULL, &ret);
+    JS_CallFunctionName(cx, obj, "open", 1, argv, &ret);
+
+    if (JS_IsExceptionPending(cx)) {
+        check = JS_FALSE;
+    }
+
+    JS_LeaveLocalRootScope(cx);
+    JS_EndRequest(cx);
+    return check;
+}
+
 JSBool
 File_position_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
 {
@@ -128,8 +151,6 @@ File_position_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
     return JS_TRUE;
 }
 
-// FIXME: I can't use 64 bit descriptors because javascript is fail
-//        on the number side :(
 JSBool
 File_position_set (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
 {

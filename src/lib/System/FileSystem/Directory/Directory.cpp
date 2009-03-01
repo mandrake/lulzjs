@@ -55,8 +55,11 @@ Directory_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv,
     JS_BeginRequest(cx);
 
     DirectoryInformation* data = new DirectoryInformation;
-    data->descriptor           = NULL;
     JS_SetPrivate(cx, object, data);
+
+    data->descriptor = NULL;
+    data->position   = 0;
+
 
     if (argc) {
         jsval ret;
