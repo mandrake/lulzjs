@@ -16,12 +16,12 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-Object.extend(System.FileSystem.File.prototype, {
-    writeLine: function (str) {
+Object.extend(System.FileSystem.File.prototype, (function() {
+    function writeLine (str) {
         this.write(str+"\n");
-    },
+    };
 
-    readLine: function () {
+    function readLine () {
         if (this.position == System.FileSystem.File.EndOfFile)
             return null;
 
@@ -32,14 +32,27 @@ Object.extend(System.FileSystem.File.prototype, {
         }
 
         return str;
-    },
+    };
 
-    readToEnd: function () {
+    function readToEnd () {
         return this.read(this.size);
+    };
 
-    },
-
-    readAll: function () {
+    function readAll () {
         return this.readToEnd().split('\n');
+    };
+
+    function inspect () {
+        return '#<File: path="{0}", size={1}, position={2}>'.format([
+            this.path, this.size, this.position
+        ]);
+    };
+
+    return {
+        writeLine: writeLine,
+        readLine:  readLine,
+        readToEnd: readToEnd,
+        readAll:   readAll,
+        inspect:   inspect,
     }
-}, Object.Flags.None);
+})(), Object.Flags.None);

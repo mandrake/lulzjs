@@ -18,22 +18,30 @@
 
 #include "Directory.h"
 
+JSObject* File;
+JSObject* Directory;
+
 JSBool exec (JSContext* cx) { return Directory_initialize(cx); }
 
 JSBool
 Directory_initialize (JSContext* cx)
 {
     JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
 
     jsval jsParent   = JS_EVAL(cx, "System.FileSystem");
     JSObject* parent = JSVAL_TO_OBJECT(jsParent);
 
     JSObject* object = JS_InitClass(
         cx, parent, NULL, &Directory_class,
-        Directory_constructor, 2, Directory_attributes, Directory_methods, NULL, Directory_static_methods
+        Directory_constructor, 1, Directory_attributes, Directory_methods, NULL, Directory_static_methods
     );
 
     if (object) {
+        File      = JSVAL_TO_OBJECT(JS_EVAL(cx, "System.FileSystem.File"));
+        Directory = JSVAL_TO_OBJECT(JS_EVAL(cx, "System.FileSystem.Directory"));
+
+        JS_LeaveLocalRootScope(cx);
         JS_EndRequest(cx);
         return JS_TRUE;
     }
@@ -301,12 +309,11 @@ Directory_fileAt (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* 
     struct stat file;
     std::string path;
  
-    seekdir(data->descriptor, data->pointers[data->position]);
-    dir = readdir(data->descriptor);
- 
+    seekdir(data->descriptor, data->pointers[position]);
+    dir  = readdir(data->descriptor);
     path = data->path + dir->d_name;
     stat(path.c_str(), &file);
- 
+
     JS_ResumeRequest(cx, req);
 
     std::string newPath = data->path + dir->d_name;
@@ -317,14 +324,17 @@ Directory_fileAt (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* 
     JSObject* retObject = NULL;
     jsval     classObj;
     if (S_ISREG(file.st_mode)) {
-        classObj = JS_EVAL(cx, "System.FileSystem.File");
+        classObj = OBJECT_TO_JSVAL(File);
     }
     else if (S_ISDIR(file.st_mode)) {
-        classObj = JS_EVAL(cx, "System.FileSystem.Directory");
+        classObj = OBJECT_TO_JSVAL(Directory);
+    }
+
+    if (JS_IsExceptionPending(cx)) {
+        return JS_FALSE;
     }
 
     if (!JS_CallFunctionWithNew(cx, classObj, 1, newArgv, &retObject)) {
-        JS_ReportError(cx, "Something went wrong with the objects.");
         return JS_FALSE;
     }
 

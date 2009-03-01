@@ -26,9 +26,10 @@
 
 #include "lulzjs.h"
 
-const unsigned MODE_READ   = 0x02;
-const unsigned MODE_WRITE  = 0x04;
-const unsigned MODE_APPEND = 0x08;
+const int MODE_NONE   = -1;
+const int MODE_READ   = 0x02;
+const int MODE_WRITE  = 0x04;
+const int MODE_APPEND = 0x08;
 
 extern "C" JSBool exec (JSContext* cx);
 JSBool File_initialize (JSContext* cx);

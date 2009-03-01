@@ -32,7 +32,9 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#ifdef __cplusplus
 extern "C" {
+#endif
 
 JSBool js_CallFunctionWithNew (JSContext* cx, jsval obj, uintN argc, jsval *argv, JSObject** newObj);
 #define JS_CallFunctionWithNew(cx, obj, argc, argv, newObj) js_CallFunctionWithNew(cx, obj, argc, argv, newObj)
@@ -63,9 +65,9 @@ CompiledScript* Compile_compile (JSContext* cx, JSScript* script);
 CompiledScript* Compile_compileString (JSContext* cx, const char* source);
 JSBool          Compile_save (JSContext* cx, JSScript* script, const char* path);
 
+#ifdef __cplusplus
 }
 
-#ifdef __cplusplus
 #include <iostream>
 #include <string>
 #include <fstream>

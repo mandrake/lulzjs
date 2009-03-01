@@ -119,11 +119,12 @@ File_position_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
     FileInformation* data = (FileInformation*) JS_GetPrivate(cx, obj);
 
     if (!data->descriptor) {
-        JS_ReportError(cx, "You have to open a file first.");
-        return JS_FALSE;
+        *vp = JSVAL_NULL;
     }
-    
-    *vp = INT_TO_JSVAL(ftell(data->descriptor));
+    else {
+        *vp = INT_TO_JSVAL(ftell(data->descriptor));
+    }
+
     return JS_TRUE;
 }
 
@@ -156,12 +157,7 @@ JSBool
 File_size_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
 {
     FileInformation* data = (FileInformation*) JS_GetPrivate(cx, obj);
-
-    if (!data->descriptor) {
-        JS_ReportError(cx, "You have to open a file first.");
-        return JS_FALSE;
-    }
-
+    
     *vp = INT_TO_JSVAL(data->desc.st_size);
     return JS_TRUE;
 }
@@ -170,15 +166,36 @@ JSBool
 File_open (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
 {
     JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
 
-    char* filename;
-    uint16 mode = MODE_READ;
+    const char* filename;
+    int32       mode = MODE_NONE;
 
-    if (argc == 2) {
-        JS_ValueToUint16(cx, argv[1], &mode);
+    if (argc < 1) {
+        JS_ReportError(cx, "Not enough parameters.");
+        return JS_FALSE;
     }
 
     FileInformation* data = (FileInformation*) JS_GetPrivate(cx, object);
+
+    if (argc == 2) {
+        JS_ValueToInt32(cx, argv[1], &mode);
+        filename = JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
+    }
+    else {
+        if (JSVAL_IS_NUMBER(argv[0])) {
+            if (data->path.empty()) {
+                JS_ReportError(cx, "The path is missing.");
+                return JS_FALSE;
+            }
+
+            JS_ValueToInt32(cx, argv[0], &mode);
+            filename = data->path.c_str();
+        }
+        else {
+            filename = JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
+        }
+    }
 
     if (data->descriptor) {
         JS_ReportError(cx, "A file is already opened.");
@@ -198,6 +215,12 @@ File_open (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval
         return JS_FALSE;
     }
 
+    if (mode == MODE_NONE) {
+        JS_LeaveLocalRootScope(cx);
+        JS_EndRequest(cx);
+        return JS_TRUE;
+    }
+
     std::string realMode;
     switch (mode) {
         case MODE_READ: 
@@ -214,6 +237,7 @@ File_open (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval
     }
     data->descriptor = fopen(data->path.c_str(), realMode.c_str());
 
+    JS_LeaveLocalRootScope(cx);
     JS_EndRequest(cx);
     return JS_TRUE;
 }

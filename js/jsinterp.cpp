@@ -1794,11 +1794,8 @@ js_InvokeConstructor(JSContext *cx, uintN argc, JSBool clampReturn, jsval *vp)
 
         if (OBJ_GET_CLASS(cx, obj2) == &js_FunctionClass) {
             fun2 = GET_FUNCTION_PRIVATE(cx, obj2);
-            if (!FUN_INTERPRETED(fun2) &&
-                !(fun2->flags & JSFUN_TRACEABLE) &&
-                fun2->u.n.u.clasp) {
-                clasp = fun2->u.n.u.clasp;
-            }
+            if (!FUN_INTERPRETED(fun2) && fun2->u.n.clasp)
+                clasp = fun2->u.n.clasp;
         }
     }
     obj = js_NewObject(cx, clasp, proto, parent, 0);
@@ -2692,12 +2689,15 @@ js_Interpret(JSContext *cx)
 
 #define BRANCH(n)                                                             \
     JS_BEGIN_MACRO                                                            \
-        regs.pc += n;                                                         \
-        if (n <= 0) {                                                         \
+        regs.pc += (n);                                                       \
+        op = (JSOp) *regs.pc;                                                 \
+        if (op == JSOP_NOP) {                                                 \
+            op = (JSOp) *++regs.pc;                                           \
+        } else if (op == JSOP_LOOP) {                                         \
             CHECK_BRANCH();                                                   \
             MONITOR_BRANCH();                                                 \
+            op = (JSOp) *regs.pc;                                             \
         }                                                                     \
-        op = (JSOp) *regs.pc;                                                 \
         DO_OP();                                                              \
     JS_END_MACRO
 
@@ -6849,6 +6849,9 @@ js_Interpret(JSContext *cx)
             regs.sp--;
           END_CASE(JSOP_ARRAYPUSH)
 #endif /* JS_HAS_GENERATORS */
+
+          BEGIN_CASE(JSOP_LOOP)
+          END_CASE(JSOP_LOOP)
 
 #if JS_THREADED_INTERP
           L_JSOP_BACKPATCH:

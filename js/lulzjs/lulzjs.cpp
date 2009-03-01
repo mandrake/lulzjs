@@ -28,6 +28,10 @@ js_CallFunctionWithNew (JSContext* cx, jsval obj, uintN argc, jsval *argv, JSObj
 
     JSObject* classObj; JS_ValueToObject(cx, obj, &classObj);
 
+    if (!classObj) {
+        return JS_FALSE;
+    }
+
     JSClass* klass = JS_GET_CLASS(cx, classObj);
     *newObject     = JS_NewObject(cx, klass, NULL, NULL);
 
