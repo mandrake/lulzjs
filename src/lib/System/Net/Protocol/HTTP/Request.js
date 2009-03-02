@@ -76,18 +76,10 @@ System.Net.Protocol.HTTP.Request = Class.create({
                     return null;
                 }
     
-                if (this.response.headers["Content-Type"].match(/^text/i)) {
-                    return this.response.content += this.socket.receive(length
-                        ? length
-                        : this.response.headers["Content-Length"].toInt()
-                    );
-                }
-                else {
-                    return this.response.content.append(this.socket.receiveBytes(length
-                        ? length
-                        : this.response.headers["Content-Length"].toInt())
-                    );
-                }
+                return this.response.content += this.socket.receive(length
+                    ? length
+                    : this.response.headers["Content-Length"].toInt()
+                );
             }
             else {
                 if (this.response.headers["Transfer-Encoding"] == "chunked") {
@@ -97,12 +89,7 @@ System.Net.Protocol.HTTP.Request = Class.create({
                         return null;
                     }
                     
-                    if (this.response.headers["Content-Type"].match(/^text/i)) {
-                        return this.response.content += tmp.toString();
-                    }
-                    else {
-                        return this.response.content.append(tmp)
-                    }
+                    return this.response.content += tmp;
                 }
             }
         },
@@ -127,11 +114,7 @@ System.Net.Protocol.HTTP.Request = Class.create({
                     headers["Content-Type"] = "text/plain";
                 }
 
-                var content = (headers["Content-Type"].match(/^text/i)
-                    ? new String
-                    : new Bytes);
-    
-                return new System.Net.Protocol.HTTP.Response(answer, headers, content);
+                return new System.Net.Protocol.HTTP.Response(answer, headers, "");
             },
     
             POST: function () {
@@ -155,11 +138,7 @@ System.Net.Protocol.HTTP.Request = Class.create({
                     headers["Content-Type"] = "text/plain";
                 }
 
-                var content = (headers["Content-Type"].match(/^text/i)
-                    ? new String
-                    : new Bytes);
-        
-                return new System.Net.Protocol.HTTP.Response(answer, headers, content);
+                return new System.Net.Protocol.HTTP.Response(answer, headers, "");
             },
         
             HEAD: function () {
@@ -217,14 +196,11 @@ System.Net.Protocol.HTTP.Request = Class.create({
         },
     
         readChunked: function (length) {
-            var text = this.response.headers["Content-Type"].match(/^text/i);
-
-            var ret = text ? new String : new Bytes;
+            var ret = ""
 
             if (!length) {
                 while (read = this.socket.receiveLine().toInt(16)) {
-                    if (text) ret += this.socket.receive(read);
-                    else      ret.append(this.socket.receiveBytes(read));
+                    ret += this.socket.receive(read);
                     this.socket.receiveLine()
                 }
                 return ret;
@@ -245,13 +221,11 @@ System.Net.Protocol.HTTP.Request = Class.create({
                 }
     
                 if (length > this.chunk.length) {
-                    if (text) ret += this.socket.receive(this.chunk.length);
-                    else      ret.append(this.socket.receiveBytes(this.chunk.length));
+                    ret += this.socket.receive(this.chunk.length);
                     length -= (this.chunk.read = this.chunk.length);
                 }
                 else {
-                    if (text) ret += this.socket.receive(length);
-                    else      ret.append(this.socket.receiveBytes(length));
+                    ret += this.socket.receive(length);
                     this.chunk.read = length;
                     break;
                 }

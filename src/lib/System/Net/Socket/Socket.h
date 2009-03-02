@@ -52,9 +52,6 @@ JSBool Socket_accept (JSContext* cx, JSObject* object, uintN argc, jsval* argv, 
 JSBool Socket_send (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 JSBool Socket_receive (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
-JSBool Socket_sendBytes (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-JSBool Socket_receiveBytes (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-
 JSBool Socket_static_getHostByName (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
 JSBool Socket_static_isIPv4 (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
@@ -67,10 +64,6 @@ static JSFunctionSpec Socket_methods[] = {
 
     {"send",    Socket_send,    0, 0, 0},
     {"receive", Socket_receive, 0, 0, 0},
-
-    {"sendBytes",    Socket_sendBytes,    0, 0, 0},
-    {"receiveBytes", Socket_receiveBytes, 0, 0, 0},
-
     {NULL}
 };
 

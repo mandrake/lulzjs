@@ -18,8 +18,6 @@
 
 require("System/System.so");
 
-require("System/IO/IO.so");
-
 require(["Console.so", "Console.js"]);
 
-Program.Console = System.Console;
+Console = System.Console;

@@ -1,7 +1,8 @@
 #! /usr/bin/env ljs
 require("System/Console");
 require("System/Net/Protocol/HTTP/Simple");
-require("System/IO/File");
+require("System/FileSystem");
+require("System/FileSystem/File");
 
 var url = arguments.shift();
 var out = arguments.shift();
@@ -12,11 +13,5 @@ if (out) {
     Console.writeLine(content);
 }
 else {
-    var file = new File(File.baseName(url), "w");
-    if (Object.is(content, Bytes)){
-        file.writeBytes(content);
-    }
-    else {
-        file.write(content);
-    }
+    new File(FileSystem.baseName(url), File.Mode.Write).write(content);
 }

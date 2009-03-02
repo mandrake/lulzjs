@@ -245,7 +245,7 @@ Socket_accept (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* 
 JSBool
 Socket_send (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
 {
-    char*  string;
+    JSString* stringObject;
     uint16 flags = 0;
 
     JS_BeginRequest(cx);
@@ -257,7 +257,7 @@ Socket_send (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rv
 
     switch (argc) {
         case 2: JS_ValueToUint16(cx, argv[1], &flags);
-        case 1: string = JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
+        case 1: stringObject = JS_ValueToString(cx, argv[0]);
     }
 
     SocketInformation* data = (SocketInformation*) JS_GetPrivate(cx, object);
@@ -272,9 +272,12 @@ Socket_send (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rv
 
     JS_EndRequest(cx);
 
-    unsigned offset = 0;
-    while (offset < strlen(string)) {
-        offset += send(data->socket, (string+offset), (strlen(string)-offset)*sizeof(char), flags);
+    char*  string = JS_GetStringBytes(stringObject); 
+    size_t offset = 0;
+    size_t length = JS_GetStringLength(stringObject);
+
+    while (offset < length) {
+        offset += send(data->socket, (string+offset), (length-offset)*sizeof(char), flags);
     }
 
     return JS_TRUE;
@@ -309,12 +312,12 @@ Socket_receive (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval 
     }
 
     JS_EnterLocalRootScope(cx);
-    char* string = (char*) JS_malloc(cx, (size+1)*sizeof(char));
+    char* string = (char*) JS_malloc(cx, size*sizeof(char));
 
     jsrefcount req = JS_SuspendRequest(cx);
-    unsigned offset = 0;
-    int      tmp;
-    while (offset < (unsigned) size) {
+    size_t offset = 0;
+    size_t tmp;
+    while (offset < size) {
         tmp = recv(data->socket, (string+offset), (size-offset)*sizeof(char), flags);
 
         if (tmp == -1) {
@@ -330,144 +333,15 @@ Socket_receive (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval 
         
         offset += tmp;
     }
-    string[size] = '\0';
+    string = (char*) JS_realloc(cx, string, offset);
     JS_ResumeRequest(cx, req);
 
-    *rval = STRING_TO_JSVAL(JS_NewString(cx, string, sizeof(char)*strlen(string)));
+    *rval = STRING_TO_JSVAL(JS_NewString(cx, string, offset));
 
     JS_LeaveLocalRootScope(cx);
     JS_EndRequest(cx);
     return JS_TRUE;
 }
-
-JSBool
-Socket_sendBytes (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
-{
-    JSObject* obj;
-    uint16    flags = 0;
-
-    JS_BeginRequest(cx);
-
-    if (argc < 1) {
-        JS_ReportError(cx, "Not enough parameters.");
-        return JS_FALSE;
-    }
-
-    switch (argc) {
-        case 2: JS_ValueToUint16(cx, argv[1], &flags);
-        case 1: JS_ValueToObject(cx, argv[0], &obj);
-    }
-
-    SocketInformation* data = (SocketInformation*) JS_GetPrivate(cx, object);
-
-    jsval jsConnected; JS_GetProperty(cx, object, "connected", &jsConnected);
-    JSBool connected = JSVAL_TO_BOOLEAN(jsConnected);
-
-    if (!connected) {
-        JS_ReportError(cx, "The socket isn't connected.");
-        return JS_FALSE;
-    }
-
-    unsigned char* string;
-    jsval ret; JS_CallFunctionName(cx, obj, "toArray", 0, NULL, &ret);
-    JSObject* array = JSVAL_TO_OBJECT(ret);
-
-    jsuint length; JS_GetArrayLength(cx, array, &length);
-    string = new unsigned char[length];
-
-    jsuint i;
-    for (i = 0; i < length; i++) {
-        jsval val; JS_GetElement(cx, array, i, &val);
-        string[i] = (unsigned char) JSVAL_TO_INT(val);
-    }
-    JS_EndRequest(cx);
-
-    *rval = INT_TO_JSVAL(send(data->socket, string, length*sizeof(char), flags));
-    delete string;
-    return JS_TRUE;
-}
-
-JSBool
-Socket_receiveBytes (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval *rval)
-{
-    int32 size;
-    uint16 flags = 0;
-
-    JS_BeginRequest(cx);
-
-    if (argc < 1) {
-        JS_ReportError(cx, "Not enough parameters.");
-        return JS_FALSE;
-    }
-
-    switch (argc) {
-        case 2: JS_ValueToUint16(cx, argv[1], &flags);
-        case 1: JS_ValueToInt32(cx, argv[0], &size);
-    }
-
-    SocketInformation* data = (SocketInformation*) JS_GetPrivate(cx, object);
-
-    jsval jsConnected; JS_GetProperty(cx, object, "connected", &jsConnected);
-    JSBool connected = JSVAL_TO_BOOLEAN(jsConnected);
-
-    if (!connected) {
-        JS_ReportError(cx, "The socket isn't connected.");
-        return JS_FALSE;
-    }
-
-    unsigned char* string = new unsigned char[size];
-
-    jsrefcount req = JS_SuspendRequest(cx);
-    unsigned offset = 0;
-    int      tmp;
-    while (offset < (unsigned) size) {
-        tmp = recv(data->socket, (string+offset), (size-offset)*sizeof(char), flags);
-
-        if (tmp == -1) {
-            JS_ReportError(cx, "An error occurred with the socket.");
-            delete string;
-            return JS_FALSE;
-        }
-        else if (tmp == 0) {
-            jsConnected = JSVAL_FALSE;
-            JS_SetProperty(cx, object, "connected", &jsConnected);
-            break;
-        }
-        
-        offset += tmp;
-    }
-    JS_ResumeRequest(cx, req);
-
-    JS_EnterLocalRootScope(cx);
-
-    JSObject* array = JS_NewArrayObject(cx, 0, NULL);
-
-    unsigned i;
-    for (i = 0; i < (unsigned) size; i++) {
-        jsval val = INT_TO_JSVAL(string[i]);
-        JS_SetElement(cx, array, i, &val);
-    }
-    delete string;
-
-    jsval newArgv[] = {OBJECT_TO_JSVAL(array)};
-
-    jsval property; JS_GetProperty(cx, JS_GetGlobalObject(cx), "Bytes", &property);
-    JSObject* Bytes = JSVAL_TO_OBJECT(property);
-
-    jsval jsProto; JS_GetProperty(cx, Bytes, "prototype", &jsProto);
-    JSObject* proto = JSVAL_TO_OBJECT(jsProto);
-
-    JSObject* bytes = JS_ConstructObject(cx, NULL, proto, NULL);
-    jsval ret;
-    JS_CallFunctionValue(cx, bytes, OBJECT_TO_JSVAL(Bytes), 1, newArgv, &ret);
-
-    JS_LeaveLocalRootScope(cx);
-    JS_EndRequest(cx);
-
-    *rval = OBJECT_TO_JSVAL(bytes);
-    return JS_TRUE;
-}
-
 
 JSBool
 Socket_static_getHostByName (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
