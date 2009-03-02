@@ -16,12 +16,16 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-Object.extend(System.FileSystem, (function() {
-    function dirName (file) {
-        if (file.count("/") >= 2) {
-            return /((\/)?.*?)\//.exec(file)[1];
+System.FileSystem.addMethods((function() {
+    function dirName (path) {
+        if (path.count("/") >= 2 && !(path.count("/") == 2 && path.endsWith("/"))) {
+            if (path.endsWith("/")) {
+                path = path.substr(0, path.length-1);
+            }
+
+            return /((\/)?.*?)\/[^\/]*$/.exec(path)[1];
         }
-        else if (file.startsWith("/")) {
+        else if (path.startsWith("/")) {
             return '/';
         }
         else {
@@ -29,21 +33,26 @@ Object.extend(System.FileSystem, (function() {
         }
     };
 
-    function baseName (file) {
-        if (file == "/" || file == "." || file == "..") {
-            return file;
+    function baseName (path) {
+        if (path == "/" || path == "." || path == "..") {
+            return path;
         }
 
-        if (file.endsWith("/")) {
-            file = file.substr(0, file.length-1);
+        if (path.endsWith("/")) {
+            path = path.substr(0, path.length-1);
         }
 
-        return file.match(/([^\/]*)$/)[1];
+        return path.match(/([^\/]*)$/)[1];
+    };
+
+    function baseDir (path) {
+        return System.FileSystem.baseName(System.FileSystem.dirName(path));
     };
 
     return {
         dirName:  dirName,
         baseName: baseName,
+        baseDir:  baseDir,
     };
 })(), Object.Flags.None);
 
