@@ -113,6 +113,14 @@ Hash = Class.create(Enumerable, (function() {
             toJSON:                 toJSON,
             clone:                  clone,
         },
+
+        attributes: {
+            length: {
+                get: function () {
+                    return this.keys().length;
+                }
+            },
+        },
     };
 })());
 
