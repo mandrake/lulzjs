@@ -18,7 +18,7 @@
 
 $break = { };
 
-Enumerable = (function() {
+Enumerable = Class.create((function() {
     function each (iterator, context) {
         var index = 0;
 
@@ -260,35 +260,37 @@ Enumerable = (function() {
     };
 
     return {
-        _each:      Array.prototype.forEach,
-        each:       each,
-        eachSlice:  eachSlice,
-        all:        all,
-        every:      all,
-        any:        any,
-        some:       any,
-        collect:    collect,
-        map:        collect,
-        detect:     detect,
-        findAll:    findAll,
-        select:     findAll,
-        filter:     findAll,
-        grep:       grep,
-        include:    include,
-        member:     include,
-        inGroupsOf: inGroupsOf,
-        inject:     inject,
-        invoke:     invoke,
-        max:        max,
-        min:        min,
-        partition:  partition,
-        pluck:      pluck,
-        reject:     reject,
-        sortBy:     sortBy,
-        toArray:    toArray,
-        entries:    toArray,
-        zip:        zip,
-        inspect:    inspect,
-        find:       detect
+        methods: {
+            _each:      Array.prototype.forEach,
+            each:       each,
+            eachSlice:  eachSlice,
+            all:        all,
+            every:      all,
+            any:        any,
+            some:       any,
+            collect:    collect,
+            map:        collect,
+            detect:     detect,
+            findAll:    findAll,
+            select:     findAll,
+            filter:     findAll,
+            grep:       grep,
+            include:    include,
+            member:     include,
+            inGroupsOf: inGroupsOf,
+            inject:     inject,
+            invoke:     invoke,
+            max:        max,
+            min:        min,
+            partition:  partition,
+            pluck:      pluck,
+            reject:     reject,
+            sortBy:     sortBy,
+            toArray:    toArray,
+            entries:    toArray,
+            zip:        zip,
+            inspect:    inspect,
+            find:       detect,
+        },
     };
-})();
+})());

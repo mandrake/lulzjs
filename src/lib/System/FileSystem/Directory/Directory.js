@@ -21,10 +21,8 @@
 var File      = System.FileSystem.File;
 var Directory = System.FileSystem.Directory;
 
-Object.extend(Directory.prototype, (function() {
+Directory.prototype.addMethods((function() {
     function _init () {
-        this.extend(Enumerable, Object.Flags.None, false);
-
         for (let i = 0; i < this.length; i++) {
             this.__defineGetter__(i, new Function("return this.fileAt("+i+")"));
         }
@@ -42,7 +40,7 @@ Object.extend(Directory.prototype, (function() {
     };
 })(), Object.Flags.None);
 
-Object.addAttributes(Directory.prototype, {
+Directory.prototype.addAttributes({
     next: { get: function () {
         return (this.position == this.length-1)
             ? null
@@ -58,6 +56,10 @@ Object.addAttributes(Directory.prototype, {
             ? null
             : this[this.position];
     }},
-}, Object.Flags.None);
+
+    name: { get: function() {
+        return System.FileSystem.baseName(this.path);
+    }},
+});
 
 })();

@@ -20,7 +20,7 @@ require("System/System.so");
 
 require(["System/FileSystem/FileSystem.so", "System/FileSystem/FileSystem.js"]);
 
-require("Permission.js");
+require(["Permission.js", "Mode.js"]);
 
 Permission = System.FileSystem.Permission;
 

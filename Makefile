@@ -118,6 +118,7 @@ libsystem_install: libsystem
 ########
 	cp -f ${LIB_SYSTEM_DIR}/FileSystem/Permission/init.js		${LJS_LIBDIR}/System/FileSystem/Permission/init.js
 	cp -f ${LIB_SYSTEM_DIR}/FileSystem/Permission/Permission.js	${LJS_LIBDIR}/System/FileSystem/Permission/Permission.js
+	cp -f ${LIB_SYSTEM_DIR}/FileSystem/Permission/Mode.js		${LJS_LIBDIR}/System/FileSystem/Permission/Mode.js
 ########
 	cp -f ${LIB_SYSTEM_DIR}/FileSystem/Time/init.js				${LJS_LIBDIR}/System/FileSystem/Time/init.js
 	cp -f ${LIB_SYSTEM_DIR}/FileSystem/Time/Time.js				${LJS_LIBDIR}/System/FileSystem/Time/Time.js

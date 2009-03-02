@@ -53,7 +53,7 @@ Class = {
             ? properties.constructor
             : Function.empty.clone()),
         Object.Flags.None);
-    
+
         klass.addMethods(properties.methods);
         klass.addStatic(properties.static);
         klass.addAttributes(properties.attributes);

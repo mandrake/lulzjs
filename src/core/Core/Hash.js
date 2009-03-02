@@ -16,10 +16,6 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-function $H (object) {
-    return new Hash(object);
-};
-
 Hash = Class.create(Enumerable, (function() {
     function constructor (object) {
         this._object = Object.is(object, Hash)
@@ -115,9 +111,13 @@ Hash = Class.create(Enumerable, (function() {
             update:                 update,
             inspect:                inspect,
             toJSON:                 toJSON,
-            clone:                  clone
-        }
+            clone:                  clone,
+        },
     };
 })());
+
+function $H (object) {
+    return new Hash(object);
+};
 
 Hash.from = $H;

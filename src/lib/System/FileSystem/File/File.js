@@ -16,7 +16,7 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-Object.extend(System.FileSystem.File.prototype, (function() {
+System.FileSystem.File.prototype.addMethods((function() {
     function writeLine (str) {
         this.write(str+"\n");
     };
@@ -59,4 +59,10 @@ Object.extend(System.FileSystem.File.prototype, (function() {
         readAll:   readAll,
         inspect:   inspect,
     }
-})(), Object.Flags.None);
+})());
+
+System.FileSystem.File.prototype.addAttributes({
+    name: { get: function() {
+        return System.FileSystem.baseName(this.path);
+    }},
+});

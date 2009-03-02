@@ -55,10 +55,10 @@ FileSystem.Permission = Class.create({
             var def = (0666 - umask).toPaddedString(4,8);
             def = {
                 permission: def,
-                bits:       def[0].toInt(),
-                user:       def[1].toInt(),
-                group:      def[2].toInt(),
-                other:      def[3].toInt(),
+                bits:       def[0],
+                user:       new System.FileSystem.Permission.Mode(def[1]),
+                group:      new System.FileSystem.Permission.Mode(def[2]),
+                other:      new System.FileSystem.Permission.Mode(def[3]),
             };
 
             if (!perm.is(Number) && !perm.is(String)) {
@@ -75,18 +75,12 @@ FileSystem.Permission = Class.create({
             return {
                 permission: perm, 
                 bits:       (perm.length < 4 ? '0' : perm[0]).toInt(),
-                user:       perm[0+offset].toInt(),
-                group:      perm[1+offset].toInt(),
-                other:      perm[2+offset].toInt(),
+                user:       new System.FileSystem.Permission.Mode(perm[0+offset]),
+                group:      new System.FileSystem.Permission.Mode(perm[1+offset]),
+                other:      new System.FileSystem.Permission.Mode(perm[2+offset]),
             };
         },
     }
 });
-
-Object.extend(FileSystem.Permission, {
-    Execute: 1,
-    Write:   2,
-    Read:    4,
-}, Object.Flags.Readonly);
 
 })();

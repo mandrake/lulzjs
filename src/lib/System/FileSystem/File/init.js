@@ -19,7 +19,11 @@
 require("System/System.so");
 
 require(["System/FileSystem/FileSystem.so", "System/FileSystem/FileSystem.js"]);
-require(["System/FileSystem/Permission/Permission.js", "System/FileSystem/Time/Time.js"]);
+require([
+    "System/FileSystem/Permission/Permission.js",
+    "System/FileSystem/Permission/Mode.js",
+    "System/FileSystem/Time/Time.js",
+]);
 
 require(["File.so", "File.js"]);
 
