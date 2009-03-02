@@ -24,6 +24,7 @@ typedef struct {
     FILE*       descriptor;
     unsigned    mode;
     struct stat desc;
+    off_t       position;
 } FileInformation;
 
 #endif

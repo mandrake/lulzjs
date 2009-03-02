@@ -116,6 +116,19 @@ Object.extend(String.prototype, (function() {
         return count < 1 ? '' : new Array(count + 1).join(this);
     };
 
+    function count (string) {
+        var times = 0;
+        var check = this;
+        var pos;
+
+        while ((pos = check.indexOf(string)) !== -1) {
+            check = check.substr(pos+string.length);
+            times++;
+        }
+
+        return times;
+    };
+
     function inspect (useDoubleQuotes) {
         var escapedString = this.gsub(/[\x00-\x1f\\]/, function(match) {
             var character = String.specialChar[match[0]];
@@ -262,6 +275,7 @@ Object.extend(String.prototype, (function() {
         toArray:        toArray,
         next:           next,
         times:          times,
+        count:          count,
         inspect:        inspect,
         toJSON:         toJSON,
         unfilterJSON:   unfilterJSON,

@@ -76,18 +76,12 @@ JSBool File_close (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsv
 JSBool File_write (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 JSBool File_read (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
-JSBool File_writeBytes (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-JSBool File_readBytes (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-
 static JSFunctionSpec File_methods[] = {
     {"open",  File_open,  0, 0, 0},
     {"close", File_close, 0, 0, 0},
 
     {"write", File_write, 0, 0, 0},
     {"read",  File_read,  0, 0, 0},
-
-    {"writeBytes", File_writeBytes, 0, 0, 0},
-    {"readBytes",  File_readBytes,  0, 0, 0},
     {NULL}
 };
 

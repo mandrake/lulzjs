@@ -35,7 +35,11 @@ Object.extend(System.FileSystem.File.prototype, (function() {
     };
 
     function readToEnd () {
-        return this.read(this.size);
+        var tmp       = this.position;
+        var ret       = this.read(this.size);
+        this.position = tmp;
+
+        return ret;
     };
 
     function readAll () {
