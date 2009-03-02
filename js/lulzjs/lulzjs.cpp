@@ -17,6 +17,7 @@
 ****************************************************************************/
 
 #include "lulzjs.h"
+#include "jsfun.h"
 
 JSBool
 js_CallFunctionWithNew (JSContext* cx, jsval obj, uintN argc, jsval *argv, JSObject** newObject)
@@ -28,11 +29,12 @@ js_CallFunctionWithNew (JSContext* cx, jsval obj, uintN argc, jsval *argv, JSObj
 
     JSObject* classObj; JS_ValueToObject(cx, obj, &classObj);
 
-    if (!classObj) {
+    if (!classObj || !JS_ObjectIsFunction(cx, classObj)) {
+        JS_ReportError(cx, "The class object is null.");
         return JS_FALSE;
     }
 
-    JSClass* klass = JS_GET_CLASS(cx, classObj);
+    JSClass* klass = FUN_CLASP(GET_FUNCTION_PRIVATE(cx, classObj));
     *newObject     = JS_NewObject(cx, klass, NULL, NULL);
 
     if (!*newObject) {

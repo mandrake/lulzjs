@@ -39,17 +39,26 @@ static JSClass Directory_class = {
     JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, Directory_finalize
 };
 
+JSBool Directory_name_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
+JSBool Directory_path_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
+JSBool Directory_length_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
+
 JSBool Directory_position_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
 JSBool Directory_position_set (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
 
-JSBool Directory_path_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
-JSBool Directory_length_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
+JSBool Directory_size_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
+JSBool Directory_permission_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
+JSBool Directory_last_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
 
 static JSPropertySpec Directory_attributes[] = {
     {"path",   0, 0, Directory_path_get,   NULL},
     {"length", 0, 0, Directory_length_get, NULL},
 
     {"position", 0, 0, Directory_position_get, Directory_position_set},
+
+    {"size",       0, 0, Directory_size_get,       NULL},
+    {"permission", 0, 0, Directory_permission_get, NULL},
+    {"last",       0, 0, Directory_last_get,       NULL},
     {NULL}
 };
 

@@ -18,6 +18,9 @@
 
 #include "File.h"
 
+jsval Permission;
+jsval Time;
+
 JSBool exec (JSContext* cx) { return File_initialize(cx); }
 
 JSBool
@@ -36,6 +39,9 @@ File_initialize (JSContext* cx)
     if (object) {
         jsval property;
 
+        Permission = JS_EVAL(cx, "System.FileSystem.Permission"); 
+        Time       = JS_EVAL(cx, "System.FileSystem.Time");
+
         JSObject* File = JSVAL_TO_OBJECT(JS_EVAL(cx, "System.FileSystem.File"));
 
         JSObject* Mode = JS_NewObject(cx, NULL, NULL, NULL);
@@ -50,9 +56,6 @@ File_initialize (JSContext* cx)
             JS_SetProperty(cx, Mode, "Append", &property);
 
         JS_DefineProperty(cx, File, "End", INT_TO_JSVAL(EOF), NULL, NULL, JSPROP_READONLY);
-
-        property = INT_TO_JSVAL(666);
-        JS_SetProperty(cx, object, "hell", &property);
 
         JS_LeaveLocalRootScope(cx);
         JS_EndRequest(cx);
@@ -147,7 +150,7 @@ File_position_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
         *vp = JSVAL_NULL;
     }
     else {
-        *vp = INT_TO_JSVAL(ftell(data->descriptor));
+        JS_NewNumberValue(cx, ftello(data->descriptor), vp);
     }
 
     return JS_TRUE;
@@ -164,15 +167,15 @@ File_position_set (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
     }
 
     JS_BeginRequest(cx);
-    int32 offset; JS_ValueToInt32(cx, *vp, &offset);
+    jsdouble offset; JS_ValueToNumber(cx, *vp, &offset);
 
-    if (offset > ftell(data->descriptor)) {
+    if (offset > ftello(data->descriptor)) {
         JS_ReportError(cx, "The offset is bigger than the file's length.");
         return JS_FALSE;
     }
     JS_EndRequest(cx);
 
-    fseek(data->descriptor, offset, SEEK_SET);
+    fseeko(data->descriptor, offset, SEEK_SET);
     return JS_TRUE;
 }
 
@@ -181,7 +184,68 @@ File_size_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
 {
     FileInformation* data = (FileInformation*) JS_GetPrivate(cx, obj);
     
-    *vp = INT_TO_JSVAL(data->desc.st_size);
+    JS_NewNumberValue(cx, data->desc.st_size, vp);
+    return JS_TRUE;
+}
+
+JSBool
+File_permission_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
+{
+    FileInformation* data = (FileInformation*) JS_GetPrivate(cx, obj);
+
+    JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
+
+    char bitString[10]; snprintf(bitString, 9, "%lo", (long unsigned) data->desc.st_mode);
+    int  bits = atoi(bitString);
+
+    // % 1000 gets the file mode bits.
+    jsval argv[] = {INT_TO_JSVAL(bits % 10000)};
+    JSObject* permission;
+
+    if (!JS_CallFunctionWithNew(cx, Permission, 1, argv, &permission)) {
+        if (!JS_IsExceptionPending(cx)) {
+            JS_ReportError(cx, "Something went wrong with the creation of the object.");
+        }
+
+        return JS_FALSE;
+    }
+
+    *vp = OBJECT_TO_JSVAL(permission);
+
+    JS_LeaveLocalRootScope(cx);
+    JS_EndRequest(cx);
+    return JS_TRUE;
+}
+
+JSBool
+File_last_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
+{
+    FileInformation* data = (FileInformation*) JS_GetPrivate(cx, obj);
+
+    JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
+
+    jsval access, modification, change;
+    JS_NewNumberValue(cx, data->desc.st_atime*1000, &access);
+    JS_NewNumberValue(cx, data->desc.st_mtime*1000, &modification);
+    JS_NewNumberValue(cx, data->desc.st_ctime*1000, &change);
+
+    jsval argv[] = {access, modification, change};
+    JSObject* last;
+
+    if (!JS_CallFunctionWithNew(cx, Time, 3, argv, &last)) {
+        if (!JS_IsExceptionPending(cx)) {
+            JS_ReportError(cx, "Something went wrong with the creation of the object.");
+        }
+
+        return JS_FALSE;
+    }
+
+    *vp = OBJECT_TO_JSVAL(last);
+
+    JS_LeaveLocalRootScope(cx);
+    JS_EndRequest(cx);
     return JS_TRUE;
 }
 
@@ -253,7 +317,7 @@ File_open (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval
             realMode = "ab+";
             break;
         }
-        data->descriptor = fopen(data->path.c_str(), realMode.c_str());
+        data->descriptor = fopen64(data->path.c_str(), realMode.c_str());
     }
 
     JS_LeaveLocalRootScope(cx);

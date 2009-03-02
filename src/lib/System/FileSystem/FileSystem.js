@@ -18,10 +18,10 @@
 
 Object.extend(System.FileSystem, (function() {
     function dirName (file) {
-        if (file.match(/(\/).*(\/)/)) {
-            return /^(.*?)\//.exec(file)[1];
+        if (file.count("/") >= 2) {
+            return /((\/)?.*?)\//.exec(file)[1];
         }
-        else if (file.match(/\//)) {
+        else if (file.startsWith("/")) {
             return '/';
         }
         else {
@@ -34,7 +34,8 @@ Object.extend(System.FileSystem, (function() {
     };
 
     return {
-        baseName: baseName
+        dirName:  dirName,
+        baseName: baseName,
     };
 })(), Object.Flags.None);
 

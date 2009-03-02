@@ -19,10 +19,14 @@
 #ifndef _SYSTEM_FILESYSTEM_FILE_H
 #define _SYSTEM_FILESYSTEM_FILE_H
 
-#undef  _GNU_SOURCE
-#undef  _FILE_OFFSET_BITS
-#define _GNU_SOURCE
-#define _FILE_OFFSET_BITS 64
+#ifdef __APPLE__
+#   define fopen64(path, mode) fopen(path, mode)
+#else
+#   undef  _GNU_SOURCE
+#   undef  _FILE_OFFSET_BITS
+#   define _GNU_SOURCE 1
+#   define _FILE_OFFSET_BITS 64
+#endif
 
 #include "lulzjs.h"
 
@@ -52,12 +56,17 @@ JSBool File_position_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
 JSBool File_position_set (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
 
 JSBool File_size_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
+JSBool File_permission_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
+JSBool File_last_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
+
 
 static JSPropertySpec File_attributes[] = {
     {"path",     0, 0, File_path_get,     File_path_set},
     {"position", 0, 0, File_position_get, File_position_set},
 
-    {"size",   0, 0, File_size_get,   NULL},
+    {"size",       0, 0, File_size_get,       NULL},
+    {"permission", 0, 0, File_permission_get, NULL},
+    {"last",       0, 0, File_last_get,       NULL},
     {NULL}
 };
 

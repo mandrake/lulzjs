@@ -38,9 +38,9 @@ require(["Object.so", "Object.js"]);
 
 require([
     "Class.js", "Function.js", "Date.js", "RegExp.js",
-    "PeriodicalExecuter.js", "String.js", "Template.js", "Enumerable.js",
-    "Array.js", "Hash.js", "Number.js", "Range.js",
-    "XML.js", "Bytes.js", "Thread", "random.js"
+    "PeriodicalExecuter.js", "String.js", "String.so", "Template.js",
+    "Enumerable.js", "Array.js", "Hash.js", "Number.js",
+    "Range.js", "XML.js", "Thread", "random.js"
 ]);
 
 //Program.GCExecution = new PeriodicalExecuter(function(){Program.GC()}, 60);

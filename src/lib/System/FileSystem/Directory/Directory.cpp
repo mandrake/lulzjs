@@ -18,8 +18,10 @@
 
 #include "Directory.h"
 
-JSObject* File;
-JSObject* Directory;
+jsval File;
+jsval Directory;
+jsval Permission;
+jsval Time;
 
 JSBool exec (JSContext* cx) { return Directory_initialize(cx); }
 
@@ -38,10 +40,11 @@ Directory_initialize (JSContext* cx)
     );
 
     if (object) {
-        File      = JSVAL_TO_OBJECT(JS_EVAL(cx, "System.FileSystem.File"));
-        Directory = JSVAL_TO_OBJECT(JS_EVAL(cx, "System.FileSystem.Directory"));
+        File       = JS_EVAL(cx, "System.FileSystem.File");
+        Directory  = JS_EVAL(cx, "System.FileSystem.Directory");
+        Permission = JS_EVAL(cx, "System.FileSystem.Permission"); 
+        Time       = JS_EVAL(cx, "System.FileSystem.Time");
 
-        JS_LeaveLocalRootScope(cx);
         JS_EndRequest(cx);
         return JS_TRUE;
     }
@@ -59,7 +62,6 @@ Directory_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv,
 
     data->descriptor = NULL;
     data->position   = 0;
-
 
     if (argc) {
         jsval ret;
@@ -93,6 +95,28 @@ Directory_finalize (JSContext* cx, JSObject* object)
 }
 
 JSBool
+Directory_name_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
+{
+    DirectoryInformation* data = (DirectoryInformation*) JS_GetPrivate(cx, obj);
+
+    if (data->path.empty()) {
+        JS_ReportError(cx, "There is no directory initialized.");
+        return JS_FALSE;
+    }
+
+    JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
+
+    *vp = STRING_TO_JSVAL(JS_NewString(
+        cx, JS_strdup(cx, data->path.c_str()), data->path.length()
+    ));
+
+    JS_LeaveLocalRootScope(cx);
+    JS_EndRequest(cx);
+    return JS_TRUE;
+}
+
+JSBool
 Directory_path_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
 {
     DirectoryInformation* data = (DirectoryInformation*) JS_GetPrivate(cx, obj);
@@ -119,7 +143,12 @@ Directory_length_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
 {
     DirectoryInformation* data = (DirectoryInformation*) JS_GetPrivate(cx, obj);
 
-    *vp = INT_TO_JSVAL(data->pointers.size());
+    if (!data->descriptor) {
+        *vp = JSVAL_NULL;
+    }
+    else {
+        *vp = INT_TO_JSVAL(data->pointers.size());
+    }
 
     return JS_TRUE;
 }
@@ -130,11 +159,11 @@ Directory_position_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
     DirectoryInformation* data = (DirectoryInformation*) JS_GetPrivate(cx, obj);
 
     if (!data->descriptor) {
-        JS_ReportError(cx, "You have to open a directory first.");
-        return JS_FALSE;
+        *vp = JSVAL_NULL;
     }
-
-    *vp = INT_TO_JSVAL(data->position);
+    else {
+        *vp = INT_TO_JSVAL(data->position);
+    }
 
     return JS_TRUE;
 }
@@ -172,6 +201,76 @@ Directory_position_set (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
 
     seekdir(data->descriptor, data->pointers[(data->position = position)]);
 
+    return JS_TRUE;
+}
+
+JSBool
+Directory_size_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
+{
+    DirectoryInformation* data = (DirectoryInformation*) JS_GetPrivate(cx, obj);
+    
+    JS_NewNumberValue(cx, data->desc.st_size, vp);
+    return JS_TRUE;
+}
+
+JSBool
+Directory_permission_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
+{
+    DirectoryInformation* data = (DirectoryInformation*) JS_GetPrivate(cx, obj);
+
+    JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
+
+    char bitString[10]; snprintf(bitString, 9, "%lo", (long unsigned) data->desc.st_mode);
+    int  bits = atoi(bitString);
+
+    // % 10000 gets the file mode bits.
+    jsval argv[] = {INT_TO_JSVAL(bits % 10000)};
+    JSObject* permission;
+
+    if (!JS_CallFunctionWithNew(cx, Permission, 1, argv, &permission)) {
+        if (!JS_IsExceptionPending(cx)) {
+            JS_ReportError(cx, "Something went wrong with the creation of the object.");
+        }
+
+        return JS_FALSE;
+    }
+
+    *vp = OBJECT_TO_JSVAL(permission);
+
+    JS_LeaveLocalRootScope(cx);
+    JS_EndRequest(cx);
+    return JS_TRUE;
+}
+
+JSBool
+Directory_last_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
+{
+    DirectoryInformation* data = (DirectoryInformation*) JS_GetPrivate(cx, obj);
+
+    JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
+
+    jsval access, modification, change;
+    JS_NewNumberValue(cx, data->desc.st_atime*1000, &access);
+    JS_NewNumberValue(cx, data->desc.st_mtime*1000, &modification);
+    JS_NewNumberValue(cx, data->desc.st_ctime*1000, &change);
+
+    jsval argv[] = {access, modification, change};
+    JSObject* last;
+
+    if (!JS_CallFunctionWithNew(cx, Time, 3, argv, &last)) {
+        if (!JS_IsExceptionPending(cx)) {
+            JS_ReportError(cx, "Something went wrong with the creation of the object.");
+        }
+
+        return JS_FALSE;
+    }
+
+    *vp = OBJECT_TO_JSVAL(last);
+
+    JS_LeaveLocalRootScope(cx);
+    JS_EndRequest(cx);
     return JS_TRUE;
 }
 
@@ -265,14 +364,12 @@ JSBool
 Directory_fileAt (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval)
 {
     JS_BeginRequest(cx);
-    JS_EnterLocalRootScope(cx);
 
     int position;
 
     if (argc != 1 || !JS_ConvertArguments(cx, argc, argv, "i", &position)) {
         JS_ReportError(cx, "Not enough parameters.");
 
-        JS_LeaveLocalRootScope(cx);
         JS_EndRequest(cx);
         return JS_FALSE;
     }
@@ -282,6 +379,7 @@ Directory_fileAt (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* 
 
     if (position < 0 || position > data->pointers.size()) {
         JS_ResumeRequest(cx, req);
+        JS_EnterLocalRootScope(cx);
 
         const char message[] = "The position is out of range.";
         jsval argv[] = {STRING_TO_JSVAL(
@@ -302,7 +400,6 @@ Directory_fileAt (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* 
         JS_ReportError(cx, "There is no opened directory.");
 
         JS_ResumeRequest(cx, req);
-        JS_LeaveLocalRootScope(cx);
         JS_EndRequest(cx);
         return JS_FALSE;
     }
@@ -317,6 +414,7 @@ Directory_fileAt (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* 
     stat(path.c_str(), &file);
 
     JS_ResumeRequest(cx, req);
+    JS_EnterLocalRootScope(cx);
 
     std::string newPath = data->path + dir->d_name;
     jsval newArgv[] = {
@@ -326,10 +424,10 @@ Directory_fileAt (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* 
     JSObject* retObject = NULL;
     jsval     classObj;
     if (S_ISREG(file.st_mode)) {
-        classObj = OBJECT_TO_JSVAL(File);
+        classObj = File;
     }
     else if (S_ISDIR(file.st_mode)) {
-        classObj = OBJECT_TO_JSVAL(Directory);
+        classObj = Directory;
     }
 
     if (JS_IsExceptionPending(cx)) {
@@ -337,6 +435,10 @@ Directory_fileAt (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* 
     }
 
     if (!JS_CallFunctionWithNew(cx, classObj, 1, newArgv, &retObject)) {
+        if (!JS_IsExceptionPending(cx)) {
+            JS_ReportError(cx, "Something went wrong with the creation of the object.");
+        }
+
         return JS_FALSE;
     }
 

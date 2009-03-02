@@ -22,9 +22,9 @@ var FileSystem = System.FileSystem;
 
 FileSystem.Time = Class.create({
     constructor: function (access, modification, change) {
-        (this.access       = new Date()).setTime(access);
-        (this.modification = new Date()).setTime(modification);
-        (this.change       = new Date()).setTime(change);
+        this.access       = new Date(access);
+        this.modification = new Date(modification);
+        this.change       = new Date(change);
     },
 
     methods: {
