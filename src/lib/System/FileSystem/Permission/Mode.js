@@ -16,34 +16,37 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-Object.extend(System.FileSystem, (function() {
-    function dirName (file) {
-        if (file.count("/") >= 2) {
-            return /((\/)?.*?)\//.exec(file)[1];
-        }
-        else if (file.startsWith("/")) {
-            return '/';
-        }
-        else {
-            return '.';
-        }
-    };
+(function() {
 
-    function baseName (file) {
-        if (file == "/" || file == "." || file == "..") {
-            return file;
-        }
+var FileSystem = System.FileSystem;
+var Permission = FileSystem.Permission
 
-        if (file.endsWith("/")) {
-            file = file.substr(0, file.length-1);
-        }
+Permission.Mode = Class.create({
+    constructor: function (mode) {
+        this.__defineProperty__("mode", String(mode).toInt(), Object.Flags.None);
+    },
 
-        return file.match(/([^\/]*)$/)[1];
-    };
+    methods: {
+        toString: function () {
+            var str = new Array;
 
-    return {
-        dirName:  dirName,
-        baseName: baseName,
-    };
-})(), Object.Flags.None);
+            str.push(this.mode & System.FileSystem.Permission.Mode.Read    ? "r" : "-");
+            str.push(this.mode & System.FileSystem.Permission.Mode.Write   ? "w" : "-");
+            str.push(this.mode & System.FileSystem.Permission.Mode.Execute ? "x" : "-");
 
+            return str.join('');
+        },
+
+        inspect: function () {
+            return '#<Mode: mode={0}, string="{1}">'.format([this.mode, this.toString()]);
+        },
+    },
+
+    static: {
+        Execute: 1,
+        Write:   2,
+        Read:    4,
+    }
+});
+
+})();
