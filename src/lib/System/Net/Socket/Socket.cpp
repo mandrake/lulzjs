@@ -320,14 +320,7 @@ Socket_receive (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval 
     while (offset < size) {
         tmp = recv(data->socket, (string+offset), (size-offset)*sizeof(char), flags);
 
-        if (tmp == -1) {
-            JS_ReportError(cx, "An error occurred with the socket.");
-            JS_free(cx, string);
-            return JS_FALSE;
-        }
-        else if (tmp == 0) {
-            jsConnected = JSVAL_FALSE;
-            JS_SetProperty(cx, object, "connected", &jsConnected);
+        if (tmp == -1 || tmp == 0) {
             break;
         }
         
@@ -335,6 +328,16 @@ Socket_receive (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval 
     }
     string = (char*) JS_realloc(cx, string, offset);
     JS_ResumeRequest(cx, req);
+
+    if (tmp == -1) {
+        JS_ReportError(cx, "An error occurred with the socket.");
+        JS_free(cx, string);
+        return JS_FALSE;
+    }
+    else if (tmp == 0) {
+        jsConnected = JSVAL_FALSE;
+        JS_SetProperty(cx, object, "connected", &jsConnected);
+    }
 
     *rval = STRING_TO_JSVAL(JS_NewString(cx, string, offset));
 

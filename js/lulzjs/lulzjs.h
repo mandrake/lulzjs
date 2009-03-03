@@ -98,12 +98,13 @@ class Script
     static JSScript* load (JSContext* cx, std::string path);
     static JSBool    isBytecode (const char* bytecode);
     static JSBool    isBytecode (std::ifstream* file);
+    static JSBool    isCompilable (JSContext* cx, std::string source);
 
   private:
     JSContext*  _cx;
     char*       _bytecode;
     uint32      _length;
-    JSScript*   _script;
+    JSObject*   _script;
     std::string _filename;
     std::string _source;
 

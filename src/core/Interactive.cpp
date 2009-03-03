@@ -23,7 +23,6 @@ Interactive (JSContext* cx, JSObject* global)
 {
     JSBool exit = JS_FALSE;
 
-    JSScript* script;
     jsval     result;
     JSString* strResult;
 
@@ -37,8 +36,6 @@ Interactive (JSContext* cx, JSObject* global)
     std::cout << "lulzJS " << __LJS_VERSION__ << std::endl << std::endl;
 
     do {
-        JS_BeginRequest(cx);
-
         startline = lineno = 1;
         whole = NULL;
 
@@ -63,7 +60,7 @@ Interactive (JSContext* cx, JSObject* global)
 
             free(line);
             lineno++; lineNumber++;
-        } while (!JS_BufferIsCompilableUnit(cx, global, whole, strlen(whole)));
+        } while (!lulzJS::Script::isCompilable(cx, whole));
 
         if (strlen(whole) == 0) {
             continue;
@@ -71,31 +68,32 @@ Interactive (JSContext* cx, JSObject* global)
 
         add_history(whole);
 
-        JS_ClearPendingException(cx);
-        script = JS_CompileScript(cx, global, whole, strlen(whole), "lulzJS", lineNumber);
 
-        if (script) {
-            if (JS_ExecuteScript(cx, global, script, &result)) {
-                jsval val = result;
-                jsval jsObj; JS_GetProperty(cx, global, "Object", &jsObj);
-                JSObject* object = JSVAL_TO_OBJECT(jsObj);
+        JS_BeginRequest(cx);
+        JS_EnterLocalRootScope(cx);
+        lulzJS::Script script(cx, whole);
+        jsval val = script.execute();
 
-                jsval argv[] = {val};
-                JS_CallFunctionName(cx, object, "inspect", 1, argv, &result);
+        if (!JSVAL_IS_VOID(val)) {
+            jsval jsObj; JS_GetProperty(cx, global, "Object", &jsObj);
+            JSObject* object = JSVAL_TO_OBJECT(jsObj);
 
-                strResult = JS_ValueToString(cx, result);
+            jsval argv[] = {val};
+            JS_CallFunctionName(cx, object, "inspect", 1, argv, &result);
 
-                if (strResult) {
-                    std::string str = JS_GetStringBytes(strResult);
+            strResult = JS_ValueToString(cx, result);
 
-                    if (str != "undefined") {
-                        std::cout << "=> " << JS_GetStringBytes(strResult) << std::endl;
-                    }
+            if (strResult) {
+                std::string str = JS_GetStringBytes(strResult);
+
+                if (str != "undefined") {
+                    std::cout << "=> " << JS_GetStringBytes(strResult) << std::endl;
                 }
             }
-            JS_DestroyScript(cx, script);
         }
-        
+        JS_LeaveLocalRootScope(cx);
+
+        JS_ClearPendingException(cx);
         free(whole);
 
         JS_EndRequest(cx);

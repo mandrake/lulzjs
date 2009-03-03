@@ -327,7 +327,7 @@ Script::Script (JSContext* cx, JSScript* script)
     _cx         = cx;
     _bytecode   = NULL;
     _length     = 0;
-    _script     = script;
+    _script     = JS_NewScriptObject(cx, script);
     _loaded     = true;
     _compiled   = false;
     _executable = true;
@@ -341,8 +341,11 @@ Script::Script (JSContext* cx, std::string source)
     _source     = source;
     _stripShebang();
     JS_BeginRequest(_cx);
-    _script     = JS_CompileScript(cx, JS_GetGlobalObject(cx), _source.c_str(), _source.length(), "lulzJS", 1);
-    JS_AddRoot(_cx, _script);
+    _script     = JS_NewScriptObject(cx,
+        JS_CompileScript(cx, JS_GetGlobalObject(cx), 
+        _source.c_str(), _source.length(), "lulzJS", 1)
+    );
+    JS_AddRoot(cx, &_script);
     JS_EndRequest(_cx);
     _loaded     = true;
     _compiled   = false;
@@ -370,8 +373,7 @@ Script::~Script (void)
 
     if (_script) {
         JS_BeginRequest(_cx);
-        JS_RemoveRoot(_cx, _script);
-        JS_DestroyScript(_cx, _script);
+        JS_RemoveRoot(_cx, &_script);
         JS_EndRequest(_cx);
     }
 }
@@ -424,7 +426,11 @@ Script::load (std::string path, int mode)
                 source[fileStat.st_size] = '\0';
                 _source = source; _stripShebang();
                 JS_BeginRequest(_cx);
-                _script = JS_CompileScript(_cx, JS_GetGlobalObject(_cx), _source.c_str(), _source.length(), path.c_str(), 1);
+                _script = JS_NewScriptObject(_cx,
+                    JS_CompileScript(_cx, JS_GetGlobalObject(_cx),
+                    _source.c_str(), _source.length(), path.c_str(), 1)
+                );
+                JS_AddRoot(_cx, &_script);
                 JS_EndRequest(_cx);
                 delete [] source;
 
@@ -473,7 +479,8 @@ Script::compile (void)
     JSXDRState* xdr = JS_XDRNewMem(_cx, JSXDR_ENCODE);
     char* bytes;
 
-    if (JS_XDRScript(xdr, &_script)) {
+    JSScript* script = (JSScript*) JS_GetPrivate(_cx, _script);
+    if (JS_XDRScript(xdr, &script)) {
         bytes     = (char*) JS_XDRMemGetData(xdr, &_length);
         _bytecode = (char*) malloc(_length*sizeof(char));
         memcpy(_bytecode, bytes, _length);
@@ -494,7 +501,8 @@ Script::decompile (void)
     JSXDRState* xdr = JS_XDRNewMem(_cx, JSXDR_DECODE);
     JS_XDRMemSetData(xdr, _bytecode, _length);
 
-    if (JS_XDRScript(xdr, &_script)) {
+    JSScript* script = (JSScript*) JS_GetPrivate(_cx, _script);
+    if (JS_XDRScript(xdr, &script)) {
         JS_XDRMemSetData(xdr, NULL, 0);
     }
     JS_XDRDestroy(xdr);
@@ -513,8 +521,11 @@ Script::execute (void)
             this->decompile();
         }
         else if (!_source.empty()) {
-            _script = JS_CompileScript(_cx, JS_GetGlobalObject(_cx), _source.c_str(), _source.length(), _filename.c_str(), 1);
-            JS_AddRoot(_cx, _script);
+            _script = JS_NewScriptObject(_cx,
+                JS_CompileScript(_cx, JS_GetGlobalObject(_cx),
+                _source.c_str(), _source.length(), _filename.c_str(), 1)
+            );
+            JS_AddRoot(_cx, &_script);
             _executable = true;
         }
     }
@@ -524,7 +535,7 @@ Script::execute (void)
     }
     
     jsval ret = JSVAL_VOID;
-    JS_ExecuteScript(_cx, JS_GetGlobalObject(_cx), _script, &ret);
+    JS_ExecuteScript(_cx, JS_GetGlobalObject(_cx), (JSScript*) JS_GetPrivate(_cx, _script), &ret);
 
     JS_EndRequest(_cx);
     return ret;
@@ -560,6 +571,16 @@ Script::isBytecode (std::ifstream* file)
         }
     }
     delete file;
+
+    return result;
+}
+
+JSBool
+Script::isCompilable (JSContext* cx, std::string source)
+{
+    JS_BeginRequest(cx);
+    JSBool result = JS_BufferIsCompilableUnit(cx, JS_GetGlobalObject(cx), source.c_str(), source.length());
+    JS_EndRequest(cx);
 
     return result;
 }

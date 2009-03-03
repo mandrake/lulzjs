@@ -6,7 +6,7 @@ var socket = new Socket;
 socket.listen(null, 2707);
 
 var client = socket.accept();
-var bytes = client.receiveBytes(4);
-Console.writeLine("Client: "+bytes.inspect());
-client.sendBytes(new Bytes([0x61,0x00]));
+var bytes = client.receive(4);
+Console.writeLine("Client: "+bytes);
+client.send("\x61\x00");
 Console.writeLine("DONE :O");
