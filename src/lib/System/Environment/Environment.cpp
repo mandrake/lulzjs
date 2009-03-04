@@ -35,6 +35,18 @@ Environment_initialize (JSContext* cx)
     if (object) {
         JS_DefineFunctions(cx, object, Environment_methods);
 
+        char* const* environment = environ;
+
+        while (*environment) {
+            std::string env   = *environment++;
+            size_t      split = env.find_first_of('=');
+
+            JS_DefineProperty(
+                cx, object, env.substr(0, split).c_str(),
+                JSVAL_NULL, NULL, NULL, JSPROP_ENUMERATE
+            );
+        }
+
         JS_LeaveLocalRootScope(cx);
         JS_EndRequest(cx);
         return JS_TRUE;
@@ -51,6 +63,10 @@ Environment_get (JSContext *cx, JSObject *obj, jsval id, jsval *vp)
 
     jsval jsName; JS_IdToValue(cx, id, &jsName);
     std::string name = JS_GetStringBytes(JS_ValueToString(cx, jsName));
+
+    if (name == "__iterator__" || name == "prototype" || name == "__parent__") {
+        return JS_TRUE;
+    }
 
     char* value = getenv(name.c_str());
 

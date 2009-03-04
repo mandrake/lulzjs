@@ -21,6 +21,8 @@
 
 #include "lulzjs.h"
 
+extern char **environ;
+
 extern "C" JSBool exec (JSContext* cx);
 JSBool Environment_initialize (JSContext* cx);
 
