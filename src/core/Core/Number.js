@@ -87,6 +87,10 @@ Object.extend(Number.prototype, (function() {
         return this.toString(base).toUpperCase();
     };
 
+    function toChar () {
+        return String.fromCharCode(this);
+    };
+
     return {
         next:           next,
         times:          times,
@@ -105,5 +109,6 @@ Object.extend(Number.prototype, (function() {
         acos:           acos,
         atan:           atan,
         toBase:         toBase,
+        toChar:         toChar,
     };
 })(), Object.Flags.None);

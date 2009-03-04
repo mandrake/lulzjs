@@ -367,22 +367,22 @@ __Core_getPath (JSContext* cx, std::string fileName)
     
     struct stat test;
     if (stat(path.c_str(), &test) != 0) {
-        jsval jsPath;
-        JS_GetProperty(cx, JS_GetGlobalObject(cx), "__PATH__", &jsPath);
-        JSObject* lPath = JSVAL_TO_OBJECT(jsPath);
+        JSObject* lPath; JS_ValueToObject(cx, JS_EVAL(cx, "__PATH__"), &lPath);
 
-        jsuint length;
-        JS_GetArrayLength(cx, lPath, &length);
+        if (lPath) {
+            jsuint length;
+            JS_GetArrayLength(cx, lPath, &length);
 
-        size_t i;
-        for (i = 0; i < length; i++) {
-            jsval pathFile;
-            JS_GetElement(cx, lPath, i, &pathFile);
+            size_t i;
+            for (i = 0; i < length; i++) {
+                jsval pathFile;
+                JS_GetElement(cx, lPath, i, &pathFile);
 
-            path = std::string(JS_GetStringBytes(JSVAL_TO_STRING(pathFile))) + "/" + fileName;
+                path = std::string(JS_GetStringBytes(JSVAL_TO_STRING(pathFile))) + "/" + fileName;
 
-            if (stat(path.c_str(), &test) == 0) {
-                break;
+                if (stat(path.c_str(), &test) == 0) {
+                    break;
+                }
             }
         }
     }
@@ -417,8 +417,14 @@ __Core_include (JSContext* cx, std::string path)
         struct stat cacheStat;
         if (!stat(cachePath.c_str(), &cacheStat)) {
             if (cacheStat.st_mtime >= pathStat.st_mtime) {
-                lulzJS::Script script(cx, cachePath, lulzJS::Script::Bytecode);
-                script.execute();
+                try {
+                    lulzJS::Script script(cx, cachePath, lulzJS::Script::Bytecode);
+                    script.execute();
+                }
+                catch (std::runtime_error e) {
+                    JS_ReportPendingException(cx);
+                    return JS_FALSE;
+                }
 
                 if (JS_IsExceptionPending(cx)) {
                     JS_ReportPendingException(cx);
@@ -431,13 +437,12 @@ __Core_include (JSContext* cx, std::string path)
         std::cerr << "(javascript) path: " << path << std::endl;
         #endif
 
-        lulzJS::Script script(cx, path, lulzJS::Script::Text);
-        script.execute();
-
-        if (!JS_IsExceptionPending(cx)) {
+        try {
+            lulzJS::Script script(cx, path, lulzJS::Script::Text);
+            script.execute();
             script.save(cachePath, lulzJS::Script::Bytecode);
         }
-        else {
+        catch (std::runtime_error e) {
             JS_ReportPendingException(cx);
             return JS_FALSE;
         }

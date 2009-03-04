@@ -17,7 +17,7 @@
 ****************************************************************************/
 
 Object.extend(System.Net.Socket.prototype, {
-    sendLine: function (str, options) {
+    writeLine: function (str, options) {
         options = options || {};
         var flags     = options.flags || 0;
         var separator = options.separator || "\r\n";
@@ -27,11 +27,11 @@ Object.extend(System.Net.Socket.prototype, {
         }
 
         for (var i = 0; i < str.length; i++) {
-            this.send(str[i]+separator, flags)
+            this.write(str[i]+separator, flags)
         }
     },
 
-    receiveLine: function (options) {
+    readLine: function (options) {
         options = options || {};
 
         var times     = options.times     || 1;
@@ -42,7 +42,7 @@ Object.extend(System.Net.Socket.prototype, {
         for (var i = 0; i < times; i++) {
             var position = 0;
             var ch;
-            while (ch = this.receive(1, flags)) {
+            while (ch = this.read(1, flags)) {
                 if (ch == separator[position]) {
                     position++;
 

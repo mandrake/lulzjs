@@ -340,13 +340,20 @@ Script::Script (JSContext* cx, std::string source)
     _length     = 0;
     _source     = source;
     _stripShebang();
+
     JS_BeginRequest(_cx);
-    _script     = JS_NewScriptObject(cx,
-        JS_CompileScript(cx, JS_GetGlobalObject(cx), 
-        _source.c_str(), _source.length(), "lulzJS", 1)
-    );
-    JS_AddRoot(cx, &_script);
+    JSScript* script = JS_CompileScript(cx, JS_GetGlobalObject(cx), _source.c_str(), _source.length(), "lulzJS", 1);
+    
+    if (script) {
+        _script = JS_NewScriptObject(cx, script);
+        JS_AddRoot(cx, &_script);
+    }
     JS_EndRequest(_cx);
+
+    if (!script) {
+        throw std::runtime_error("The script couldn't be compiled.");
+    }
+
     _loaded     = true;
     _compiled   = false;
     _executable = true;
@@ -425,13 +432,19 @@ Script::load (std::string path, int mode)
                 file.read(source, fileStat.st_size);
                 source[fileStat.st_size] = '\0';
                 _source = source; _stripShebang();
+
                 JS_BeginRequest(_cx);
-                _script = JS_NewScriptObject(_cx,
-                    JS_CompileScript(_cx, JS_GetGlobalObject(_cx),
-                    _source.c_str(), _source.length(), path.c_str(), 1)
-                );
-                JS_AddRoot(_cx, &_script);
+                JSScript* script = JS_CompileScript(_cx, JS_GetGlobalObject(_cx), _source.c_str(), _source.length(), path.c_str(), 1);
+                
+                if (script) {
+                    _script = JS_NewScriptObject(_cx, script);
+                    JS_AddRoot(_cx, &_script);
+                }
                 JS_EndRequest(_cx);
+            
+                if (!script) {
+                    throw std::runtime_error("The script couldn't be compiled.");
+                }
                 delete [] source;
 
                 file.close();
@@ -521,11 +534,15 @@ Script::execute (void)
             this->decompile();
         }
         else if (!_source.empty()) {
-            _script = JS_NewScriptObject(_cx,
-                JS_CompileScript(_cx, JS_GetGlobalObject(_cx),
-                _source.c_str(), _source.length(), _filename.c_str(), 1)
-            );
-            JS_AddRoot(_cx, &_script);
+            JSScript* script = JS_CompileScript(_cx, JS_GetGlobalObject(_cx), _source.c_str(), _source.length(), "lulzJS", 1);
+            if (script) {
+                _script = JS_NewScriptObject(_cx, script);
+                JS_AddRoot(_cx, &_script);
+            }
+        
+            if (!script) {
+                throw std::runtime_error("The script couldn't be compiled.");
+            }
             _executable = true;
         }
     }

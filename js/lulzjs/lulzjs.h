@@ -71,6 +71,7 @@ JSBool          Compile_save (JSContext* cx, JSScript* script, const char* path)
 #include <iostream>
 #include <string>
 #include <fstream>
+#include <stdexcept>
 
 namespace lulzJS {
 
