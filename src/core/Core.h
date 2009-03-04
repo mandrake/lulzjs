@@ -51,17 +51,6 @@ JSBool Core_GC (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rv
 JSBool Core_die (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
 JSBool Core_exit (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
 
-JSBool Core_ENV (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
-
-/*
- * Execute a system command and return the output.
- *
- * PARAMS:
- *      command (String) > The string that the system will execute.
- *
- * RETURN:
- *     String < The command's output.
- */
 JSBool Core_exec (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
 
 JSBool Core_sleep (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);
@@ -76,7 +65,6 @@ static JSFunctionSpec Core_methods[] = {
     {"die",  Core_die,  0, 0, 0},
     {"exit", Core_exit, 0, 0, 0},
 
-    {"ENV",   Core_ENV,  0, 0, 0},
     {"exec",  Core_exec, 0, 0, 0},
     {"sleep", Core_sleep, 0, 0, 0},
 

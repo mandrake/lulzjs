@@ -38,6 +38,7 @@ LIB_CORE_LDFLAGS = ${LDFLAGS}
 LIB_SYSTEM_DIR = src/lib/System
 LIB_SYSTEM = \
 	${LIB_SYSTEM_DIR}/System.o \
+	${LIB_SYSTEM_DIR}/Environment/Environment.o \
 	${LIB_SYSTEM_DIR}/Console/Console.o \
 	${LIB_SYSTEM_DIR}/FileSystem/FileSystem.o ${LIB_SYSTEM_DIR}/FileSystem/File/File.o ${LIB_SYSTEM_DIR}/FileSystem/Directory/Directory.o \
 	${LIB_SYSTEM_DIR}/Net/Net.o ${LIB_SYSTEM_DIR}/Net/Socket/Socket.o ${LIB_SYSTEM_DIR}/Net/Protocol/Protocol.o \
@@ -85,6 +86,7 @@ $(LIB_SYSTEM): $(LIB_SYSTEM:.o=.cpp)
 libsystem_install: libsystem
 	mkdir -p ${LJS_LIBDIR}
 	mkdir -p ${LJS_LIBDIR}/System
+	mkdir -p ${LJS_LIBDIR}/System/Environment
 	mkdir -p ${LJS_LIBDIR}/System/Console
 	mkdir -p ${LJS_LIBDIR}/System/FileSystem
 	mkdir -p ${LJS_LIBDIR}/System/FileSystem/File
@@ -102,6 +104,9 @@ libsystem_install: libsystem
 ########
 	cp -f ${LIB_SYSTEM_DIR}/init.js								${LJS_LIBDIR}/System/init.js
 	cp -f ${LIB_SYSTEM_DIR}/System.o							${LJS_LIBDIR}/System/System.so
+########
+	cp -f ${LIB_SYSTEM_DIR}/Environment/init.js                             ${LJS_LIBDIR}/System/Environment/init.js
+	cp -f ${LIB_SYSTEM_DIR}/Environment/Environment.o			${LJS_LIBDIR}/System/Environment/Environment.so
 ########
 	cp -f ${LIB_SYSTEM_DIR}/FileSystem/init.js					${LJS_LIBDIR}/System/FileSystem/init.js
 	cp -f ${LIB_SYSTEM_DIR}/FileSystem/FileSystem.o				${LJS_LIBDIR}/System/FileSystem/FileSystem.so

@@ -47,8 +47,11 @@ require([
 
 // Isolate the used variables.
 (function(){
+    require("System/System.so");
+    require("System/Environment/Environment.so");
+
     // Include the environment paths in the current script.
-    var PATH = ENV("JSPATH");
+    var PATH = System.Environment.JSPATH;
     if (PATH) {
         let re = /([^:])+/g;
     
@@ -59,7 +62,7 @@ require([
     }
 
     // Include the standards include following the environment variable.
-    var INCLUDE = ENV("JSINCLUDE");
+    var INCLUDE = System.Environment.JSINCLUDE;
     if (INCLUDE) {
         let re = /([^:])+/g;
     

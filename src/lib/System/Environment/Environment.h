@@ -16,37 +16,26 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-// Global library object
-require("System.so")
+#ifndef _SYSTEM_H
+#define _SYSTEM_H
 
-require("Environment/Environment.so");
+#include "lulzjs.h"
 
-// Input output modules
-require("FileSystem/FileSystem.so")
+extern "C" JSBool exec (JSContext* cx);
+JSBool Environment_initialize (JSContext* cx);
 
-require(["FileSystem/File/File.so", "FileSystem/File/File.js"]);
-require(["FileSystem/Directory/Directory.so", "FileSystem/Directory/Directory.js"]);
+JSBool Environment_get (JSContext *cx, JSObject *obj, jsval id, jsval *vp);
+JSBool Environment_set (JSContext *cx, JSObject *obj, jsval id, jsval *vp);
+JSBool Environment_del (JSContext *cx, JSObject *obj, jsval id, jsval *vp);
 
-// Networking modules
-require("Net/Net.so");
+static JSClass Environment_class = {
+    "Environment", 0,
+    JS_PropertyStub, Environment_del, Environment_get, Environment_set,
+    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub
+};
 
-require(["Net/Socket/Socket.so", "Net/Socket/Socket.js"]);
+static JSFunctionSpec Environment_methods[] = {
+    {NULL}
+};
 
-require("Net/Ports/Ports.js");
-
-require("Net/Protocol/Protocol.so");
-
-require([
-    "Net/Protocol/HTTP/HTTP.so", "Net/Protocol/HTTP/HTTP.js",
-    "Net/Protocol/HTTP/Request.js", "Net/Protocol/HTTP/Response.js",
-    "Net/Protocol/HTTP/Client.js", "Net/Protocol/HTTP/Simple/Simple.js"
-]);
-
-// Crypt modules
-require("Crypt/Crypt.so");
-
-require(["Crypt/SHA1/SHA1.so", "Crypt/SHA1/SHA1.js"]);
-
-// Console module
-require(["Console/Console.so", "Console/Console.js"]);
-
+#endif

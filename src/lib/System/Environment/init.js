@@ -16,37 +16,8 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-// Global library object
-require("System.so")
+require("System/System.so");
 
-require("Environment/Environment.so");
+require("Environment.so");
 
-// Input output modules
-require("FileSystem/FileSystem.so")
-
-require(["FileSystem/File/File.so", "FileSystem/File/File.js"]);
-require(["FileSystem/Directory/Directory.so", "FileSystem/Directory/Directory.js"]);
-
-// Networking modules
-require("Net/Net.so");
-
-require(["Net/Socket/Socket.so", "Net/Socket/Socket.js"]);
-
-require("Net/Ports/Ports.js");
-
-require("Net/Protocol/Protocol.so");
-
-require([
-    "Net/Protocol/HTTP/HTTP.so", "Net/Protocol/HTTP/HTTP.js",
-    "Net/Protocol/HTTP/Request.js", "Net/Protocol/HTTP/Response.js",
-    "Net/Protocol/HTTP/Client.js", "Net/Protocol/HTTP/Simple/Simple.js"
-]);
-
-// Crypt modules
-require("Crypt/Crypt.so");
-
-require(["Crypt/SHA1/SHA1.so", "Crypt/SHA1/SHA1.js"]);
-
-// Console module
-require(["Console/Console.so", "Console/Console.js"]);
-
+Environment = System.Environment;
