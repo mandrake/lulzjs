@@ -333,7 +333,7 @@ Script::Script (JSContext* cx, JSScript* script)
     _executable = true;
 }
 
-Script::Script (JSContext* cx, std::string source)
+Script::Script (JSContext* cx, std::string source, std::string name, int lineno)
 {
     _cx         = cx;
     _bytecode   = NULL;
@@ -342,7 +342,7 @@ Script::Script (JSContext* cx, std::string source)
     _stripShebang();
 
     JS_BeginRequest(_cx);
-    JSScript* script = JS_CompileScript(cx, JS_GetGlobalObject(cx), _source.c_str(), _source.length(), "lulzJS", 1);
+    JSScript* script = JS_CompileScript(cx, JS_GetGlobalObject(cx), _source.c_str(), _source.length(), name.c_str(), lineno);
     
     if (script) {
         _script = JS_NewScriptObject(cx, script);

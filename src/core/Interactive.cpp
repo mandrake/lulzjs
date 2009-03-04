@@ -71,26 +71,31 @@ Interactive (JSContext* cx, JSObject* global)
 
         JS_BeginRequest(cx);
         JS_EnterLocalRootScope(cx);
-        lulzJS::Script script(cx, whole);
-        jsval val = script.execute();
 
-        if (!JSVAL_IS_VOID(val)) {
-            jsval jsObj; JS_GetProperty(cx, global, "Object", &jsObj);
-            JSObject* object = JSVAL_TO_OBJECT(jsObj);
+        try {
+            lulzJS::Script script(cx, whole, "ljs", lineNumber);
+            jsval val = script.execute();
 
-            jsval argv[] = {val};
-            JS_CallFunctionName(cx, object, "inspect", 1, argv, &result);
+            if (!JSVAL_IS_VOID(val)) {
+                jsval jsObj; JS_GetProperty(cx, global, "Object", &jsObj);
+                JSObject* object = JSVAL_TO_OBJECT(jsObj);
 
-            strResult = JS_ValueToString(cx, result);
+                jsval argv[] = {val};
+                JS_CallFunctionName(cx, object, "inspect", 1, argv, &result);
 
-            if (strResult) {
-                std::string str = JS_GetStringBytes(strResult);
+                strResult = JS_ValueToString(cx, result);
 
-                if (str != "undefined") {
-                    std::cout << "=> " << JS_GetStringBytes(strResult) << std::endl;
+                if (strResult) {
+                    std::string str = JS_GetStringBytes(strResult);
+
+                    if (str != "undefined") {
+                        std::cout << "=> " << JS_GetStringBytes(strResult) << std::endl;
+                    }
                 }
             }
         }
+        catch (std::exception e) {}
+
         JS_LeaveLocalRootScope(cx);
 
         JS_ClearPendingException(cx);

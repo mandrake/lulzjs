@@ -85,7 +85,7 @@ class Script
     Script (void);
     Script (JSContext* cx, const char* bytecode, uint32 length);
     Script (JSContext* cx, JSScript* script);
-    Script (JSContext* cx, std::string source);
+    Script (JSContext* cx, std::string source, std::string name = "lulzJS", int lineno = 1);
     Script (JSContext* cx, std::string path, int mode);
 
     virtual ~Script (void);

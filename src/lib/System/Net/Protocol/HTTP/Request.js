@@ -232,7 +232,7 @@ System.Net.Protocol.HTTP.Request = Class.create({
         _initializeConnection: {
             GET: function () {
                 this.socket.writeLine([
-                    "GET {0} HTTP/1.1".format([this.options.page+(this.options.params ? "?"+this.options.params)]),
+                    "GET {0} HTTP/1.1".format([this.options.page+(this.options.params ? "?"+this.options.params : '')]),
                     "Host: {0}".format([this.options.host]),
                 ].concat(this.getRequestHeadersArray()).concat([""]));
             
