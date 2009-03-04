@@ -52,7 +52,8 @@
 #include <limits.h>
 
 #include "nanojit/nanojit.h"
-#include "jsarray.h"            // higher-level library and API headers
+#include "jsapi.h"              // higher-level library and API headers
+#include "jsarray.h"
 #include "jsbool.h"
 #include "jscntxt.h"
 #include "jsdbgapi.h"
@@ -240,6 +241,7 @@ static bool did_we_check_sse2 = false;
 
 #ifdef JS_JIT_SPEW
 bool js_verboseDebug = getenv("TRACEMONKEY") && strstr(getenv("TRACEMONKEY"), "verbose");
+bool js_verboseStats = getenv("TRACEMONKEY") && strstr(getenv("TRACEMONKEY"), "stats");
 #endif
 
 /* The entire VM shares one oracle. Collisions and concurrent updates are tolerated and worst
@@ -3570,6 +3572,13 @@ js_RecordLoopEdge(JSContext* cx, TraceRecorder* r, uintN& inlineCallCount)
     Fragment* f = getLoop(&JS_TRACE_MONITOR(cx), cx->fp->regs->pc, ti->globalShape);
     if (nesting_enabled && f) {
 
+        /* Cannot handle treecalls with callDepth > 0 and argc > nargs, see bug 480244. */
+        if (r->getCallDepth() > 0 && 
+            cx->fp->argc > cx->fp->fun->nargs) {
+            js_AbortRecording(cx, "Can't call inner tree with extra args in pending frame");
+            return false;
+        }
+
         /* Make sure inner tree call will not run into an out-of-memory condition. */
         if (tm->reservedDoublePoolPtr < (tm->reservedDoublePool + MAX_NATIVE_STACK_SLOTS) &&
             !js_ReplenishReservedPool(cx, tm)) {
@@ -4521,7 +4530,7 @@ extern void
 js_FinishJIT(JSTraceMonitor *tm)
 {
 #ifdef JS_JIT_SPEW
-    if (jitstats.recorderStarted) {
+    if (js_verboseStats && jitstats.recorderStarted) {
         printf("recorder: started(%llu), aborted(%llu), completed(%llu), different header(%llu), "
                "trees trashed(%llu), slot promoted(%llu), unstable loop variable(%llu), "
                "breaks(%llu), returns(%llu), unstableInnerCalls(%llu)\n",
@@ -5947,7 +5956,7 @@ TraceRecorder::getThis(LIns*& this_ins)
 }
 
 JS_REQUIRES_STACK bool
-TraceRecorder::guardClass(JSObject* obj, LIns* obj_ins, JSClass* clasp, ExitType exitType)
+TraceRecorder::guardClass(JSObject* obj, LIns* obj_ins, JSClass* clasp, LIns* exit)
 {
     bool cond = STOBJ_GET_CLASS(obj) == clasp;
 
@@ -5956,14 +5965,14 @@ TraceRecorder::guardClass(JSObject* obj, LIns* obj_ins, JSClass* clasp, ExitType
 
     char namebuf[32];
     JS_snprintf(namebuf, sizeof namebuf, "guard(class is %s)", clasp->name);
-    guard(cond, addName(lir->ins2(LIR_eq, class_ins, INS_CONSTPTR(clasp)), namebuf), exitType);
+    guard(cond, addName(lir->ins2(LIR_eq, class_ins, INS_CONSTPTR(clasp)), namebuf), exit);
     return cond;
 }
 
 JS_REQUIRES_STACK bool
 TraceRecorder::guardDenseArray(JSObject* obj, LIns* obj_ins, ExitType exitType)
 {
-    return guardClass(obj, obj_ins, &js_ArrayClass, exitType);
+    return guardClass(obj, obj_ins, &js_ArrayClass, snapshot(exitType));
 }
 
 JS_REQUIRES_STACK bool
@@ -6576,6 +6585,14 @@ TraceRecorder::getClassPrototype(JSObject* ctor, LIns*& proto_ins)
     }
     if (JSVAL_TAG(pval) != JSVAL_OBJECT)
         ABORT_TRACE("got primitive prototype from constructor");
+#ifdef DEBUG
+    JSBool ok, found;
+    uintN attrs;
+    ok = JS_GetPropertyAttributes(cx, ctor, js_class_prototype_str, &attrs, &found);
+    JS_ASSERT(ok);
+    JS_ASSERT(found);
+    JS_ASSERT((~attrs & (JSPROP_READONLY | JSPROP_PERMANENT)) == 0);
+#endif
     proto_ins = INS_CONSTPTR(JSVAL_TO_OBJECT(pval));
     return true;
 }
@@ -6656,25 +6673,22 @@ TraceRecorder::functionCall(bool constructing, uintN argc)
     if (FUN_INTERPRETED(fun)) {
         if (constructing) {
             LIns* args[] = { get(&fval), cx_ins };
-            LIns* tv_ins = lir->insCall(&js_FastNewObject_ci, args);
+            LIns* tv_ins = lir->insCall(&js_NewInstance_ci, args);
             guard(false, lir->ins_eq0(tv_ins), OOM_EXIT);
             set(&tval, tv_ins);
         }
         return interpretedFunctionCall(fval, fun, argc, constructing);
     }
 
-    if (!constructing && !(fun->flags & JSFUN_TRACEABLE))
+    if (!(fun->flags & JSFUN_TRACEABLE))
         ABORT_TRACE("untraceable native");
 
-    static JSTraceableNative knownNatives[] = {
-        { (JSFastNative)js_Object, &js_FastNewObject_ci,  "fC", "",    FAIL_NULL | JSTN_MORE },
-        { (JSFastNative)js_Date,   &js_FastNewDate_ci,    "pC", "",    FAIL_NULL },
-    };
+    JSTraceableNative* known = FUN_TRCINFO(fun);
+    JS_ASSERT(known && (JSFastNative)fun->u.n.native == known->native);
 
     LIns* args[5];
-    JSTraceableNative* known = constructing ? knownNatives : FUN_TRCINFO(fun);
     do {
-        if (constructing && (JSFastNative)fun->u.n.native != known->native)
+        if (((known->flags & JSTN_CONSTRUCTOR) != 0) != constructing)
             continue;
 
         uintN knownargc = strlen(known->argtypes);
@@ -7012,7 +7026,30 @@ TraceRecorder::record_SetPropHit(JSPropCacheEntry* entry, JSScopeProperty* sprop
             ABORT_TRACE("lazy import of global slot failed");
 
         LIns* r_ins = get(&r);
-        set(&STOBJ_GET_SLOT(obj, slot), r_ins);
+
+        if (JSVAL_IS_OBJECT(r)) {
+            LIns* exit = snapshot(MISMATCH_EXIT);
+            if (VALUE_IS_FUNCTION(cx, r)) {
+                /*
+                 * If we are recording a function being set into the slot, we must write the
+                 * same function that's already in the slot, otherwise we would have to re-brand.
+                 * In that case we simply fall off trace. Since we guard that the value is
+                 * already in the slot, we don't actually write anything into the slot in this
+                 * case.
+                 */
+                guard(true, lir->ins2(LIR_eq, get(&STOBJ_GET_SLOT(obj, slot)), r_ins), exit);
+            } else {
+                /*
+                 * If a regular object was written, we have to guard that it's not a function
+                 * at execution time either. FIXME: We should split function and object into
+                 * separate types when on trace (bug 481273).
+                 */
+                guardClass(obj, obj_ins, &js_FunctionClass, exit);
+                set(&STOBJ_GET_SLOT(obj, slot), r_ins);
+            }
+        } else {
+            set(&STOBJ_GET_SLOT(obj, slot), r_ins);
+        }
 
         JS_ASSERT(*pc != JSOP_INITPROP);
         if (pc[JSOP_SETPROP_LENGTH] != JSOP_POP)
@@ -7674,6 +7711,7 @@ TraceRecorder::prop(JSObject* obj, LIns* obj_ins, uint32& slot, LIns*& v_ins)
          * This trace will be valid as long as neither the object nor any object
          * on its prototype chain change shape.
          */
+        LIns* exit = snapshot(BRANCH_EXIT);
         for (;;) {
             LIns* map_ins = lir->insLoad(LIR_ldp, obj_ins, (int)offsetof(JSObject, map));
             LIns* ops_ins;
@@ -7682,7 +7720,7 @@ TraceRecorder::prop(JSObject* obj, LIns* obj_ins, uint32& slot, LIns*& v_ins)
                                           "shape");
                 guard(true,
                       addName(lir->ins2i(LIR_eq, shape_ins, OBJ_SHAPE(obj)), "guard(shape)"),
-                      BRANCH_EXIT);
+                      exit);
             } else if (!guardDenseArray(obj, obj_ins, BRANCH_EXIT))
                 ABORT_TRACE("non-native object involved in undefined property access");
 
@@ -7778,11 +7816,28 @@ TraceRecorder::elem(jsval& oval, jsval& idx, jsval*& vp, LIns*& v_ins, LIns*& ad
 
     LIns* dslots_ins = lir->insLoad(LIR_ldp, obj_ins, offsetof(JSObject, dslots));
     if (!guardDenseArrayIndex(obj, i, obj_ins, dslots_ins, idx_ins, BRANCH_EXIT)) {
-        LIns* rt_ins = lir->insLoad(LIR_ldp, cx_ins, offsetof(JSContext, runtime));
-        guard(true,
-              lir->ins_eq0(lir->insLoad(LIR_ldp, rt_ins,
-                                        offsetof(JSRuntime, anyArrayProtoHasElement))),
-              MISMATCH_EXIT);
+        /*
+         * If we read a hole, make sure at recording time and at runtime that nothing along
+         * the prototype has numeric properties.
+         */
+        if (js_PrototypeHasIndexedProperties(cx, obj))
+            return false;
+
+        LIns* exit = snapshot(BRANCH_EXIT);
+        while ((obj = JSVAL_TO_OBJECT(obj->fslots[JSSLOT_PROTO])) != NULL) {
+            obj_ins = stobj_get_fslot(obj_ins, JSSLOT_PROTO);
+            LIns* map_ins = lir->insLoad(LIR_ldp, obj_ins, (int)offsetof(JSObject, map));
+            LIns* ops_ins;
+            if (!map_is_native(obj->map, map_ins, ops_ins))
+                ABORT_TRACE("non-native object involved along prototype chain");
+
+            LIns* shape_ins = addName(lir->insLoad(LIR_ld, map_ins, offsetof(JSScope, shape)),
+                                      "shape");
+            guard(true,
+                  addName(lir->ins2i(LIR_eq, shape_ins, OBJ_SHAPE(obj)), "guard(shape)"),
+                  exit);
+        }
+
         // Return undefined and indicate that we didn't actually read this (addr_ins).
         v_ins = lir->insImm(JSVAL_TO_PSEUDO_BOOLEAN(JSVAL_VOID));
         addr_ins = NULL;
@@ -8033,7 +8088,7 @@ TraceRecorder::record_JSOP_NEWINIT()
         if (JSVAL_IS_PRIMITIVE(v_obj))
             ABORT_TRACE("primitive Object value");
         obj = JSVAL_TO_OBJECT(v_obj);
-        ci = &js_FastNewObject_ci;
+        ci = &js_Object_tn_ci;
     }
     LIns* args[] = { INS_CONSTPTR(obj), cx_ins };
     LIns* v_ins = lir->insCall(ci, args);
@@ -8163,8 +8218,10 @@ TraceRecorder::record_JSOP_NEXTITER()
         ABORT_TRACE("for-in on a primitive value");
 
     LIns* iterobj_ins = get(&iterobj_val);
-    if (guardClass(JSVAL_TO_OBJECT(iterobj_val), iterobj_ins, &js_IteratorClass, BRANCH_EXIT))
+    if (guardClass(JSVAL_TO_OBJECT(iterobj_val), iterobj_ins, &js_IteratorClass,
+                   snapshot(BRANCH_EXIT))) {
         return call_imacro(nextiter_imacros.native_iter_next);
+    }
     return call_imacro(nextiter_imacros.custom_iter_next);
 }
 
@@ -9401,13 +9458,6 @@ TraceRecorder::record_JSOP_NEWARRAY()
     LIns* args[] = { lir->insImm(len), INS_CONSTPTR(proto), cx_ins };
     LIns* v_ins = lir->insCall(ci, args);
     guard(false, lir->ins_eq0(v_ins), OOM_EXIT);
-
-    // De-optimize when we might have setters on Array.prototype.
-    LIns* rt_ins = lir->insLoad(LIR_ldp, cx_ins, offsetof(JSContext, runtime));
-    guard(true,
-          lir->ins_eq0(lir->insLoad(LIR_ldp, rt_ins,
-                                    offsetof(JSRuntime, anyArrayProtoHasElement))),
-          MISMATCH_EXIT);
 
     LIns* dslots_ins = NULL;
     for (uint32 i = 0; i < len; i++) {

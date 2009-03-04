@@ -1794,11 +1794,8 @@ js_InvokeConstructor(JSContext *cx, uintN argc, JSBool clampReturn, jsval *vp)
 
         if (OBJ_GET_CLASS(cx, obj2) == &js_FunctionClass) {
             fun2 = GET_FUNCTION_PRIVATE(cx, obj2);
-            if (!FUN_INTERPRETED(fun2) &&
-                !(fun2->flags & JSFUN_TRACEABLE) &&
-                fun2->u.n.u.clasp) {
-                clasp = fun2->u.n.u.clasp;
-            }
+            if (!FUN_INTERPRETED(fun2) && fun2->u.n.clasp)
+                clasp = fun2->u.n.clasp;
         }
     }
     obj = js_NewObject(cx, clasp, proto, parent, 0);
@@ -4731,7 +4728,7 @@ js_Interpret(JSContext *cx)
                     i = JSID_TO_INT(id);
                     if ((jsuint)i < length) {
                         if (obj->dslots[i] == JSVAL_HOLE) {
-                            if (rt->anyArrayProtoHasElement)
+                            if (js_PrototypeHasIndexedProperties(cx, obj))
                                 break;
                             if (i >= obj->fslots[JSSLOT_ARRAY_LENGTH])
                                 obj->fslots[JSSLOT_ARRAY_LENGTH] = i + 1;

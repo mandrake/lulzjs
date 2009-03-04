@@ -822,6 +822,30 @@ array_setProperty(JSContext *cx, JSObject *obj, jsid id, jsval *vp)
     return JS_TRUE;
 }
 
+JSBool
+js_PrototypeHasIndexedProperties(JSContext *cx, JSObject *obj)
+{
+    /* Walk up the prototype chain and see if this indexed element already exists. */
+    for (;;) {
+        obj = JSVAL_TO_OBJECT(obj->fslots[JSSLOT_PROTO]);
+
+        /*
+         * If we hit the end of the prototype chain, its safe to set the element on the
+         * original object.
+         */
+        if (!obj)
+            break;
+
+        /*
+         * If the prototype is a dense array, or a non-dense array that has numeric
+         * properties, return true.
+         */
+        if (OBJ_IS_DENSE_ARRAY(cx, obj) || (SCOPE_HAS_INDEXED_PROPERTIES(OBJ_SCOPE(obj))))
+            return JS_TRUE;
+    }
+    return JS_FALSE;
+}
+
 #ifdef JS_TRACER
 JSBool FASTCALL
 js_Array_dense_setelem(JSContext* cx, JSObject* obj, jsint i, jsval v)
@@ -843,8 +867,9 @@ js_Array_dense_setelem(JSContext* cx, JSObject* obj, jsint i, jsval v)
         return JS_FALSE;
 
     if (obj->dslots[u] == JSVAL_HOLE) {
-        if (cx->runtime->anyArrayProtoHasElement)
+        if (js_PrototypeHasIndexedProperties(cx, obj))
             return JS_FALSE;
+
         if (u >= jsuint(obj->fslots[JSSLOT_ARRAY_LENGTH]))
             obj->fslots[JSSLOT_ARRAY_LENGTH] = u + 1;
         ++obj->fslots[JSSLOT_ARRAY_COUNT];

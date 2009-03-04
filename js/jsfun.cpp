@@ -2115,18 +2115,19 @@ js_NewFunction(JSContext *cx, JSObject *funobj, JSNative native, uintN nargs,
     } else {
         fun->u.n.extra = 0;
         fun->u.n.spare = 0;
+        fun->u.n.clasp = NULL;
         if (flags & JSFUN_TRACEABLE) {
 #ifdef JS_TRACER
             JSTraceableNative *trcinfo =
                 JS_FUNC_TO_DATA_PTR(JSTraceableNative *, native);
             fun->u.n.native = (JSNative) trcinfo->native;
-            FUN_TRCINFO(fun) = trcinfo;
+            fun->u.n.trcinfo = trcinfo;
 #else
-            JS_ASSERT(0);
+            fun->u.n.trcinfo = NULL;
 #endif
         } else {
             fun->u.n.native = native;
-            FUN_CLASP(fun) = NULL;
+            fun->u.n.trcinfo = NULL;
         }
     }
     fun->atom = atom;
@@ -2235,17 +2236,14 @@ js_ValueToFunctionObject(JSContext *cx, jsval *vp, uintN flags)
 JSObject *
 js_ValueToCallableObject(JSContext *cx, jsval *vp, uintN flags)
 {
-    JSObject *callable;
+    JSObject *callable = JSVAL_IS_PRIMITIVE(*vp) ? NULL : JSVAL_TO_OBJECT(*vp);
 
-    callable = JSVAL_IS_PRIMITIVE(*vp) ? NULL : JSVAL_TO_OBJECT(*vp);
-    if (callable &&
-        ((callable->map->ops == &js_ObjectOps)
-         ? OBJ_GET_CLASS(cx, callable)->call
-         : callable->map->ops->call)) {
+    if (js_IsCallable(cx, callable)) {
         *vp = OBJECT_TO_JSVAL(callable);
     } else {
         callable = js_ValueToFunctionObject(cx, vp, flags);
     }
+
     return callable;
 }
 

@@ -1568,6 +1568,13 @@ JS_InitClass(JSContext *cx, JSObject *obj, JSObject *parent_proto,
              JSPropertySpec *ps, JSFunctionSpec *fs,
              JSPropertySpec *static_ps, JSFunctionSpec *static_fs);
 
+extern JS_PUBLIC_API(JSObject *)
+JS_InitTraceableClass(JSContext *cx, JSObject *obj, JSObject *parent_proto,
+                      JSClass *clasp, JSNative constructor, uintN nargs,
+                      JSPropertySpec *ps, JSFunctionSpec *fs,
+                      JSPropertySpec *static_ps, JSFunctionSpec *static_fs,
+                      JSTraceableNative *trcinfo);
+
 #ifdef JS_THREADSAFE
 extern JS_PUBLIC_API(JSClass *)
 JS_GetClass(JSContext *cx, JSObject *obj);
@@ -2513,7 +2520,7 @@ JS_PUBLIC_API(JSBool)
 JS_ConsumeJSONText(JSContext *cx, JSONParser *jp, const jschar *data, uint32 len);
 
 JS_PUBLIC_API(JSBool)
-JS_FinishJSONParse(JSContext *cx, JSONParser *jp);
+JS_FinishJSONParse(JSContext *cx, JSONParser *jp, jsval reviver);
 
 /************************************************************************/
 
