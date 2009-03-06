@@ -112,3 +112,18 @@ Object.extend(Number.prototype, (function() {
         toChar:         toChar,
     };
 })(), Object.Flags.None);
+
+Object.addAttributes(Number.prototype, {
+    digits: { get: function () {
+        var matches = this.toString().match(/e(.*)$/);
+
+        if (matches) {
+            return (matches[1].toInt() > 0)
+                ? 1+matches[1].toInt()
+                : 0;
+        }
+        else {
+            return this.toString().length;
+        }
+    }},
+});

@@ -2458,7 +2458,7 @@ TraceRecorder::compile(JSTraceMonitor* tm)
     Fragmento* fragmento = tm->fragmento;
     if (treeInfo->maxNativeStackSlots >= MAX_NATIVE_STACK_SLOTS) {
         debug_only_v(printf("Blacklist: excessive stack use.\n"));
-        js_Blacklist(fragment);
+        js_Blacklist(fragment->root);
         return;
     }
     if (anchor && anchor->exitType != CASE_EXIT)
@@ -2472,7 +2472,7 @@ TraceRecorder::compile(JSTraceMonitor* tm)
         return;
     if (fragmento->assm()->error() != nanojit::None) {
         debug_only_v(printf("Blacklisted: error during compilation\n");)
-        js_Blacklist(fragment);
+        js_Blacklist(fragment->root);
         return;
     }
     if (anchor) {
@@ -2536,7 +2536,7 @@ TraceRecorder::closeLoop(JSTraceMonitor* tm, bool& demote)
 
     if (callDepth != 0) {
         debug_only_v(printf("Blacklisted: stack depth mismatch, possible recursion.\n");)
-        js_Blacklist(fragment);
+        js_Blacklist(fragment->root);
         trashSelf = true;
         return false;
     }
@@ -2717,7 +2717,7 @@ TraceRecorder::endLoop(JSTraceMonitor* tm)
 
     if (callDepth != 0) {
         debug_only_v(printf("Blacklisted: stack depth mismatch, possible recursion.\n");)
-        js_Blacklist(fragment);
+        js_Blacklist(fragment->root);
         trashSelf = true;
         return;
     }
@@ -3002,7 +3002,7 @@ js_CheckGlobalObjectShape(JSContext* cx, JSTraceMonitor* tm, JSObject* globalObj
             AUDIT(globalShapeMismatchAtEntry);
             debug_only_v(printf("Global shape mismatch (%u vs. %u), flushing cache.\n",
                                 globalShape, ti->globalShape);)
-                return false;
+            return false;
         }
         if (shape)
             *shape = globalShape;
@@ -3013,7 +3013,6 @@ js_CheckGlobalObjectShape(JSContext* cx, JSTraceMonitor* tm, JSObject* globalObj
 
     /* No recorder, search for a tracked global-state (or allocate one). */
     for (size_t i = 0; i < MONITOR_N_GLOBAL_STATES; ++i) {
-
         GlobalState &state = tm->globalStates[i];
 
         if (state.globalShape == (uint32) -1) {
@@ -4270,7 +4269,7 @@ js_MonitorLoopEdge(JSContext* cx, uintN& inlineCallCount)
         /* If we hit the max peers ceiling, don't try to lookup fragments all the time. Thats
            expensive. This must be a rather type-unstable loop. */
         debug_only_v(printf("Blacklisted: too many peer trees.\n");)
-        js_Blacklist(f);
+        js_Blacklist(f->root);
         return false;
     }
 

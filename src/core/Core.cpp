@@ -332,7 +332,7 @@ __Core_getPath (JSContext* cx, std::string fileName)
     
     struct stat test;
     if (stat(path.c_str(), &test) != 0) {
-        JSObject* lPath; JS_ValueToObject(cx, JS_EVAL(cx, "__PATH__"), &lPath);
+        JSObject* lPath; JS_ValueToObject(cx, JS_EVAL(cx, "Program.__PATH__"), &lPath);
 
         if (lPath) {
             jsuint length;
@@ -405,6 +405,12 @@ __Core_include (JSContext* cx, std::string path)
         try {
             lulzJS::Script script(cx, path, lulzJS::Script::Text);
             script.execute();
+
+            if (JS_IsExceptionPending(cx)) {
+                JS_ReportPendingException(cx);
+                return JS_FALSE;
+            }
+
             script.save(cachePath, lulzJS::Script::Bytecode);
         }
         catch (std::runtime_error e) {

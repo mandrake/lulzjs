@@ -45,6 +45,10 @@ Object.extend(String.prototype, (function() {
         };
     };
 
+    function evaluate () {
+        return Program.eval(this);
+    };
+
     function gsub (pattern, replacement) {
         pattern    = eval(pattern.toString().replace(/\/(.*)g(.*)/, '/$1$2'));
         var result = "";
@@ -80,6 +84,10 @@ Object.extend(String.prototype, (function() {
             if (--count < 0) return match[0];
             return replacement(match);
         });
+    };
+
+    function test (pattern) {
+        return pattern.test(this);
     };
 
     function scan (pattern, iterator) {
@@ -275,8 +283,10 @@ Object.extend(String.prototype, (function() {
     };
 
     return {
+        eval:           evaluate,
         gsub:           gsub,
         sub:            sub,
+        test:           test,
         scan:           scan,
         truncate:       truncate,
         strip:          strip,

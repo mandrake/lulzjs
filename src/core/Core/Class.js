@@ -17,6 +17,9 @@
 ****************************************************************************/
 
 Class = {
+    Normal:   0x01,
+    Abstract: 0x02,
+
     create: function () {
         arguments      = Object.toArray(arguments);
         var parent     = (arguments[0].is(Function) ? arguments.shift() : null);
@@ -26,33 +29,56 @@ Class = {
             throw new Error("You have to pass the class description.");
         }
       
-        function klass() {
-            if (this.initialize) {
-                return this.initialize.apply(this, arguments);
+        var klass = function () {
+            switch (this.type) {
+                case Class.Abstract:
+                throw new Error("You can't instantiate an abstract class.");
+                break;
+
+                case Class.Normal:
+                if (this.initialize) {
+                    return this.initialize.apply(this, arguments);
+                }
+                break;
             }
 
             return null;
         }
-    
+
         Object.extend(klass, Class.Methods, Object.Flags.None);
-        klass.__defineProperty__("superclass", parent, Object.Flags.None);
-        klass.__defineProperty__("subclasses", new Array, Object.Flags.None);
+        klass.__defineProperty__("prototype", klass.prototype);
+        klass.__defineProperty__("superclass", parent);
+        klass.__defineProperty__("subclasses", new Array);
     
         if (parent) {
+            if (!parent.type) {
+                parent.type = Class.Normal;
+            }
+
+            if (parent.type == Class.Abstract) {
+                let tmp          = parent;
+                parent           = new Object;
+                parent.prototype = Object.extend(
+                    Function.empty.clone().prototype, tmp, Object.Flags.None
+                );
+            }
+
             if (!parent.subclasses) {
-                parent.__defineProperty__("subclasses", new Array, Object.Flags.None);
+                parent.__defineProperty__("subclasses", new Array);
             }
 
             var subclass = Function.empty.clone();
-            subclass.__defineProperty__("prototype", parent.prototype, Object.Flags.None);
-            klass.__defineProperty__("prototype", new subclass, Object.Flags.None);
+            subclass.__defineProperty__("prototype", parent.prototype);
+            klass.__defineProperty__("prototype", new subclass);
             parent.subclasses.push(klass);
         }
 
+        klass.prototype.__defineProperty__("type", properties.type || Class.Normal);
+
         klass.prototype.__defineProperty__("initialize", (properties.constructor.is(Function)
             ? properties.constructor
-            : Function.empty.clone()),
-        Object.Flags.None);
+            : Function.empty.clone())
+        );
 
         klass.addMethods(properties.methods);
         klass.addStatic(properties.static);
@@ -68,7 +94,12 @@ Class = {
                 ? flags
                 : Object.Flags.None);
 
-            return Object.addMethods(this.prototype, source, flags);
+            if (this.type == Class.Abstract) {
+                return Object.addMethods(this, source, flags | Object.Flags.Enumerate)
+            }
+            else {
+                return Object.addMethods(this.prototype, source, flags);   
+            }
         },
 
         addStatic: function (source, flags) {
@@ -84,7 +115,12 @@ Class = {
                 ? flags
                 : Object.Flags.None);
 
-            return Object.addAttributes(this.prototype, source);
+            if (this.type == Class.Abstract) {
+                return Object.addAttributes(this, source, flags | Object.Flags.Enumerate)
+            }
+            else {
+                return Object.addAttributes(this.prototype, source, flags);   
+            }
         }
     }
 };

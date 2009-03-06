@@ -84,18 +84,6 @@ Array.__defineProperty__("from", $A, Object.Flags.None);
         return slice.call(this, 0);
     };
 
-    function size () {
-        return this.length;
-    };
-
-    function first () {
-        return this[0];
-    };
-
-    function last () {
-        return this[this.length - 1];
-    };
-
     function inspect () {
         return '[' + this.map(Object.inspect).join(", ") + ']';
     };
@@ -118,8 +106,6 @@ Array.__defineProperty__("from", $A, Object.Flags.None);
     Object.extend(arrayProto, {
         _each:     _each,
         clear:     clear,
-        first:     first,
-        last:      last,
         compact:   compact,
         flatten:   flatten,
         without:   without,
@@ -131,8 +117,26 @@ Array.__defineProperty__("from", $A, Object.Flags.None);
         toJSON:    toJSON
     }, Object.Flags.None);
 
-    arrayProto.__defineAttributes__("size",  {get: size});
-    arrayProto.__defineAttributes__("first", {get: first});
-    arrayProto.__defineAttributes__("last",  {get: last});
 })();
+
+Object.addAttributes(Array.prototype, (function() {
+    var size = { get: function size () {
+        print(this[0]);
+        return this.length;
+    }};
+
+    var first = { get: function first () {
+        return this[0];
+    }};
+
+    var last = { get: function last () {
+        return this[this.length - 1];
+    }};
+
+    return {
+        size:  size,
+        first: first,
+        last:  last,
+    };
+})(), Object.Flags.None);
 

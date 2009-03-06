@@ -95,6 +95,7 @@
             : Object.Flags.None);
 
         for (let attribute in source) {
+            print(source[attribute].get);
             object.__defineAttributes__(attribute, source[attribute], flags)
         }
 

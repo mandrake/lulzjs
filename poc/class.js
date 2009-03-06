@@ -1,37 +1,29 @@
 #! /usr/bin/env ljs
 
-var Person = Class.create({
-    constructor: function (name, age) {
-        this._name = name;
-        this._age  = age;
+var Animal = Class.create({ type: Class.Abstract,
+    constructor: function (name, sound) {
+        this._name  = name;
+        this._sound = sound;
     },
 
     methods: {
-        
+        speak: function () {
+            print("{0} says: {1}!".format([this._name, this._sound]));
+        },
+    },
+});
+
+var Snake = Class.create(Animal, {
+    constructor: function ($super, name) {
+        print("LOL");
+        print($super);
+        $super(name, 'hissssssssss');
     },
 
     static: {
-        faggotree: function (person) {
-            return person.name.charCodeAt(0);
-        }
+        eats: ["Babies"]
     },
-
-    attributes: {
-        name: {
-            get: function () { return this._name },
-        },
-
-        age: {
-            get: function ()    { return this._age },
-            set: function (val) { 
-                if (val > 1 && val < 125) {
-                    this._age = val
-                }
-            }
-        }
-    }
 });
 
-var jack = new Person("Jack");
-print(jack.name);
-print(Person.faggotree(jack));
+var nig = new Snake("nig");
+nig.speak();

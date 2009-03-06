@@ -260,6 +260,8 @@ Enumerable = Class.create((function() {
     };
 
     return {
+        type: Class.Abstract,
+
         methods: {
             _each:      Array.prototype.forEach,
             each:       each,

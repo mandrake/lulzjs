@@ -1,4 +1,4 @@
-VERSION = 0.1.8
+VERSION = 0.2.0
 
 CC         = gcc
 CXX        = g++
@@ -21,7 +21,7 @@ endif
 
 ## CORE ##
 CORE_DIR     = src/core
-CORE         = ${CORE_DIR}/main.cpp ${CORE_DIR}/Core.cpp ${CORE_DIR}/Interactive.cpp
+CORE         = ${CORE_DIR}/main.o ${CORE_DIR}/Core.o ${CORE_DIR}/Interactive.o
 CORE_CFLAGS  = ${CFLAGS}
 CORE_LDFLAGS = ${LDFLAGS} -ldl -lreadline -lncurses
 
@@ -50,8 +50,11 @@ LIB_SYSTEM_LDFLAGS = ${LDFLAGS}
 
 all: ljs libcore libsystem
 
-ljs:
-	${CXX} ${CORE_LDFLAGS} ${CORE_CFLAGS} ${CORE} -o ljs
+ljs: $(CORE)
+	${CXX} ${CORE_LDFLAGS} ${CORE_CFLAGS} $(CORE:.o=.cpp) -o ljs
+
+$(CORE): $(CORE:.o=.cpp)
+	${CXX} ${CORE_CFLAGS} -c $*.cpp -o $*.o
 
 core_install:
 	mkdir -p ${LJS_LIBDIR}

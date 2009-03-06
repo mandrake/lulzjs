@@ -141,6 +141,8 @@ js_eval (JSContext* cx, const char* string)
     JS_BeginRequest(cx);
     JS_EnterLocalRootScope(cx);
 
+    JS_ReportPendingException(cx);
+
     jsval ret;
 
     JS_EvaluateScript(cx, JS_GetGlobalObject(cx), string, strlen(string), "eval", 1, &ret);
