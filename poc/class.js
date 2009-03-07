@@ -23,5 +23,18 @@ var Snake = Class.create(Animal, {
     },
 });
 
+var Nigger = Class.create(Animal, {
+    constructor: function ($super) {
+        $super("Dix", "WHARS MAH WUTERMALON, FRIED CHIKKIN!");
+    },
+
+    static: {
+        eats: ["Wutermalon", "Babies"],
+    }
+});
+
 var nig = new Snake("nig");
 nig.speak();
+
+var nog = new Nigger;
+nog.speak();

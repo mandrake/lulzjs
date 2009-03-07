@@ -128,7 +128,7 @@
         }
 
         if (object === null) return 'null';
-        if (object.toJSON)   return object.toJSON();
+        if (object.toJSON && object.toJSON !== Object.prototype.toJSON)   return object.toJSON();
 
         var results = new Array;
         for (let property in object) {
@@ -290,3 +290,5 @@ Object.extend(Object.prototype, (function() {
         inspect:       inspect,
     };
 })(), Object.Flags.None);
+
+Object.prototype.__defineAttributes__("class", {get: function () Object.getClass(this)});
