@@ -49,8 +49,29 @@
             ? flags
             : Object.Flags.None);
 
+        var ancestor = object.superclass
+            ? object.superclass && object.superclass.prototype
+            : undefined;
+ 
         for (let property in source) {
-            object.prototype.__defineProperty__(property, source[property], flags);
+            let value = source[property];
+ 
+            if (ancestor && value.is(Function) && value.argumentNames) {
+                if (value.argumentNames().first() == "$super") {
+                    let method = value;
+     
+                    value = (function (m) {
+                        return function () {
+                            return ancestor[m].apply(this, arguments);
+                        };
+                    })(property).wrap(method);
+     
+                    value.__defineProperty__("valueOf", method.valueOf.bind(method), flags);
+                    value.__defineProperty__("toString", method.toString.bind(method), flags);
+                }
+            }
+ 
+            object.prototype.__defineProperty__(property, value, flags);
         }
     };
 
@@ -244,6 +265,16 @@ Object.extend(Object.prototype, (function() {
         return Object.clone(this, deep);
     };
 
+    function exclude (names) {
+        var obj = this.clone();
+
+        for each (let name in names) {
+            delete obj[name];
+        }
+
+        return obj;
+    };
+
     return {
         extend :       extend,
         addMethods:    addMethods,
@@ -253,6 +284,7 @@ Object.extend(Object.prototype, (function() {
         keys   :       keys,
         values :       values,
         clone  :       clone,
+        exclude:       exclude,
         is     :       is,
         toArray:       toArray,
         inspect:       inspect,

@@ -67,33 +67,13 @@ Class = {
 
         klass.__defineProperty__("__type__",           properties.type || Class.Normal);
         klass.prototype.__defineProperty__("__type__", properties.type || Class.Normal);
-        
-        var constructor = properties.constructor;
-        if (constructor) {
-            if (parent && constructor.argumentNames().first() == "$super") {
-                constructor = (function (m) {
-                    return function () {
-                        return parent.prototype[m].apply(this, arguments); 
-                    };
-                })("initialize").wrap(constructor);
-    
-                constructor.__defineProperty__("valueOf",  constructor.valueOf.bind(constructor));
-                constructor.__defineProperty__("toString", constructor.toString.bind(constructor));
-            }
-        }
-        else {
-            constructor = Function.empty.clone();
-        }
-        
 
-        klass.prototype.__defineProperty__("initialize", constructor);
+        klass.addMethods({initialize: (properties.constructor.is(Function)
+            ? properties.constructor
+            : Function.empty.clone())
+        });
 
-        if (this.__type__ == Class.Abstract) {
-            klass.addStatic(properties.methods);
-        }
-        else {
-            klass.addMethods(properties.methods);
-        }
+        klass.addMethods(properties.methods);
 
         klass.addStatic(properties.static);
         klass.addAttributes(properties.attributes);
@@ -108,11 +88,11 @@ Class = {
                 ? flags
                 : Object.Flags.None);
 
-            if (this.__type__ == Class.Abstract) {
-                Object.addStatic(this, source, flags | Object.Flags.Enumerate);
-            }
+            Object.addMethods(this, source, flags);
 
-            return Object.addMethods(this, source, flags);
+            if (this.__type__ == Class.Abstract) {
+                this.addStatic(source.exclude(["initialize"]), flags | Object.Flags.Enumerate);
+            }
         },
 
         addStatic: function (source, flags) {
@@ -120,7 +100,7 @@ Class = {
                 ? flags
                 : Object.Flags.None);
 
-            return Object.addStatic(this, source, flags);
+            Object.addStatic(this, source, flags);
         },
 
         addAttributes: function (source, flags) {
@@ -132,7 +112,7 @@ Class = {
                 Object.addAttributes(this, source, flags | Object.Flags.Enumerate);
             }
             
-            return Object.addAttributes(this.prototype, source, flags);   
+            Object.addAttributes(this.prototype, source, flags);   
         }
     }
 };

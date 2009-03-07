@@ -121,7 +121,6 @@ Array.__defineProperty__("from", $A, Object.Flags.None);
 
 Object.addMethods(Array, (function() {
     function size  () {
-        print(this[0]);
         return this.length;
     };
 
@@ -143,7 +142,6 @@ Object.addMethods(Array, (function() {
 
 /*Object.addAttributes(Array.prototype, (function() {
     var size = { get: function size () {
-        print(this[0]);
         return this.length;
     }};
 
