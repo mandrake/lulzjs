@@ -119,7 +119,29 @@ Array.__defineProperty__("from", $A, Object.Flags.None);
 
 })();
 
-Object.addAttributes(Array.prototype, (function() {
+Object.addMethods(Array, (function() {
+    function size  () {
+        print(this[0]);
+        return this.length;
+    };
+
+    function first () {
+        return this[0];
+    };
+
+    function last () {
+        return this[this.length - 1];
+    };
+
+    return {
+        size:  size,
+        first: first,
+        last:  last,
+    };
+
+})(), Object.Flags.None);
+
+/*Object.addAttributes(Array.prototype, (function() {
     var size = { get: function size () {
         print(this[0]);
         return this.length;
@@ -139,4 +161,4 @@ Object.addAttributes(Array.prototype, (function() {
         last:  last,
     };
 })(), Object.Flags.None);
-
+*/

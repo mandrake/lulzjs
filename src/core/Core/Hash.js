@@ -95,6 +95,8 @@ Hash = Class.create(Enumerable, (function() {
     };
 
     return {
+        type: Class.Normal,
+
         constructor: constructor,
         
         methods: {

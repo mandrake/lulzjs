@@ -30,7 +30,7 @@ Class = {
         }
       
         var klass = function () {
-            switch (this.type) {
+            switch (this.__type__) {
                 case Class.Abstract:
                 throw new Error("You can't instantiate an abstract class.");
                 break;
@@ -51,16 +51,8 @@ Class = {
         klass.__defineProperty__("subclasses", new Array);
     
         if (parent) {
-            if (!parent.type) {
-                parent.type = Class.Normal;
-            }
-
-            if (parent.type == Class.Abstract) {
-                let tmp          = parent;
-                parent           = new Object;
-                parent.prototype = Object.extend(
-                    Function.empty.clone().prototype, tmp, Object.Flags.None
-                );
+            if (!parent.__type__) {
+                parent.__type__ = Class.Normal;
             }
 
             if (!parent.subclasses) {
@@ -73,14 +65,36 @@ Class = {
             parent.subclasses.push(klass);
         }
 
-        klass.prototype.__defineProperty__("type", properties.type || Class.Normal);
+        klass.__defineProperty__("__type__",           properties.type || Class.Normal);
+        klass.prototype.__defineProperty__("__type__", properties.type || Class.Normal);
+        
+        var constructor = properties.constructor;
+        if (constructor) {
+            if (parent && constructor.argumentNames().first() == "$super") {
+                constructor = (function (m) {
+                    return function () {
+                        return parent.prototype[m].apply(this, arguments); 
+                    };
+                })("initialize").wrap(constructor);
+    
+                constructor.__defineProperty__("valueOf",  constructor.valueOf.bind(constructor));
+                constructor.__defineProperty__("toString", constructor.toString.bind(constructor));
+            }
+        }
+        else {
+            constructor = Function.empty.clone();
+        }
+        
 
-        klass.prototype.__defineProperty__("initialize", (properties.constructor.is(Function)
-            ? properties.constructor
-            : Function.empty.clone())
-        );
+        klass.prototype.__defineProperty__("initialize", constructor);
 
-        klass.addMethods(properties.methods);
+        if (this.__type__ == Class.Abstract) {
+            klass.addStatic(properties.methods);
+        }
+        else {
+            klass.addMethods(properties.methods);
+        }
+
         klass.addStatic(properties.static);
         klass.addAttributes(properties.attributes);
       
@@ -94,12 +108,11 @@ Class = {
                 ? flags
                 : Object.Flags.None);
 
-            if (this.type == Class.Abstract) {
-                return Object.addMethods(this, source, flags | Object.Flags.Enumerate)
+            if (this.__type__ == Class.Abstract) {
+                Object.addStatic(this, source, flags | Object.Flags.Enumerate);
             }
-            else {
-                return Object.addMethods(this.prototype, source, flags);   
-            }
+
+            return Object.addMethods(this, source, flags);
         },
 
         addStatic: function (source, flags) {
@@ -115,12 +128,11 @@ Class = {
                 ? flags
                 : Object.Flags.None);
 
-            if (this.type == Class.Abstract) {
-                return Object.addAttributes(this, source, flags | Object.Flags.Enumerate)
+            if (this.__type__ == Class.Abstract) {
+                Object.addAttributes(this, source, flags | Object.Flags.Enumerate);
             }
-            else {
-                return Object.addAttributes(this.prototype, source, flags);   
-            }
+            
+            return Object.addAttributes(this.prototype, source, flags);   
         }
     }
 };

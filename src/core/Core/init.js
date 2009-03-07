@@ -43,6 +43,11 @@ require([
     "Range.js", "XML.js", "Thread", "random.js"
 ]);
 
+[Object, Function, Array, String, Number, RegExp, Date].each(function (obj) {
+    obj.__defineProperty__(          "__type__", Class.Normal);
+    obj.prototype.__defineProperty__("__type__", Class.Normal);
+});
+
 //Program.GCExecution = new PeriodicalExecuter(function(){Program.GC()}, 60);
 
 // Isolate the used variables.

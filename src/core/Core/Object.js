@@ -49,27 +49,8 @@
             ? flags
             : Object.Flags.None);
 
-        var ancestor = object.superclass
-            ? object.superclass && object.superclass.prototype
-            : undefined;
-
         for (let property in source) {
-            let value = source[property];
-
-            if (ancestor && Object.is(value, Function) && value.argumentNames().first() == "$super") {
-                let method = value;
-
-                value = (function (m) {
-                    return function () {
-                        return ancestor[m].apply(this, arguments); 
-                    };
-                })(property).wrap(method);
-
-                value.__defineProperty__("valueOf",  method.valueOf.bind(method),  flags);
-                value.__defineProperty__("toString", method.toString.bind(method), flags);
-            }
-
-            object.__defineProperty__(property, value, flags);
+            object.prototype.__defineProperty__(property, source[property], flags);
         }
     };
 
@@ -95,7 +76,6 @@
             : Object.Flags.None);
 
         for (let attribute in source) {
-            print(source[attribute].get);
             object.__defineAttributes__(attribute, source[attribute], flags)
         }
 

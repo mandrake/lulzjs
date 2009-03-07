@@ -15,8 +15,6 @@ var Animal = Class.create({ type: Class.Abstract,
 
 var Snake = Class.create(Animal, {
     constructor: function ($super, name) {
-        print("LOL");
-        print($super);
         $super(name, 'hissssssssss');
     },
 

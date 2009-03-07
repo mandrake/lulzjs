@@ -21,7 +21,7 @@
 var File      = System.FileSystem.File;
 var Directory = System.FileSystem.Directory;
 
-Directory.prototype.addMethods((function() {
+Directory.addMethods((function() {
     function _init () {
         for (let i = 0; i < this.length; i++) {
             this.__defineGetter__(i, new Function("return this.fileAt("+i+")"));

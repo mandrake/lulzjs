@@ -84,7 +84,7 @@ Object.extend(Function.prototype, (function() {
     };
 
     function wrap (wrapper) {
-        var __method = this;
+        var method = this;
 
         return function () {
             return wrapper.apply(this, update([method.bind(this)], arguments));

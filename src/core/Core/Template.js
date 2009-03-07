@@ -17,6 +17,8 @@
 ****************************************************************************/
 
 Template = Class.create({
+    type: Class.Normal,
+
     constructor: function (template, pattern) {
         this.template = template.toString();
         this.pattern  = pattern || Template.Pattern;
