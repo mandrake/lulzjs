@@ -70,7 +70,7 @@ Template = Class.create({
     },
 
     static: {
-        Pattern: /(^|.|\r|\n)(#\{(.*?)\})/
+        Pattern: /(^|.|\r|\n)(#\{(.*?)\})/,
     }
 });
 

@@ -113,7 +113,7 @@ Object.extend(Number.prototype, (function() {
     };
 })(), Object.Flags.None);
 
-Object.addAttributes(Number.prototype, {
+Object.extendAttributes(Number.prototype, {
     digits: { get: function () {
         var matches = this.toString().match(/e(.*)$/);
 
@@ -126,4 +126,4 @@ Object.addAttributes(Number.prototype, {
             return this.toString().length;
         }
     }},
-});
+}, Object.Flags.None);

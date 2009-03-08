@@ -21,7 +21,7 @@
 var File      = System.FileSystem.File;
 var Directory = System.FileSystem.Directory;
 
-Directory.addMethods((function() {
+Object.addMethods(Directory, (function() {
     function _init () {
         for (let i = 0; i < this.length; i++) {
             this.__defineGetter__(i, new Function("return this.fileAt("+i+")"));
@@ -40,7 +40,7 @@ Directory.addMethods((function() {
     };
 })(), Object.Flags.None);
 
-Directory.prototype.addAttributes({
+Object.addAttributes(Directory.prototype, {
     next: { get: function () {
         return (this.position == this.length-1)
             ? null

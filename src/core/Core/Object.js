@@ -16,13 +16,27 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
+/*. Object
+ *
+ *| The Object object (lol) has some default methods and static methods that
+ *| simplify the programmer's life.
+ */
 (function() {
+    /*# getClass (object) => String
+     *  - object [Object]: The object to get the class from.
+     *
+     *| Get the object's class.
+     */
     function getClass (object) {
         return Object.prototype.toString.call(object).match(
             /\[object\s(.*)\]$/)[1];
     };
 
     function extend (destination, source, flags, overwrite) {
+        if (!destination) {
+            throw new Error("destination is undefined.");
+        }
+
         flags = (typeof flags == 'number'
             ? flags
             : Object.Flags.Default);
@@ -42,65 +56,20 @@
         return destination;
     };
 
-    function addMethods (object, source, flags) {
-        if (!object || !source) return;
-
-        flags = (flags !== undefined
-            ? flags
-            : Object.Flags.None);
-
-        var ancestor = object.superclass
-            ? object.superclass && object.superclass.prototype
-            : undefined;
- 
-        for (let property in source) {
-            let value = source[property];
- 
-            if (ancestor && value.is(Function) && value.argumentNames) {
-                if (value.argumentNames().first() == "$super") {
-                    let method = value;
-     
-                    value = (function (m) {
-                        return function () {
-                            return ancestor[m].apply(this, arguments);
-                        };
-                    })(property).wrap(method);
-     
-                    value.__defineProperty__("valueOf", method.valueOf.bind(method), flags);
-                    value.__defineProperty__("toString", method.toString.bind(method), flags);
-                }
-            }
- 
-            object.prototype.__defineProperty__(property, value, flags);
-        }
-    };
-
-   function addStatic (object, source, flags) {
-        if (!object || !source) return;
-
-        flags = (flags !== undefined
-            ? flags
-            : Object.Flags.None);
-
-        for (let property in source) {
-            object.__defineProperty__(property, source[property], flags);
+    function extendAttributes (destination, source, flags) {
+        if (!destination) {
+            throw new Error("destination is undefined.");
         }
 
-        return this;
-    };
-
-    function addAttributes (object, source, flags) {
-        if (!source) return;
-
-        flags = (flags !== undefined
+        flags = (typeof flags == 'number'
             ? flags
-            : Object.Flags.None);
+            : Object.Flags.Default);
 
         for (let attribute in source) {
-            object.__defineAttributes__(attribute, source[attribute], flags)
+            destination.__defineAttributes__(attribute, source[attribute], flags);
         }
 
-        return this;
+        return destination;
     };
 
     function inspect (object) {
@@ -205,18 +174,16 @@
     };
 
     extend(Object, {
-        getClass:      getClass,   
-        extend:        extend,
-        addMethods:    addMethods,
-        addStatic:     addStatic,
-        addAttributes: addAttributes,
-        inspect:       inspect,
-        toJSON:        toJSON,
-        keys:          keys,
-        values:        values,
-        clone:         clone,
-        is:            is,
-        toArray:       toArray
+        getClass:         getClass,   
+        extend:           extend,
+        extendAttributes: extendAttributes,
+        inspect:          inspect,
+        toJSON:           toJSON,
+        keys:             keys,
+        values:           values,
+        clone:            clone,
+        is:               is,
+        toArray:          toArray
     }, Object.Flags.None);
 })();
 
@@ -225,16 +192,8 @@ Object.extend(Object.prototype, (function() {
         return Object.extend(this, source, flags, overwrite);
     };
 
-    function addMethods (source, flags) {
-        Object.addMethods(this, source, flags);
-    };
-
-    function addStatic (source, flags) {
-        Object.addStatic(this, source, flags);
-    };
-
-    function addAttributes (source, flags) {
-        Object.addAttributes(this, source, flags);
+    function extendAttributes (source, flags) {
+        return Object.extendAttributes(this, source, flags);
     };
 
     function is (type) {
@@ -276,19 +235,18 @@ Object.extend(Object.prototype, (function() {
     };
 
     return {
-        extend :       extend,
-        addMethods:    addMethods,
-        addStatic:     addStatic,
-        addAttributes: addAttributes,
-        toJSON :       toJSON,
-        keys   :       keys,
-        values :       values,
-        clone  :       clone,
-        exclude:       exclude,
-        is     :       is,
-        toArray:       toArray,
-        inspect:       inspect,
+        extend :          extend,
+        extendAttributes: extendAttributes,
+        toJSON :          toJSON,
+        keys   :          keys,
+        values :          values,
+        clone  :          clone,
+        exclude:          exclude,
+        is     :          is,
+        toArray:          toArray,
+        inspect:          inspect,
     };
 })(), Object.Flags.None);
 
 Object.prototype.__defineAttributes__("class", {get: function () Object.getClass(this)});
+

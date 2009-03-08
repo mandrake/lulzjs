@@ -119,7 +119,7 @@ Array.__defineProperty__("from", $A, Object.Flags.None);
 
 })();
 
-Object.addMethods(Array, (function() {
+Object.extend(Array.prototype, (function() {
     function size  () {
         return this.length;
     };
@@ -137,7 +137,6 @@ Object.addMethods(Array, (function() {
         first: first,
         last:  last,
     };
-
 })(), Object.Flags.None);
 
 /*Object.addAttributes(Array.prototype, (function() {

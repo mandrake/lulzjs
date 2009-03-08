@@ -88,10 +88,33 @@ Class = {
                 ? flags
                 : Object.Flags.None);
 
-            Object.addMethods(this, source, flags);
+            var ancestor = this.superclass
+                ? this.superclass && this.superclass.prototype
+                : undefined;
 
-            if (this.__type__ == Class.Abstract) {
-                this.addStatic(source.exclude(["initialize"]), flags | Object.Flags.Enumerate);
+            for (let name in source) {
+                let value = source[name];
+
+                if (ancestor && value.is(Function) && value.argumentNames) {
+                    if (value.argumentNames().first() == "$super") {
+                        let method = value;
+         
+                        value = (function (m) {
+                            return function () {
+                                return ancestor[m].apply(this, arguments);
+                            };
+                        })(property).wrap(method);
+         
+                        value.__defineProperty__("valueOf", method.valueOf.bind(method), flags);
+                        value.__defineProperty__("toString", method.toString.bind(method), flags);
+                    }
+                }
+
+                this.prototype.__defineProperty__(name, value, flags);
+
+                if (this.__type__ == Class.Abstract) {
+                    this.__defineProperty__(name, value, flags | Object.Flags.Enumerate);
+                }
             }
         },
 
@@ -100,7 +123,9 @@ Class = {
                 ? flags
                 : Object.Flags.None);
 
-            Object.addStatic(this, source, flags);
+            for (let property in source) {
+                this.__defineProperty__(property, source[property], flags);
+            }
         },
 
         addAttributes: function (source, flags) {
@@ -108,11 +133,12 @@ Class = {
                 ? flags
                 : Object.Flags.None);
 
+            Object.extendAttributes(this.prototype, source, flags);   
+
             if (this.__type__ == Class.Abstract) {
-                Object.addAttributes(this, source, flags | Object.Flags.Enumerate);
+                Object.extendAttributes(this, source, flags | Object.Flags.Enumerate);
             }
-            
-            Object.addAttributes(this.prototype, source, flags);   
         }
     }
 };
+

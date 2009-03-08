@@ -38,14 +38,15 @@ require(["Object.so", "Object.js"]);
 
 require([
     "Class.js", "Function.js", "Date.js", "RegExp.js",
-    "Bytes.js", "PeriodicalExecuter.js", "String.js", "Template.js",
-    "Enumerable.js", "Array.js", "Hash.js", "Number.js",
+    "String.js", "Template.js", "Enumerable.js", "Array.js",
+    "Bytes.js", "Hash.js", "Number.js",
     "Range.js", "XML.js", "Thread", "random.js"
 ]);
 
-[Object, Function, Array, String, Number, RegExp, Date].each(function (obj) {
+[Function, Array, String, Number, RegExp, Date, XML].each(function (obj) {
     obj.__defineProperty__(          "__type__", Class.Normal);
     obj.prototype.__defineProperty__("__type__", Class.Normal);
+    Object.extend(obj, Class.Methods, Object.Flags.None);
 });
 
 //Program.GCExecution = new PeriodicalExecuter(function(){Program.GC()}, 60);

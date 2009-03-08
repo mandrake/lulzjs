@@ -16,7 +16,7 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-Bytes = Class.create({
+Bytes = Class.create(Enumerable, {
     constructor: function (base) {
         if (base !== undefined && !base.is(Array) && !base.is(String)) {
             throw "You have to pass an Array or a String.";
