@@ -51,8 +51,8 @@ File.addMethods((function() {
     };
 
     function inspect () {
-        return '#<File: path="{0}", size={1}, position={2}>'.format([
-            this.path, this.size, this.position
+        return '#<File: path="{0}", permission={1} size={2}, position={3}>'.format([
+            this.path, this.permission, this.size, this.position
         ]);
     };
 

@@ -54,5 +54,5 @@ Object.extend(System.FileSystem, (function() {
         baseName: baseName,
         baseDir:  baseDir,
     };
-})(), Object.Flags.None);
+})());
 

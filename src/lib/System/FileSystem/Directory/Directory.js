@@ -21,7 +21,7 @@
 var File      = System.FileSystem.File;
 var Directory = System.FileSystem.Directory;
 
-Object.addMethods(Directory, (function() {
+Directory.addMethods((function() {
     function _init () {
         for (let i = 0; i < this.length; i++) {
             this.__defineGetter__(i, new Function("return this.fileAt("+i+")"));
@@ -29,8 +29,8 @@ Object.addMethods(Directory, (function() {
     };
 
     function inspect () {
-        return '#<Directory: path="{0}", length={1}, position={2}>'.format([
-            this.path, this.length, this.position
+        return '#<Directory: path="{0}", permission={1}, length={2}, position={3}>'.format([
+            this.path, this.permission, this.length, this.position
         ]);
     };
 
@@ -38,13 +38,13 @@ Object.addMethods(Directory, (function() {
         _init:   _init,
         inspect: inspect,
     };
-})(), Object.Flags.None);
+})());
 
-Object.addAttributes(Directory.prototype, {
+Directory.addAttributes({
     next: { get: function () {
         return (this.position == this.length-1)
             ? null
-            : this[this.position];
+            : this[this.position+1];
     }},
 
     current: { get: function () {
@@ -54,7 +54,7 @@ Object.addAttributes(Directory.prototype, {
     previous: { get: function () {
         return (this.position == 0)
             ? null
-            : this[this.position];
+            : this[this.position-1];
     }},
 
     name: { get: function() {
