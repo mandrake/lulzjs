@@ -116,3 +116,6 @@ Object.extend(Function.prototype, (function() {
         clone        : clone
     };
 })(), Object.Flags.None);
+
+Object.extend(Function.prototype, Class.Methods, Object.Flags.None);
+

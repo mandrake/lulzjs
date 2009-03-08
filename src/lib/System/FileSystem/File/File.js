@@ -20,7 +20,7 @@
 
 var File = System.FileSystem.File;
 
-Object.addMethods(File, (function() {
+File.addMethods((function() {
     function writeLine (str) {
         this.write(str+"\n");
     };
@@ -65,10 +65,10 @@ Object.addMethods(File, (function() {
     }
 })());
 
-Object.addAttributes(File.prototype, {
+Object.extendAttributes(File.prototype, {
     name: { get: function() {
         return System.FileSystem.baseName(this.path);
     }},
-});
+}, Object.Flags.None);
 
 })();

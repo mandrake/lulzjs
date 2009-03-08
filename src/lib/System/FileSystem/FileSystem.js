@@ -16,7 +16,7 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-Object.addStatic(System.FileSystem, (function() {
+Object.extend(System.FileSystem, (function() {
     function dirName (path) {
         if (path.count("/") >= 2 && !(path.count("/") == 2 && path.endsWith("/"))) {
             if (path.endsWith("/")) {
