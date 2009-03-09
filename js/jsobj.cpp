@@ -3566,11 +3566,10 @@ PurgeProtoChain(JSContext *cx, JSObject *obj, jsid id)
     return JS_FALSE;
 }
 
-static void
-PurgeScopeChain(JSContext *cx, JSObject *obj, jsid id)
+void
+js_PurgeScopeChainHelper(JSContext *cx, JSObject *obj, jsid id)
 {
-    if (!OBJ_IS_DELEGATE(cx, obj))
-        return;
+    JS_ASSERT(OBJ_IS_DELEGATE(cx, obj));
 
     /*
      * All scope chains end in a global object, so this will change the global
@@ -3599,7 +3598,7 @@ js_AddNativeProperty(JSContext *cx, JSObject *obj, jsid id,
      * this optimistically (assuming no failure below) before locking obj, so
      * we can lock the shadowed scope.
      */
-    PurgeScopeChain(cx, obj, id);
+    js_PurgeScopeChain(cx, obj, id);
 
     JS_LOCK_OBJ(cx, obj);
     scope = js_GetMutableScope(cx, obj);
@@ -3731,7 +3730,7 @@ js_DefineNativeProperty(JSContext *cx, JSObject *obj, jsid id, jsval value,
      * Purge the property cache of now-shadowed id in obj's scope chain.
      * Do this early, before locking obj to avoid nesting locks.
      */
-    PurgeScopeChain(cx, obj, id);
+    js_PurgeScopeChain(cx, obj, id);
 
     /* Lock if object locking is required by this implementation. */
     JS_LOCK_OBJ(cx, obj);
@@ -4206,9 +4205,9 @@ JSBool
 js_GetPropertyHelper(JSContext *cx, JSObject *obj, jsid id, jsval *vp,
                      JSPropCacheEntry **entryp)
 {
+    JSObject *aobj, *obj2;
     uint32 shape;
     int protoIndex;
-    JSObject *obj2;
     JSProperty *prop;
     JSScopeProperty *sprop;
 
@@ -4216,8 +4215,9 @@ js_GetPropertyHelper(JSContext *cx, JSObject *obj, jsid id, jsval *vp,
     /* Convert string indices to integers if appropriate. */
     CHECK_FOR_STRING_INDEX(id);
 
-    shape = OBJ_SHAPE(obj);
-    protoIndex = js_LookupPropertyWithFlags(cx, obj, id, cx->resolveFlags,
+    aobj = js_GetProtoIfDenseArray(cx, obj);
+    shape = OBJ_SHAPE(aobj);
+    protoIndex = js_LookupPropertyWithFlags(cx, aobj, id, cx->resolveFlags,
                                             &obj2, &prop);
     if (protoIndex < 0)
         return JS_FALSE;
@@ -4295,7 +4295,7 @@ js_GetPropertyHelper(JSContext *cx, JSObject *obj, jsid id, jsval *vp,
 
     if (entryp) {
         JS_ASSERT_NOT_ON_TRACE(cx);
-        js_FillPropertyCache(cx, obj, shape, 0, protoIndex, obj2, sprop, entryp);
+        js_FillPropertyCache(cx, aobj, shape, 0, protoIndex, obj2, sprop, entryp);
     }
     JS_UNLOCK_OBJ(cx, obj2);
     return JS_TRUE;
@@ -4462,7 +4462,7 @@ js_SetPropertyHelper(JSContext *cx, JSObject *obj, jsid id, jsval *vp,
          * Purge the property cache of now-shadowed id in obj's scope chain.
          * Do this early, before locking obj to avoid nesting locks.
          */
-        PurgeScopeChain(cx, obj, id);
+        js_PurgeScopeChain(cx, obj, id);
 
         /* Find or make a property descriptor with the right heritage. */
         JS_LOCK_OBJ(cx, obj);
@@ -5813,6 +5813,7 @@ js_SetRequiredSlot(JSContext *cx, JSObject *obj, uint32 slot, jsval v)
         scope->map.freeslot = slot + 1;
 
     STOBJ_SET_SLOT(obj, slot, v);
+    GC_POKE(cx, JS_NULL);
     JS_UNLOCK_SCOPE(cx, scope);
     return JS_TRUE;
 }

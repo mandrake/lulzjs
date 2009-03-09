@@ -386,10 +386,7 @@ __Core_include (JSContext* cx, std::string path)
                     lulzJS::Script script(cx, cachePath, lulzJS::Script::Bytecode);
                     script.execute();
                 }
-                catch (std::runtime_error e) {
-                    JS_ReportPendingException(cx);
-                    return JS_FALSE;
-                }
+                catch (std::exception e) { }
 
                 if (JS_IsExceptionPending(cx)) {
                     JS_ReportPendingException(cx);

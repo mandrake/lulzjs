@@ -95,19 +95,17 @@ Class = {
             for (let name in source) {
                 let value = source[name];
 
-                if (ancestor && value.is(Function) && value.argumentNames) {
-                    if (value.argumentNames().first() == "$super") {
-                        let method = value;
-         
-                        value = (function (m) {
-                            return function () {
-                                return ancestor[m].apply(this, arguments);
-                            };
-                        })(property).wrap(method);
-         
-                        value.__defineProperty__("valueOf", method.valueOf.bind(method), flags);
-                        value.__defineProperty__("toString", method.toString.bind(method), flags);
-                    }
+                if (ancestor && value.is(Function) && value.argumentNames().first == "$super") {
+                    let method = value;
+     
+                    value = (function (m) {
+                        return function () {
+                            return ancestor[m].apply(this, arguments);
+                        };
+                    })(property).wrap(method);
+     
+                    value.__defineProperty__("valueOf", method.valueOf.bind(method), flags);
+                    value.__defineProperty__("toString", method.toString.bind(method), flags);
                 }
 
                 this.prototype.__defineProperty__(name, value, flags);

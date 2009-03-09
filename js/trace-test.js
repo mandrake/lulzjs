@@ -1666,8 +1666,8 @@ function testNestedExitStackOuter() {
 testNestedExitStackOuter.expected = 81;
 testNestedExitStackOuter.jitstats = {
     recorderStarted: 5,
-    recorderAborted: 2,
-    traceTriggered: 11
+    recorderAborted: 1,
+    traceTriggered: 10
 };
 test(testNestedExitStackOuter);
 
@@ -2572,9 +2572,9 @@ function testWeirdDateParse() {
 }
 testWeirdDateParse.expected = "11,17,2008,11,17,2008,11,17,2008,11,17,2008,11,17,2008";
 testWeirdDateParse.jitstats = {
-    recorderStarted: 7,
+    recorderStarted: 8,
     recorderAborted: 1,
-    traceCompleted: 6,
+    traceCompleted: 7,
     traceTriggered: 14,
     unstableLoopVariable: 3,
     noCompatInnerTrees: 1
@@ -4456,9 +4456,17 @@ function testLambdaCtor() {
     // Assert that the last f was properly constructed.
     return a[RUNLOOP-1].__proto__ === f.prototype;
 }
-
 testLambdaCtor.expected = true;
 test(testLambdaCtor);
+
+function testNonStubGetter() {
+    let ([] = false) { (this.watch("x", /a/g)); };
+    (function () { (eval("(function(){for each (x in [1, 2, 2]);});"))(); })();
+    this.unwatch("x");
+    return "ok";
+}
+testNonStubGetter.expected = "ok";
+test(testNonStubGetter);
 
 /*****************************************************************************
  *                                                                           *

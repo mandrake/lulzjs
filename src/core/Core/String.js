@@ -152,14 +152,6 @@ Object.extend(String.prototype, (function() {
         return "'" + escapedString.replace(/'/g, '\\\'') + "'";
     };
 
-    function toJSON () {
-        return this.inspect(true);
-    };
-
-    function unfilterJSON (filter) {
-        return this.sub(filter || Object.JSONFilter, '#{1}');
-    };
-
     function isJSON () {
         var str = this;
 
@@ -168,20 +160,11 @@ Object.extend(String.prototype, (function() {
         }
 
         str = this.replace(/\\./g, '@').replace(/"[^"\\\n\r]*"/g, '');
-        return (/^[,:{}\[\]0-9.\-+Eaeflnr-u \n\r\t]*$/).test(str);
+        return str.test(/^[,:{}\[\]0-9.\-+Eaeflnr-u \n\r\t]*$/);
     };
 
-    function evalJSON (sanitize) {
-        var json = this.unfilterJSON();
-
-        try {
-            if (!sanitize || json.isJSON()) {
-                return eval('(' + json + ')');
-            }
-        }
-        catch (e) { }
-
-        throw new SyntaxError('Badly formed JSON string: ' + this.inspect());
+    function parseJSON (json, unsecure) {
+        return JSON.parse(json, unsecure);
     };
 
     function include (pattern) {
@@ -260,13 +243,7 @@ Object.extend(String.prototype, (function() {
         return this.split('').reverse().join('');
     };
 
-    function toInt (base) {
-        return (base)
-            ? parseInt(this, base)
-            : parseInt(this);
-    };
-
-    function toFloat () {
+    function toNumber () {
         return parseFloat(this);
     };
 
@@ -275,7 +252,11 @@ Object.extend(String.prototype, (function() {
     };
 
     function toBase (base) {
-        return this.toInt().toBase(base).toUpperCase();
+        return this.toNumber().toBase(base).toUpperCase();
+    };
+
+    function fromBase (base) {
+        return parseInt(this, base);
     };
 
     function toCode () {
@@ -296,9 +277,8 @@ Object.extend(String.prototype, (function() {
         count:          count,
         inspect:        inspect,
         toJSON:         toJSON,
-        unfilterJSON:   unfilterJSON,
         isJSON:         isJSON,
-        evalJSON:       evalJSON,
+        parseJSON:      parseJSON,
         include:        include,
         startsWith:     startsWith,
         endsWith:       endsWith,
@@ -309,10 +289,9 @@ Object.extend(String.prototype, (function() {
         commonChars:    commonChars,
         format:         format,
         reverse:        reverse,
-        toInt:          toInt,
-        toFloat:        toFloat,
+        toNumber:       toNumber,
         toBytes:        toBytes,
-        fromBase:       toInt,
+        fromBase:       fromBase,
         toBase:         toBase,
         toCode:         toCode,
     };

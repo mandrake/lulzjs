@@ -88,19 +88,6 @@ Array.__defineProperty__("from", $A, Object.Flags.None);
         return '[' + this.map(Object.inspect).join(", ") + ']';
     };
 
-    function toJSON () {
-        var results = [];
-
-        this.each(function (object) {
-            var value = Object.toJSON(object);
-            if (value !== undefined) {
-                results.push(value);
-            }
-        });
-
-        return '[' + results.join(", ") + ']';
-    };
-
     Object.extend(arrayProto, Enumerable, Object.Flags.None);
 
     Object.extend(arrayProto, {
@@ -119,27 +106,7 @@ Array.__defineProperty__("from", $A, Object.Flags.None);
 
 })();
 
-Object.extend(Array.prototype, (function() {
-    function size  () {
-        return this.length;
-    };
-
-    function first () {
-        return this[0];
-    };
-
-    function last () {
-        return this[this.length - 1];
-    };
-
-    return {
-        size:  size,
-        first: first,
-        last:  last,
-    };
-})(), Object.Flags.None);
-
-/*Object.addAttributes(Array.prototype, (function() {
+Array.addAttributes((function() {
     var size = { get: function size () {
         return this.length;
     }};
@@ -158,4 +125,4 @@ Object.extend(Array.prototype, (function() {
         last:  last,
     };
 })(), Object.Flags.None);
-*/
+

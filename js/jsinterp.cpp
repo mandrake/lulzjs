@@ -4263,7 +4263,7 @@ js_Interpret(JSContext *cx)
                 JSObject *aobj;
                 JSPropCacheEntry *entry;
 
-                aobj = OBJ_IS_DENSE_ARRAY(cx, obj) ? OBJ_GET_PROTO(cx, obj) : obj;
+                aobj = js_GetProtoIfDenseArray(cx, obj);
                 if (JS_LIKELY(aobj->map->ops->getProperty == js_GetProperty)) {
                     PROPERTY_CACHE_TEST(cx, regs.pc, aobj, obj2, entry, atom);
                     if (!atom) {
@@ -4291,7 +4291,7 @@ js_Interpret(JSContext *cx)
                 }
                 id = ATOM_TO_JSID(atom);
                 if (entry
-                    ? !js_GetPropertyHelper(cx, aobj, id, &rval, &entry)
+                    ? !js_GetPropertyHelper(cx, obj, id, &rval, &entry)
                     : !OBJ_GET_PROPERTY(cx, obj, id, &rval)) {
                     goto error;
                 }
@@ -4354,7 +4354,7 @@ js_Interpret(JSContext *cx)
                     goto error;
             }
 
-            aobj = OBJ_IS_DENSE_ARRAY(cx, obj) ? OBJ_GET_PROTO(cx, obj) : obj;
+            aobj = js_GetProtoIfDenseArray(cx, obj);
             if (JS_LIKELY(aobj->map->ops->getProperty == js_GetProperty)) {
                 PROPERTY_CACHE_TEST(cx, regs.pc, aobj, obj2, entry, atom);
                 if (!atom) {
@@ -4399,7 +4399,7 @@ js_Interpret(JSContext *cx)
                 } else
 #endif
                 if (entry
-                    ? !js_GetPropertyHelper(cx, aobj, id, &rval, &entry)
+                    ? !js_GetPropertyHelper(cx, obj, id, &rval, &entry)
                     : !OBJ_GET_PROPERTY(cx, obj, id, &rval)) {
                     goto error;
                 }
@@ -4589,6 +4589,15 @@ js_Interpret(JSContext *cx)
                                                  rval);
                                 LOCKED_OBJ_SET_SLOT(obj, slot, rval);
                                 JS_UNLOCK_SCOPE(cx, scope);
+
+                                /*
+                                 * Purge the property cache of the id we may
+                                 * have just shadowed in obj's scope and proto
+                                 * chains. We do this after unlocking obj's
+                                 * scope to avoid lock nesting.
+                                 */
+                                js_PurgeScopeChain(cx, obj, sprop->id);
+
                                 TRACE_2(SetPropHit, entry, sprop);
                                 break;
                             }
@@ -6175,8 +6184,6 @@ js_Interpret(JSContext *cx)
                     if (sprop->parent != scope->lastProp)
                         goto do_initprop_miss;
 
-                    TRACE_2(SetPropHit, entry, sprop);
-
                     /*
                      * Otherwise this entry must be for a direct property of
                      * obj, not a proto-property, and there cannot have been
@@ -6224,6 +6231,8 @@ js_Interpret(JSContext *cx)
                                      rval);
                     LOCKED_OBJ_SET_SLOT(obj, slot, rval);
                     JS_UNLOCK_SCOPE(cx, scope);
+
+                    TRACE_2(SetPropHit, entry, sprop);
                     break;
                 }
 

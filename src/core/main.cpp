@@ -223,17 +223,25 @@ executeScript (JSContext* cx, std::string file)
 {
     JSBool returnValue;
 
-    if (lulzJS::Script::isBytecode(new std::ifstream(file.c_str()))) {
-        lulzJS::Script script(cx, file, lulzJS::Script::Bytecode);
-        returnValue = script.execute();
+    try {
+        if (lulzJS::Script::isBytecode(new std::ifstream(file.c_str()))) {
+            lulzJS::Script script(cx, file, lulzJS::Script::Bytecode);
+            script.execute();
+        }
+        else {
+            lulzJS::Script script(cx, file, lulzJS::Script::Text);
+            script.execute();
+        }
+
+        returnValue = JS_TRUE;
     }
-    else {
-        lulzJS::Script script(cx, file, lulzJS::Script::Text);
-        returnValue = script.execute();
+    catch (std::exception e) {
+        returnValue = JS_FALSE;
     }
 
     if (JS_IsExceptionPending(cx)) {
         JS_ReportPendingException(cx);
+        returnValue = JS_FALSE;
     }
 
     return returnValue;

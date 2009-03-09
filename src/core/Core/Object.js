@@ -16,17 +16,44 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-/*. Object
- *
- *| The Object object (lol) has some default methods and static methods that
- *| simplify the programmer's life.
- */
+/*. Object < Function {Core}
+**
+**| The Object object (lol) has some default methods and static methods that
+**| simplify the programmer's life.
+**
+**:# constructor (value) => Object
+**  - value [?]: Any value.
+**
+**| The constructor creates an object wrapper to the given value, if it's undefined
+**| or null the returned object is empty.
+**
+**:# getPrototypeOf (object) => ?
+**   - object [Object]: The object to get the prototype from.
+**
+**| Get the prototype from an object.
+**
+**@ constructor [Function]
+**
+**|< The function that constructs the object.
+**
+**@ __count__ [Number] {ReadOnly}
+**
+**|< Number of enumerated methods an properties on the object.
+**
+**@ __parent__ [Object] {ReadOnly}
+**
+**|< The object's context.
+**
+**@ __proto__ [Object] {ReadOnly}
+**
+**|< 
+*/
 (function() {
-    /*# getClass (object) => String
-     *  - object [Object]: The object to get the class from.
-     *
-     *| Get the object's class.
-     */
+    /*:# getClass (object) => String
+    **  - object [Object]: The object to get the class from.
+    **
+    **| Get the object's class.
+    */
     function getClass (object) {
         return Object.prototype.toString.call(object).match(
             /\[object\s(.*)\]$/)[1];
@@ -89,26 +116,11 @@
     };
 
     function toJSON (object) {
-        switch (typeof object) {
-            case 'undefined':
-            case 'function' :
-            case 'unknown'  : return;
-            case 'boolean'  : return object.toString();
+        if (object.toJSON && object.toJSON !== Object.toJSON) {
+            return object.toJSON();
         }
 
-        if (object === null) return 'null';
-        if (object.toJSON && object.toJSON !== Object.prototype.toJSON)   return object.toJSON();
-
-        var results = new Array;
-        for (let property in object) {
-            let value = toJSON(object[property]);
-
-            if (value !== undefined) {
-                results.push(property.toJSON() + ": " + value);
-            }
-        }
-
-        return '{' + results.join(", ") + '}';
+        return JSON._stringify(object);
     };
 
     function keys (object) {

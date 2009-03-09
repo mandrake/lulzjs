@@ -26,9 +26,22 @@ Object.extend(Number.prototype, (function() {
         return this;
     };
 
+    function upTo (num, iterator, context) {
+        $R(this, num, true).each(iterator, context);
+        return num;
+    };
+
     function toPaddedString (length, radix) {
         var string = this.toString(radix || 10);
         return '0'.times(length - string.length) + string;
+    };
+
+    function isEven () {
+        return this % 2 == 0;
+    };
+
+    function isOdd () {
+        return this % 2 != 0;
     };
 
     function abs () {
@@ -94,7 +107,10 @@ Object.extend(Number.prototype, (function() {
     return {
         next:           next,
         times:          times,
+        upTo:           upTo,
         toPaddedString: toPaddedString,
+        isEven:         isEven,
+        isOdd:          isOdd,
         abs:            abs,
         round:          round,
         ceil:           ceil,
@@ -118,8 +134,8 @@ Object.extendAttributes(Number.prototype, {
         var matches = this.toString().match(/e(.*)$/);
 
         if (matches) {
-            return (matches[1].toInt() > 0)
-                ? 1+matches[1].toInt()
+            return (matches[1].toNumber() > 0)
+                ? 1+matches[1].toNumber()
                 : 0;
         }
         else {

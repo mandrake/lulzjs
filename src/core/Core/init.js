@@ -39,8 +39,8 @@ require(["Object.so", "Object.js"]);
 require([
     "Class.js", "Function.js", "Date.js", "RegExp.js",
     "String.js", "Template.js", "Enumerable.js", "Array.js",
-    "Bytes.js", "Hash.js", "Number.js",
-    "Range.js", "XML.js", "Thread", "random.js"
+    "Bytes.js", "Hash.js", "Number.js", "Range.js",
+    "JSON.js", "XML.js", "Thread", "random.js"
 ]);
 
 [Function, Array, String, Number, RegExp, Date, XML].each(function (obj) {

@@ -29,9 +29,14 @@ Directory.addMethods((function() {
     };
 
     function inspect () {
-        return '#<Directory: path="{0}", permission={1}, length={2}, position={3}>'.format([
-            this.path, this.permission, this.length, this.position
-        ]);
+        try {
+            return '#<Directory: path="{0}", permission={1}, length={2}, position={3}>'.format([
+                this.path, this.permission, this.length, this.position
+            ]);
+        }
+        catch (e) {
+            return '#<Directory: null>';
+        }
     };
 
     return {

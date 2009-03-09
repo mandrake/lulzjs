@@ -16,6 +16,11 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
+/*. Function < Object {Core}
+**
+**| The Function object 
+*/
+
 Object.extend(Function, {
     empty: function () {},
     K:     function (x) x
