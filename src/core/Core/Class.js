@@ -102,7 +102,7 @@ Class = {
                         return function () {
                             return ancestor[m].apply(this, arguments);
                         };
-                    })(property).wrap(method);
+                    })(name).wrap(method);
      
                     value.__defineProperty__("valueOf", method.valueOf.bind(method), flags);
                     value.__defineProperty__("toString", method.toString.bind(method), flags);

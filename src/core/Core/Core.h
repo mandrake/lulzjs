@@ -34,6 +34,20 @@
 #include <libgen.h>
 #include <dlfcn.h>
 
+/*. Program [Namespace]
+**|^ The Program object is a reference to Core that's the global object.
+**
+**|~ 
+**
+**|= The Program object has some functions that are vital, like the include/require
+**|= functions that are used to include scripts and libraries (this will be perfectioned)
+**|=
+**|= It's used explicitly when you want to call global functions or variables inside another
+**|= function.
+**|=
+**|= 
+*/
+
 extern "C" JSObject* Core_initialize (JSContext* cx, const char* path);
 
 static JSClass Core_class = {

@@ -16,6 +16,18 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
+/*<< Program
+**
+**@ name [String]
+**|^ The program's name.
+**
+**@ path [String]
+**|^ The program's path.
+**
+**@ PID [String]
+**|^ The program's process id.
+*/
+
 #include "lulzjs.h"
 #include <iostream>
 #include <fstream>
