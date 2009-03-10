@@ -74,7 +74,7 @@ FileSystem.Permission = Class.create({
 
             return {
                 permission: perm, 
-                bits:       (perm.length < 4 ? '0' : perm[0]).toInt(),
+                bits:       (perm.length < 4 ? '0' : perm[0]).toNumber(),
                 user:       new System.FileSystem.Permission.Mode(perm[0+offset]),
                 group:      new System.FileSystem.Permission.Mode(perm[1+offset]),
                 other:      new System.FileSystem.Permission.Mode(perm[2+offset]),

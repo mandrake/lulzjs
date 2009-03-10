@@ -26,7 +26,7 @@
 #include <string>
 #include <list>
 
-// Not cross platform
+// *nix only
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -34,14 +34,14 @@
 #include <libgen.h>
 #include <dlfcn.h>
 
+extern "C" JSObject* Core_initialize (JSContext* cx, const char* name);
+
 static JSClass Core_class = {
     "Core", JSCLASS_GLOBAL_FLAGS|JSCLASS_HAS_PRIVATE,
     JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
     JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub,
     JSCLASS_NO_OPTIONAL_MEMBERS
 };
-
-JSObject* Core_initialize (JSContext* cx, const char* script);
 
 JSBool Core_include (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval); 
 JSBool Core_require (JSContext* cx, JSObject* obj, uintN argc, jsval* argv, jsval* rval);

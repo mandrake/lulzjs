@@ -18,35 +18,35 @@
 
 /*. Object < Function {Core}
 **
-**| The Object object (lol) has some default methods and static methods that
-**| simplify the programmer's life.
+**^ The Object object (lol) has some default methods and static methods that
+**^ simplify the programmer's life.
 **
 **:# constructor (value) => Object
 **  - value [?]: Any value.
 **
-**| The constructor creates an object wrapper to the given value, if it's undefined
-**| or null the returned object is empty.
+**^ The constructor creates an object wrapper to the given value, if it's undefined
+**^ or null the returned object is empty.
 **
 **:# getPrototypeOf (object) => ?
 **   - object [Object]: The object to get the prototype from.
 **
-**| Get the prototype from an object.
+**^ Get the prototype from an object.
 **
 **@ constructor [Function]
 **
-**|< The function that constructs the object.
+**^ The function that constructs the object.
 **
 **@ __count__ [Number] {ReadOnly}
 **
-**|< Number of enumerated methods an properties on the object.
+**^ Number of enumerated methods an properties on the object.
 **
 **@ __parent__ [Object] {ReadOnly}
 **
-**|< The object's context.
+**^ The object's context.
 **
 **@ __proto__ [Object] {ReadOnly}
 **
-**|< 
+**^ The object that was used as prototype when the object was instantiated.
 */
 (function() {
     /*:# getClass (object) => String

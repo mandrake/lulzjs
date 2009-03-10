@@ -20,7 +20,12 @@
 #include <iostream>
 #include <fstream>
 
-#include "Core.h"
+// *nix only
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <dlfcn.h>
+
 #include "Interactive.h"
 
 char USAGE[] = {
@@ -189,29 +194,50 @@ initEngine (int argc, int offset, char *argv[])
             JS_SetOptions(engine.context, JSOPTION_VAROBJFIX);
             JS_SetErrorReporter(engine.context, reportError);
 
-            if ((engine.core = Core_initialize(engine.context, argv[offset]))) {
-                jsval property;
-                JSObject* arguments = JS_NewArrayObject(engine.context, 0, NULL);
-                property = OBJECT_TO_JSVAL(arguments);
-                JS_SetProperty(engine.context, engine.core, "arguments", &property);
-
-                if (offset+1 < argc) {
-                    int i;
-                    jsval rval;
-                    for (i = offset+1; i < argc; i++) {
-                        property = STRING_TO_JSVAL(JS_NewString(engine.context, JS_strdup(engine.context, argv[i]), strlen(argv[i])));
-                        JS_CallFunctionName(
-                            engine.context, arguments, "push",
-                            1, &property, &rval);
-                    }
-                }
-
-                JS_LeaveLocalRootScope(engine.context);
-                JS_EndRequest(engine.context);
-
-                engine.error = JS_FALSE;
+            struct stat check;
+            if (stat(__LJS_LIBRARY_PATH__"/Core/Core.so", &check) != 0) {
                 return engine;
             }
+
+            void* handle = dlopen(__LJS_LIBRARY_PATH__"/Core/Core.so", RTLD_LAZY|RTLD_GLOBAL);
+            JSBool (*coreInitialize)(JSContext*, const char*)
+                = (JSBool (*)(JSContext*, const char*)) dlsym(handle, "Core_initialize");
+
+            if (coreInitialize == NULL || !(*coreInitialize)(engine.context, argv[offset])) {
+                return engine;
+            }
+
+            engine.core = JS_GetGlobalObject(engine.context);
+            jsval property;
+            
+            property = STRING_TO_JSVAL(
+                JS_NewString(engine.context, JS_strdup(engine.context, argv[offset]), strlen(argv[offset]))
+            );
+            JS_DefineProperty(engine.context, engine.core, "name", property, NULL, NULL, JSPROP_READONLY);
+
+            property = INT_TO_JSVAL(getpid());
+            JS_DefineProperty(engine.context, engine.core, "PID", property, NULL, NULL, JSPROP_READONLY);
+
+            JSObject* arguments = JS_NewArrayObject(engine.context, 0, NULL);
+            property = OBJECT_TO_JSVAL(arguments);
+            JS_SetProperty(engine.context, engine.core, "arguments", &property);
+
+            if (offset+1 < argc) {
+                int i;
+                jsval rval;
+                for (i = offset+1; i < argc; i++) {
+                    property = STRING_TO_JSVAL(JS_NewString(engine.context, JS_strdup(engine.context, argv[i]), strlen(argv[i])));
+                    JS_CallFunctionName(
+                        engine.context, arguments, "push",
+                        1, &property, &rval);
+                }
+            }
+
+            JS_LeaveLocalRootScope(engine.context);
+            JS_EndRequest(engine.context);
+
+            engine.error = JS_FALSE;
+            return engine;
         }
     }
 

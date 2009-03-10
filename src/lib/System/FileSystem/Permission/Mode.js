@@ -23,7 +23,7 @@ var Permission = FileSystem.Permission
 
 Permission.Mode = Class.create({
     constructor: function (mode) {
-        this.__defineProperty__("mode", String(mode).toInt(), Object.Flags.None);
+        this.__defineProperty__("mode", String(mode).toNumber(), Object.Flags.None);
     },
 
     methods: {

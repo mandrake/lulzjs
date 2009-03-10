@@ -21,14 +21,14 @@ endif
 
 ## CORE ##
 CORE_DIR     = src/core
-CORE         = ${CORE_DIR}/main.o ${CORE_DIR}/Core.o ${CORE_DIR}/Interactive.o
+CORE         = ${CORE_DIR}/main.o ${CORE_DIR}/Interactive.o
 CORE_CFLAGS  = ${CFLAGS}
 CORE_LDFLAGS = ${LDFLAGS} -ldl -lreadline -lncurses
 
 ## LIB_CORE ##
 LIB_CORE_DIR = src/core/Core
 LIB_CORE = \
-	${LIB_CORE_DIR}/Object.o ${LIB_CORE_DIR}/Thread/Thread.o 
+	${LIB_CORE_DIR}/Core.o ${LIB_CORE_DIR}/Object.o ${LIB_CORE_DIR}/Thread/Thread.o 
 
 LIB_CORE_CFLAGS  = ${CFLAGS}
 LIB_CORE_LDFLAGS = ${LDFLAGS}
@@ -72,6 +72,7 @@ libcore_install: libcore
 	mkdir -p ${LJS_LIBDIR}/Core/Thread
 ########
 	cp -f  ${LIB_CORE_DIR}/init.js				${LJS_LIBDIR}/Core/init.js
+	cp -f  ${LIB_CORE_DIR}/Core.o				${LJS_LIBDIR}/Core/Core.so
 ########
 	cp -rf ${LIB_CORE_DIR}/Object.o				${LJS_LIBDIR}/Core/Object.so
 ########

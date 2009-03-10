@@ -101,7 +101,7 @@ System.Net.Protocol.HTTP.Request = Class.create({
             this.response = System.Net.Protocol.HTTP.Request
                 ._initializeConnection[this.options.method.toUpperCase()].apply(this);
 
-            return this._normalRead(this.response.getHeader("Content-Length").toInt());
+            return this._normalRead(this.response.getHeader("Content-Length").toNumber());
         },
 
         _normalRead: function (length) {
@@ -115,7 +115,7 @@ System.Net.Protocol.HTTP.Request = Class.create({
 
             var content;
             if (this.response.getHeader("Content-Length")) {
-                if (this.response.content.length == this.response.getHeader("Content-Length").toInt()) {
+                if (this.response.content.length == this.response.getHeader("Content-Length").toNumber()) {
                     return null;
                 }
     
@@ -141,7 +141,7 @@ System.Net.Protocol.HTTP.Request = Class.create({
             }
 
             if (this.response.getHeader("Content-Length")) {
-                return this.read(this.response.getHeader("Content-Length").toInt())
+                return this.read(this.response.getHeader("Content-Length").toNumber())
             }
             else {
                 return this.readChunked();
@@ -192,7 +192,7 @@ System.Net.Protocol.HTTP.Request = Class.create({
             var ret = ""
 
             if (length < 1) {
-                while (read = this.socket.readLine().toInt(16)) {
+                while (read = this.socket.readLine().fromBase(16)) {
                     ret += this.socket.read(read);
                     this.socket.readLine()
                 }
@@ -209,7 +209,7 @@ System.Net.Protocol.HTTP.Request = Class.create({
             while (this.chunk.length) {
                 if (this.chunk.length == this.chunk.read) {
                     this.socket.readLine();
-                    this.chunk.length = this.socket.readLine().toInt(16);
+                    this.chunk.length = this.socket.readLine().fromBase(16);
                     this.chunk.read   = 0;
                 }
     
