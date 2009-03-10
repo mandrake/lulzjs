@@ -34,6 +34,9 @@
 #include <libgen.h>
 #include <dlfcn.h>
 
+/// = * < Object
+/// = Class < Function
+
 /*. Program [Namespace]
 **|^ The Program object is a reference to Core that's the global object.
 **

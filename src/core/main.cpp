@@ -262,6 +262,9 @@ initEngine (int argc, int offset, char *argv[])
                 }
             }
 
+            lulzJS::Script script(engine.context, std::string(__LJS_LIBRARY_PATH__"/ljs_arguments.js"), lulzJS::Script::Text);
+            script.execute();
+
             JS_LeaveLocalRootScope(engine.context);
             JS_EndRequest(engine.context);
 

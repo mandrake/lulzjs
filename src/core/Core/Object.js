@@ -16,7 +16,7 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-/*. Object < Function {Core}
+/*. Object {Core}
 **|^ The Object object (lol) has some default methods and static methods that
 **|^ simplify the programmer's life.
 **
@@ -41,6 +41,7 @@
 **@ __proto__ [Object] {ReadOnly}
 **|^ The object that was used as prototype when the object was instantiated.
 */
+
 (function() {
     /*:# getClass (object) => String
     **  - object [Object]: The object to get the class from.

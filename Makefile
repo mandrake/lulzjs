@@ -59,6 +59,7 @@ $(CORE): $(CORE:.o=.cpp)
 core_install:
 	mkdir -p ${LJS_LIBDIR}
 	cp -f ljs ${BINDIR}/
+	cp -f src/core/ljs_arguments.js ${LJS_LIBDIR}
 
 libcore: $(LIB_CORE)
 
@@ -173,6 +174,7 @@ install: all core_install libcore_install libsystem_install
 
 uninstall:
 	rm -f ${BINDIR}/ljs
+	rm -f  ${LJS_LIBDIR}/ljs_arguments.js
 	rm -rf ${LJS_LIBDIR}/Core
 	rm -rf ${LJS_LIBDIR}/System
 	
