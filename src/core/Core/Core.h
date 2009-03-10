@@ -34,7 +34,7 @@
 #include <libgen.h>
 #include <dlfcn.h>
 
-extern "C" JSObject* Core_initialize (JSContext* cx, const char* name);
+extern "C" JSObject* Core_initialize (JSContext* cx, const char* path);
 
 static JSClass Core_class = {
     "Core", JSCLASS_GLOBAL_FLAGS|JSCLASS_HAS_PRIVATE,

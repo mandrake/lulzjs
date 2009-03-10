@@ -190,8 +190,6 @@ initEngine (int argc, int offset, char *argv[])
         if ((engine.context = JS_NewContext(engine.runtime, 8192))) {
             JS_BeginRequest(engine.context);
             JS_EnterLocalRootScope(engine.context);
-
-            JS_SetOptions(engine.context, JSOPTION_VAROBJFIX);
             JS_SetErrorReporter(engine.context, reportError);
 
             struct stat check;
@@ -210,10 +208,29 @@ initEngine (int argc, int offset, char *argv[])
             engine.core = JS_GetGlobalObject(engine.context);
             jsval property;
             
+            std::string full = argv[offset];
+            std::string name;
+            std::string path;
+
+            size_t slashPosition = full.find_last_of("/\\");
+            if (slashPosition != std::string::npos) {
+                name = full.substr(slashPosition+1);
+                path = full.substr(0, slashPosition+1);
+            }
+            else {
+                name = full;
+                path = "./";
+            }
+
             property = STRING_TO_JSVAL(
-                JS_NewString(engine.context, JS_strdup(engine.context, argv[offset]), strlen(argv[offset]))
+                JS_NewString(engine.context, JS_strdup(engine.context, name.c_str()), name.length())
             );
             JS_DefineProperty(engine.context, engine.core, "name", property, NULL, NULL, JSPROP_READONLY);
+
+            property = STRING_TO_JSVAL(
+                JS_NewString(engine.context, JS_strdup(engine.context, path.c_str()), path.length())
+            );
+            JS_DefineProperty(engine.context, engine.core, "path", property, NULL, NULL, JSPROP_READONLY);
 
             property = INT_TO_JSVAL(getpid());
             JS_DefineProperty(engine.context, engine.core, "PID", property, NULL, NULL, JSPROP_READONLY);

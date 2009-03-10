@@ -27,9 +27,10 @@ JSBool      __Core_include (JSContext* cx, std::string path);
 JSBool      __Core_isIncluded (std::string path);
 
 JSObject*
-Core_initialize (JSContext *cx, const char* name)
+Core_initialize (JSContext *cx, const char* path)
 {
     JS_BeginRequest(cx);
+    JS_SetOptions(cx, JSOPTION_VAROBJFIX|JSOPTION_JIT|JSOPTION_XML);
     JS_SetVersion(cx, JS_StringToVersion("1.8"));
 
     JSObject* object = JS_NewObject(cx, &Core_class, NULL, NULL);
@@ -42,7 +43,7 @@ Core_initialize (JSContext *cx, const char* name)
         // Properties
         jsval property;
 
-        std::string rootPath = __Core_getRootPath(cx, name);
+        std::string rootPath = __Core_getRootPath(cx, path);
         jsval paths[] = {
             STRING_TO_JSVAL(JS_NewString(cx, JS_strdup(cx, rootPath.c_str()), rootPath.length())),
             STRING_TO_JSVAL(JS_NewString(cx, JS_strdup(cx, __LJS_LIBRARY_PATH__), strlen(__LJS_LIBRARY_PATH__)))
@@ -60,8 +61,9 @@ Core_initialize (JSContext *cx, const char* name)
         JS_LeaveLocalRootScope(cx);
         JS_EndRequest(cx);
 
-        if (__Core_include(cx, __LJS_LIBRARY_PATH__ "/Core"))
+        if (__Core_include(cx, __LJS_LIBRARY_PATH__ "/Core")) {
             return object;
+        }
     }
 
     return NULL;
