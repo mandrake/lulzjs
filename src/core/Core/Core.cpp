@@ -427,15 +427,17 @@ __Core_include (JSContext* cx, std::string path)
             return JS_FALSE;
         }
 
-        void* handle      = dlopen(path.c_str(), RTLD_LAZY|RTLD_GLOBAL);
-        const char* error = dlerror();
+        PRLibrary* lib = PR_LoadLibrary(path.c_str());
 
-        if (error) {
+        if (!lib) {
+            char* error = new char[PR_GetErrorTextLength()];
+            PR_GetErrorText(error);
             std::cerr << error << std::endl;
+            delete [] error;
             return JS_FALSE;
         }
 
-        JSBool (*exec)(JSContext*) = (JSBool (*)(JSContext*)) dlsym(handle, "exec");
+        JSBool (*exec)(JSContext*) = (JSBool (*)(JSContext*)) PR_FindSymbol(lib, "exec");
 
         if (exec == NULL || !(*exec)(cx)) {
             #ifdef DEBUG

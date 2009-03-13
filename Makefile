@@ -28,7 +28,7 @@ CORE_LDFLAGS = ${LDFLAGS} -ldl -lreadline -lncurses
 ## LIB_CORE ##
 LIB_CORE_DIR = src/core/Core
 LIB_CORE = \
-	${LIB_CORE_DIR}/Core.o ${LIB_CORE_DIR}/Object.o ${LIB_CORE_DIR}/Thread/Thread.o 
+	${LIB_CORE_DIR}/Core.o ${LIB_CORE_DIR}/Object.o
 
 LIB_CORE_CFLAGS  = ${CFLAGS}
 LIB_CORE_LDFLAGS = ${LDFLAGS}
@@ -38,6 +38,7 @@ LIB_CORE_LDFLAGS = ${LDFLAGS}
 LIB_SYSTEM_DIR = src/lib/System
 LIB_SYSTEM = \
 	${LIB_SYSTEM_DIR}/System.o \
+	${LIB_SYSTEM_DIR}/Thread/Thread.o \
 	${LIB_SYSTEM_DIR}/Environment/Environment.o \
 	${LIB_SYSTEM_DIR}/Console/Console.o \
 	${LIB_SYSTEM_DIR}/FileSystem/FileSystem.o ${LIB_SYSTEM_DIR}/FileSystem/File/File.o ${LIB_SYSTEM_DIR}/FileSystem/Directory/Directory.o \
@@ -70,15 +71,11 @@ $(LIB_CORE): $(LIB_CORE:.o=.cpp)
 libcore_install: libcore
 	mkdir -p ${LJS_LIBDIR}
 	mkdir -p ${LJS_LIBDIR}/Core
-	mkdir -p ${LJS_LIBDIR}/Core/Thread
 ########
 	cp -f  ${LIB_CORE_DIR}/init.js				${LJS_LIBDIR}/Core/init.js
 	cp -f  ${LIB_CORE_DIR}/Core.o				${LJS_LIBDIR}/Core/Core.so
 ########
 	cp -rf ${LIB_CORE_DIR}/Object.o				${LJS_LIBDIR}/Core/Object.so
-########
-	cp -f  ${LIB_CORE_DIR}/Thread/init.js		${LJS_LIBDIR}/Core/Thread/init.js
-	cp -f  ${LIB_CORE_DIR}/Thread/Thread.o		${LJS_LIBDIR}/Core/Thread/Thread.so
 ########
 	cp -rf ${LIB_CORE_DIR}/*.js					${LJS_LIBDIR}/Core/
 	
@@ -91,6 +88,7 @@ $(LIB_SYSTEM): $(LIB_SYSTEM:.o=.cpp)
 libsystem_install: libsystem
 	mkdir -p ${LJS_LIBDIR}
 	mkdir -p ${LJS_LIBDIR}/System
+	mkdir -p ${LJS_LIBDIR}/System/Thread
 	mkdir -p ${LJS_LIBDIR}/System/Environment
 	mkdir -p ${LJS_LIBDIR}/System/Console
 	mkdir -p ${LJS_LIBDIR}/System/FileSystem
@@ -110,7 +108,10 @@ libsystem_install: libsystem
 	cp -f ${LIB_SYSTEM_DIR}/init.js								${LJS_LIBDIR}/System/init.js
 	cp -f ${LIB_SYSTEM_DIR}/System.o							${LJS_LIBDIR}/System/System.so
 ########
-	cp -f ${LIB_SYSTEM_DIR}/Environment/init.js                             ${LJS_LIBDIR}/System/Environment/init.js
+	cp -f ${LIB_SYSTEM_DIR}/Thread/init.js						${LJS_LIBDIR}/System/Thread/init.js
+	cp -f ${LIB_SYSTEM_DIR}/Thread/Thread.o						${LJS_LIBDIR}/System/Thread/Thread.so
+########
+	cp -f ${LIB_SYSTEM_DIR}/Environment/init.js					${LJS_LIBDIR}/System/Environment/init.js
 	cp -f ${LIB_SYSTEM_DIR}/Environment/Environment.o			${LJS_LIBDIR}/System/Environment/Environment.so
 ########
 	cp -f ${LIB_SYSTEM_DIR}/FileSystem/init.js					${LJS_LIBDIR}/System/FileSystem/init.js

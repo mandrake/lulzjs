@@ -80,6 +80,10 @@ Array.__defineProperty__("from", $A, Object.Flags.None);
         });
     };
 
+    function remove (index) {
+        return delete this[index];
+    };
+
     function clone () {
         return slice.call(this, 0);
     };
@@ -98,6 +102,7 @@ Array.__defineProperty__("from", $A, Object.Flags.None);
         without:   without,
         uniq:      uniq,
         intersect: intersect,
+        remove:    remove,
         clone:     clone,
         toArray:   clone,
         inspect:   inspect,

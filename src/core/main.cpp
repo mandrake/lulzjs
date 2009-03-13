@@ -32,11 +32,12 @@
 #include <iostream>
 #include <fstream>
 
+#include "prlink.h"
+
 // *nix only
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include <dlfcn.h>
 
 #include "Interactive.h"
 
@@ -198,6 +199,8 @@ initEngine (int argc, int offset, char *argv[])
     Engine engine;
     engine.error = JS_TRUE;
 
+    JS_SetCStringsAreUTF8();
+
     if ((engine.runtime = JS_NewRuntime(8L * 1024L * 1024L))) {
         if ((engine.context = JS_NewContext(engine.runtime, 8192))) {
             JS_BeginRequest(engine.context);
@@ -209,9 +212,9 @@ initEngine (int argc, int offset, char *argv[])
                 return engine;
             }
 
-            void* handle = dlopen(__LJS_LIBRARY_PATH__"/Core/Core.so", RTLD_LAZY|RTLD_GLOBAL);
+            PRLibrary* lib = PR_LoadLibrary(__LJS_LIBRARY_PATH__"/Core/Core.so");
             JSBool (*coreInitialize)(JSContext*, const char*)
-                = (JSBool (*)(JSContext*, const char*)) dlsym(handle, "Core_initialize");
+                = (JSBool (*)(JSContext*, const char*)) PR_FindSymbol(lib, "Core_initialize");
 
             if (coreInitialize == NULL || !(*coreInitialize)(engine.context, argv[offset])) {
                 return engine;

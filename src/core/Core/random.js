@@ -16,15 +16,23 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
+function int (num) {
+    return parseInt(num);
+};
+
+function float (num) {
+    return parseFloat(num);
+};
+
 function range (begin, end) {
     return $R(begin, end).toArray();
-}
+};
 
 function ord (str) {
     return String.toCharCode(str);
-}
+};
 
 function chr (num) {
     return String.fromCharCode(num);
-}
+};
 

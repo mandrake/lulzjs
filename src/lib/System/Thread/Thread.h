@@ -19,12 +19,8 @@
 #ifndef _SYSTEM_THREAD_H
 #define _SYSTEM_THREAD_H
 
-#include "jsapi.h"
-
-#include <pthread.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+#include "lulzjs.h"
+#include "prthread.h"
 
 extern "C" JSBool exec (JSContext* cx);
 void reportError (JSContext *cx, const char *message, JSErrorReport *report);

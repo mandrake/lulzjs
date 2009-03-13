@@ -190,6 +190,10 @@ Enumerable = Class.create((function() {
         return value;
     };
 
+    function count (something) {
+        return this.select(function (elm) elm == something).length;
+    };
+
     function partition (iterator, context) {
         iterator   = iterator || Function.K;
         var trues  = new Array;
@@ -284,6 +288,7 @@ Enumerable = Class.create((function() {
             invoke:     invoke,
             max:        max,
             min:        min,
+            count:      count,
             partition:  partition,
             pluck:      pluck,
             reject:     reject,

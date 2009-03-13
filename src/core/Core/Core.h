@@ -20,6 +20,8 @@
 #define _CORE_H
 
 #include "lulzjs.h"
+#include "prlink.h"
+#include "prerror.h"
 #include "jsdbgapi.h"
 
 #include <iostream>
@@ -32,7 +34,6 @@
 #include <unistd.h>
 
 #include <libgen.h>
-#include <dlfcn.h>
 
 /// = * < Object
 /// = Class < Function

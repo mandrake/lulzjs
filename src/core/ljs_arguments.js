@@ -17,6 +17,17 @@
 ****************************************************************************/
 
 arguments.parse = function (short, long) {
+    var args = Program.arguments.clone();
 
+    var shortObj = new Hash;
+    for (let i = 0; i < short.length; i++) {
+        if (short[i+1] == ':') {
+            shortObj.set(short[i], true);
+            i++;
+        }
+        else {
+            shortObj.set(short[i], false);
+        }
+    }
 };
 
