@@ -21,16 +21,16 @@ fi
 mkdir -p /usr/include/lulzjs/js
 mkdir -p /usr/lib/lulzjs
 
-patch js-config.in < js-config.in.lulz.patch
-
 (autoconf-2.13 || autoconf2.13 || autoconf213) &> /dev/null
 
-CXXFLAGS=-Os ./configure --with-system-nspr --enable-threadsafe --bindir=/usr/bin --libdir=/usr/lib/lulzjs --includedir=/usr/include/lulzjs --enable-debug --enable-gczeal
+CXXFLAGS=-Os ./configure --with-system-nspr --enable-threadsafe --bindir=/usr/lib/lulzjs --libdir=/usr/lib/lulzjs --includedir=/usr/include/lulzjs --enable-debug --enable-gczeal
 make || bawww
 make install || bawww
 
-g++ `js-config --cflags` -fPIC -c lulzjs/lulzjs.cpp -o lulzjs.lo -g3 -Wall
-g++ `js-config --libs | sed 's/-dynamiclib.*/-dynamiclib -lm/'` -shared -o liblulzjs.so lulzjs.lo -lc || bawww
+mv /usr/lib/lulzjs/js-config /usr/bin/lulzjs-config
+
+g++ `lulzjs-config --cflags` -fPIC -c lulzjs/lulzjs.cpp -o lulzjs.lo -g3 -Wall
+g++ `lulzjs-config --libs | sed 's/-dynamiclib.*/-dynamiclib -lm/'` -shared -o liblulzjs.so lulzjs.lo -lc || bawww
 cp -f liblulzjs.so /usr/lib/lulzjs/ || bawww
 cp -f lulzjs/lulzjs.h /usr/include/lulzjs || bawww
 rm lulzjs.lo || bawww

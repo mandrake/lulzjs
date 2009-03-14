@@ -4,8 +4,8 @@ CC         = gcc
 CXX        = g++
 BINDIR     = /usr/bin
 LJS_LIBDIR = /usr/lib/lulzjs
-CFLAGS     = -D__LJS_LIBRARY_PATH__="\"${LJS_LIBDIR}\"" -D__LJS_VERSION__="\"${VERSION}\"" $(shell js-config --cflags) -I./src/core -I./src/lib 
-LDFLAGS    = $(shell js-config --libs | sed 's/-dynamic.*/-lm/') -llulzjs
+CFLAGS     = -D__LJS_LIBRARY_PATH__="\"${LJS_LIBDIR}\"" -D__LJS_VERSION__="\"${VERSION}\"" $(shell lulzjs-config --cflags) -I./src/core -I./src/lib 
+LDFLAGS    = $(shell lulzjs-config --libs | sed 's/-dynamic.*/-lm/') -llulzjs
 
 ifdef DEBUG
 CFLAGS += -g3 -DWORKING -Wall
@@ -42,7 +42,7 @@ LIB_SYSTEM = \
 	${LIB_SYSTEM_DIR}/Environment/Environment.o \
 	${LIB_SYSTEM_DIR}/Console/Console.o \
 	${LIB_SYSTEM_DIR}/FileSystem/FileSystem.o ${LIB_SYSTEM_DIR}/FileSystem/File/File.o ${LIB_SYSTEM_DIR}/FileSystem/Directory/Directory.o \
-	${LIB_SYSTEM_DIR}/Net/Net.o ${LIB_SYSTEM_DIR}/Net/Socket/Socket.o ${LIB_SYSTEM_DIR}/Net/Protocol/Protocol.o \
+	${LIB_SYSTEM_DIR}/Net/Net.o ${LIB_SYSTEM_DIR}/Net/Sockets/Sockets.o ${LIB_SYSTEM_DIR}/Net/Protocol/Protocol.o \
 	${LIB_SYSTEM_DIR}/Net/Protocol/HTTP/HTTP.o \
 	${LIB_SYSTEM_DIR}/Crypt/Crypt.o ${LIB_SYSTEM_DIR}/Crypt/SHA1/SHA1.o
 
@@ -141,8 +141,8 @@ libsystem_install: libsystem
 	cp -f ${LIB_SYSTEM_DIR}/Net/Net.o							${LJS_LIBDIR}/System/Net/Net.so
 #######
 	cp -f ${LIB_SYSTEM_DIR}/Net/Socket/init.js					${LJS_LIBDIR}/System/Net/Socket/init.js
-	cp -f ${LIB_SYSTEM_DIR}/Net/Socket/Socket.o					${LJS_LIBDIR}/System/Net/Socket/Socket.so
-	cp -f ${LIB_SYSTEM_DIR}/Net/Socket/Socket.js				${LJS_LIBDIR}/System/Net/Socket/Socket.js
+	cp -f ${LIB_SYSTEM_DIR}/Net/Sockets/Sockets.o				${LJS_LIBDIR}/System/Net/Sockets/Sockets.so
+	cp -f ${LIB_SYSTEM_DIR}/Net/Sockets/Sockets.js				${LJS_LIBDIR}/System/Net/Sockets/Sockets.js
 #######
 	cp -f ${LIB_SYSTEM_DIR}/Net/Ports/init.js					${LJS_LIBDIR}/System/Net/Ports/init.js
 	cp -f ${LIB_SYSTEM_DIR}/Net/Ports/Ports.js					${LJS_LIBDIR}/System/Net/Ports/Ports.js

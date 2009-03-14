@@ -16,8 +16,8 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-#include "Socket.h"
-
+#include "Sockets.h"
+/*
 char* __Socket_getHostByName (const char* host);
 JSBool __Socket_isIPv4 (const char* host);
 
@@ -480,3 +480,4 @@ __Socket_isIPv4 (const char* host)
 
     return JS_TRUE;
 }
+*/
