@@ -42,9 +42,12 @@
 #include "jsbit.h"              // low-level (NSPR-based) headers next
 #include "jsprf.h"
 #include <math.h>               // standard headers next
-#ifdef _MSC_VER
+
+#if defined(_MSC_VER) || defined(__MINGW32__)
 #include <malloc.h>
+#ifdef _MSC_VER
 #define alloca _alloca
+#endif
 #endif
 #ifdef SOLARIS
 #include <alloca.h>
@@ -1176,7 +1179,7 @@ specializeTreesToMissingGlobals(JSContext* cx, TreeInfo* root)
 
     ti->typeMap.captureMissingGlobalTypes(cx, *ti->globalSlots, ti->nStackTypes);
     JS_ASSERT(ti->globalSlots->length() == ti->typeMap.length() - ti->nStackTypes);
-   
+
     for (unsigned i = 0; i < root->dependentTrees.length(); i++) {
         ti = (TreeInfo*)root->dependentTrees.data()[i]->vmprivate;
         /* ti can be NULL if we hit the recording tree in emitTreeCall; this is harmless. */
@@ -1884,6 +1887,7 @@ TraceRecorder::writeBack(LIns* i, LIns* base, ptrdiff_t offset)
 JS_REQUIRES_STACK void
 TraceRecorder::set(jsval* p, LIns* i, bool initializing)
 {
+    JS_ASSERT(i != NULL);
     JS_ASSERT(initializing || known(p));
     checkForGlobalObjectReallocation();
     tracker.set(p, i);
@@ -4347,14 +4351,14 @@ TraceRecorder::monitorRecording(JSContext* cx, TraceRecorder* tr, JSOp op)
         if (!js_CloseLoop(cx))
             return JSMRS_STOP;
     } else {
-        // Clear one-shot state used to communicate between record_JSOP_CALL and post-
-        // opcode-case-guts record hook (record_FastNativeCallComplete).
+        /* Clear one-shot state used to communicate between record_JSOP_CALL and post-
+           opcode-case-guts record hook (record_FastNativeCallComplete). */
         tr->pendingTraceableNative = NULL;
 
         jsbytecode* pc = cx->fp->regs->pc;
 
-        /* If we hit a break, end the loop and generate an always taken loop exit guard. For other
-           downward gotos (like if/else) continue recording. */
+        /* If we hit a break, end the loop and generate an always taken loop exit guard.
+           For other downward gotos (like if/else) continue recording. */
         if (*pc == JSOP_GOTO || *pc == JSOP_GOTOX) {
             jssrcnote* sn = js_GetSrcNote(cx->fp->script, pc);
             if (sn && SN_TYPE(sn) == SRC_BREAK) {
@@ -4372,8 +4376,9 @@ TraceRecorder::monitorRecording(JSContext* cx, TraceRecorder* tr, JSOp op)
             js_DeleteRecorder(cx);
             return JSMRS_STOP; /* done recording */
         }
+
 #ifdef NANOJIT_IA32
-        /* Handle tableswitches specially--prepare a jump table if needed. */
+        /* Handle tableswitches specially -- prepare a jump table if needed. */
         if (*pc == JSOP_TABLESWITCH || *pc == JSOP_TABLESWITCHX) {
             LIns* guardIns = tr->tableswitch();
             if (guardIns) {
@@ -4386,10 +4391,10 @@ TraceRecorder::monitorRecording(JSContext* cx, TraceRecorder* tr, JSOp op)
 #endif
     }
 
-    /* If it's not a break or a return from a loop, continue recording and follow the trace. */
+    /* If op is not a break or a return from a loop, continue recording and follow the
+       trace. We check for imacro-calling bytecodes inside each switch case to resolve
+       the if (JSOP_IS_IMACOP(x)) conditions at compile time. */
 
-    /* We check for imacro-calling bytecodes inside the switch cases to resolve
-       the "if" condition at the compile time. */
     bool flag;
     switch (op) {
       default: goto abort_recording;
@@ -4402,12 +4407,8 @@ TraceRecorder::monitorRecording(JSContext* cx, TraceRecorder* tr, JSOp op)
                             : cx->fp->regs->pc - cx->fp->script->code,        \
                             !cx->fp->imacpc, stdout);)                        \
         flag = tr->record_##x();                                              \
-        if (x == JSOP_ITER || x == JSOP_NEXTITER || x == JSOP_APPLY ||        \
-            x == JSOP_GETELEM || x == JSOP_SETELEM || x== JSOP_INITELEM ||    \
-            JSOP_IS_BINARY(x) || JSOP_IS_UNARY(x) ||                          \
-            JSOP_IS_EQUALITY(x)) {                                            \
+        if (JSOP_IS_IMACOP(x))                                                \
             goto imacro;                                                      \
-        }                                                                     \
         break;
 # include "jsopcode.tbl"
 # undef OPDEF
@@ -4892,10 +4893,8 @@ TraceRecorder::alu(LOpcode v, jsdouble v0, jsdouble v1, LIns* s0, LIns* s1)
              */
             v = (LOpcode)((int)v & ~LIR64);
             LIns* result = lir->ins2(v, d0, d1);
-            if (!overflowSafe(d0) || !overflowSafe(d1)) {
-                lir->insGuard(LIR_xt, lir->ins1(LIR_ov, result),
-                              snapshot(OVERFLOW_EXIT));
-            }
+            if (!result->isconst() && (!overflowSafe(d0) || !overflowSafe(d1)))
+                lir->insGuard(LIR_xt, lir->ins1(LIR_ov, result), snapshot(OVERFLOW_EXIT));
             return lir->ins1(LIR_i2f, result);
         }
         /*
@@ -4946,9 +4945,15 @@ TraceRecorder::stringify(jsval& v)
     } else if (JSVAL_TAG(v) == JSVAL_BOOLEAN) {
         ci = &js_BooleanOrUndefinedToString_ci;
     } else {
-        /* We can't stringify objects here (use imacros instead), just return NULL. */
-        return NULL;
+        /*
+         * Callers must deal with non-primitive (non-null object) values by
+         * calling an imacro. We don't try to guess about which imacro, with
+         * what valueOf hint, here.
+         */
+        JS_ASSERT(JSVAL_IS_NULL(v));
+        return INS_CONSTPTR(ATOM_TO_STRING(cx->runtime->atomState.nullAtom));
     }
+
     v_ins = lir->insCall(ci, args);
     guard(false, lir->ins_eq0(v_ins), OOM_EXIT);
     return v_ins;
@@ -5019,9 +5024,9 @@ TraceRecorder::ifop()
 }
 
 #ifdef NANOJIT_IA32
-/* Record LIR for a tableswitch or tableswitchx op. We record LIR only
- * the "first" time we hit the op. Later, when we start traces after
- * exiting that trace, we just patch. */
+/* Record LIR for a tableswitch or tableswitchx op. We record LIR only the
+   "first" time we hit the op. Later, when we start traces after exiting that
+   trace, we just patch. */
 JS_REQUIRES_STACK LIns*
 TraceRecorder::tableswitch()
 {
@@ -5036,9 +5041,11 @@ TraceRecorder::tableswitch()
 
     jsbytecode* pc = cx->fp->regs->pc;
     /* Starting a new trace after exiting a trace via switch. */
-    if (anchor && (anchor->exitType == CASE_EXIT ||
-                   anchor->exitType == DEFAULT_EXIT) && fragment->ip == pc)
+    if (anchor &&
+        (anchor->exitType == CASE_EXIT || anchor->exitType == DEFAULT_EXIT) &&
+        fragment->ip == pc) {
         return NULL;
+    }
 
     /* Decode jsop. */
     jsint low, high;
@@ -5051,11 +5058,11 @@ TraceRecorder::tableswitch()
         pc += JUMPX_OFFSET_LEN;
         low = GET_JUMPX_OFFSET(pc);
         pc += JUMPX_OFFSET_LEN;
-        high = GET_JUMPX_OFFSET(pc);            
+        high = GET_JUMPX_OFFSET(pc);
     }
 
-    /* Really large tables won't fit in a page. This is a conservative
-     * check. If it matters in practice we need to go off-page. */
+    /* Really large tables won't fit in a page. This is a conservative check.
+       If it matters in practice we need to go off-page. */
     if ((high + 1 - low) * sizeof(intptr_t*) + 128 > (unsigned) LARGEST_UNDERRUN_PROT) {
         // This throws away the return value of switchop but it seems
         // ok because switchop always returns true.
@@ -6398,8 +6405,6 @@ TraceRecorder::record_JSOP_ADD()
 
     if (JSVAL_IS_STRING(l) || JSVAL_IS_STRING(r)) {
         LIns* args[] = { stringify(r), stringify(l), cx_ins };
-        if (!args[0] || !args[1])
-            ABORT_TRACE("can't stringify objects");
         LIns* concat = lir->insCall(&js_ConcatStrings_ci, args);
         guard(false, lir->ins_eq0(concat), OOM_EXIT);
         set(&l, concat);
@@ -6512,8 +6517,11 @@ TraceRecorder::record_JSOP_NEG()
             (!JSVAL_IS_DOUBLE(v) || !JSDOUBLE_IS_NEGZERO(*JSVAL_TO_DOUBLE(v))) &&
             -asNumber(v) == (int)-asNumber(v)) {
             a = lir->ins1(LIR_neg, ::demote(lir, a));
-            lir->insGuard(LIR_xt, lir->ins1(LIR_ov, a), snapshot(OVERFLOW_EXIT));
-            lir->insGuard(LIR_xt, lir->ins2(LIR_eq, a, lir->insImm(0)), snapshot(OVERFLOW_EXIT));
+            if (!a->isconst()) {
+                LIns* exit = snapshot(OVERFLOW_EXIT);
+                lir->insGuard(LIR_xt, lir->ins1(LIR_ov, a), exit);
+                lir->insGuard(LIR_xt, lir->ins2(LIR_eq, a, lir->insImm(0)), exit);
+            }
             a = lir->ins1(LIR_i2f, a);
         } else {
             a = lir->ins1(LIR_fneg, a);
@@ -6699,8 +6707,18 @@ TraceRecorder::functionCall(bool constructing, uintN argc)
         return interpretedFunctionCall(fval, fun, argc, constructing);
     }
 
-    if (FUN_SLOW_NATIVE(fun) && fun->u.n.native == js_Array)
-        return newArray(FUN_OBJECT(fun), argc, &tval + 1, &fval);
+    if (FUN_SLOW_NATIVE(fun)) {
+        JSNative native = fun->u.n.native;
+        if (native == js_Array)
+            return newArray(FUN_OBJECT(fun), argc, &tval + 1, &fval);
+        if (native == js_String && argc == 1 && !constructing) {
+            jsval& v = stackval(0 - argc);
+            if (!JSVAL_IS_PRIMITIVE(v))
+                return call_imacro(call_imacros.String);
+            set(&fval, stringify(v));
+            return true;
+        }
+    }
 
     if (!(fun->flags & JSFUN_TRACEABLE))
         ABORT_TRACE("untraceable native");

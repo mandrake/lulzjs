@@ -16,13 +16,42 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require("System/System.so");
+/*. JSON < Object {Core}
+**
+**| The JSON object takes care of parsing and stringifying objects securely
+**| so you don't have to worry about evals or other instructions in JSON
+**| data.
+*/
 
-require("Net.so");
+// Saving default methods.
+JSON._parse     = JSON.parse;
+JSON._stringify = JSON.stringify;
 
-require(["Sockets/Sockets.so", "Sockets/Socket.js"]);
+/*:# parse (json[, unsecure = false]) => Object
+**  - json [String]: The JSON to transform into an object.
+**  - unsecure [Boolean]: When true the string gets evaluated with some small
+**                        security checks. (it has the ability to parse methods too)
+**
+**| The parse method just transforms JSON text into an Object.
+*/
+JSON.parse = function (json, unsecure) {
+    if (!unsecure) {
+        return JSON._parse(json);
+    }
+    else {
+        if (json.isJSON()) {
+            return eval('('+json+')');
+        }
+    }
+};
 
-require("Ports/Ports.js");
-
-Program.Net = Program.System.Net;
+/*:# stringify (obj) => String
+**  - obj [Object]: The object to stringify.
+**
+**| The stringify method transforms to JSON the passed object, if the object has
+**| a toJSON method that method is used, if not the default is used.
+*/
+JSON.stringify = function (obj) {
+    return obj.toJSON();
+};
 

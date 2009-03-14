@@ -20,11 +20,11 @@
 #define _SYSTEM_IO_SOCKET_PRIVATE_H
 
 typedef struct {
-    int              socket;
-    unsigned         family;
-    unsigned         type;
-    unsigned         protocol;
-    struct sockaddr* addr;
+    PRFileDesc* socket;
+    unsigned    family;
+    unsigned    type;
+    unsigned    protocol;
+    int         sd;
 } SocketInformation;
 
 #endif

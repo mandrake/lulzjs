@@ -1,0 +1,11 @@
+--- js-config.in	2009-03-14 22:54:40.000000000 +0100
++++ js-config.lulz	2009-03-14 22:56:57.000000000 +0100
+@@ -103,7 +103,7 @@
+ fi
+ 
+ if test "$echo_cflags" = "yes"; then
+-    echo "-I$includedir/js $NSPR_CFLAGS"
++    echo "-I$includedir -I$includedir/js $NSPR_CFLAGS"
+ fi
+ 
+ if test "$echo_libs" = "yes"; then

@@ -653,16 +653,15 @@ JS_TypeOfValue(JSContext *cx, jsval v)
 
             ops = obj->map->ops;
 #if JS_HAS_XML_SUPPORT
-            if (ops == &js_XMLObjectOps.base) {
+            if (ops == &js_XMLObjectOps) {
                 type = JSTYPE_XML;
             } else
 #endif
             {
                 /*
                  * ECMA 262, 11.4.3 says that any native object that implements
-                 * [[Call]] should be of type "function". Note that RegExp and
-                 * Script are both of type "function" for compatibility with
-                 * older SpiderMonkeys.
+                 * [[Call]] should be of type "function". However, RegExp is of
+                 * type "object", not "function", for Web compatibility.
                  */
                 clasp = OBJ_GET_CLASS(cx, obj);
                 if ((ops == &js_ObjectOps)
@@ -3281,42 +3280,46 @@ LookupResult(JSContext *cx, JSObject *obj, JSObject *obj2, JSProperty *prop)
 }
 
 static JSBool
-GetPropertyAttributesById(JSContext *cx, JSObject *obj, jsid id,
-                          uintN *attrsp, JSBool *foundp,
-                          JSPropertyOp *getterp, JSPropertyOp *setterp)
+GetPropertyAttributesById(JSContext *cx, JSObject *obj, jsid id, uintN flags,
+                          JSBool own, JSPropertyDescriptor *desc)
 {
     JSObject *obj2;
     JSProperty *prop;
     JSBool ok;
 
-    if (!LookupPropertyById(cx, obj, id, JSRESOLVE_QUALIFIED,
-                            &obj2, &prop)) {
+    if (!LookupPropertyById(cx, obj, id, flags, &obj2, &prop))
         return JS_FALSE;
-    }
 
-    if (!prop || obj != obj2) {
-        *attrsp = 0;
-        *foundp = JS_FALSE;
-        if (getterp)
-            *getterp = NULL;
-        if (setterp)
-            *setterp = NULL;
+    if (!prop || (own && obj != obj2)) {
+        desc->obj = NULL;
+        desc->attrs = 0;
+        desc->getter = NULL;
+        desc->setter = NULL;
+        desc->value = JSVAL_VOID;
         if (prop)
             OBJ_DROP_PROPERTY(cx, obj2, prop);
         return JS_TRUE;
     }
 
-    *foundp = JS_TRUE;
-    ok = OBJ_GET_ATTRIBUTES(cx, obj, id, prop, attrsp);
-    if (ok && OBJ_IS_NATIVE(obj)) {
-        JSScopeProperty *sprop = (JSScopeProperty *) prop;
+    desc->obj = obj2;
 
-        if (getterp)
-            *getterp = sprop->getter;
-        if (setterp)
-            *setterp = sprop->setter;
+    ok = OBJ_GET_ATTRIBUTES(cx, obj2, id, prop, &desc->attrs);
+    if (ok) {
+        if (OBJ_IS_NATIVE(obj2)) {
+            JSScopeProperty *sprop = (JSScopeProperty *) prop;
+
+            desc->getter = sprop->getter;
+            desc->setter = sprop->setter;
+            desc->value = SPROP_HAS_VALID_SLOT(sprop, OBJ_SCOPE(obj2))
+                          ? LOCKED_OBJ_GET_SLOT(obj2, sprop->slot)
+                          : JSVAL_VOID;
+        } else {
+            desc->getter = NULL;
+            desc->setter = NULL;
+            desc->value = JSVAL_VOID;
+        }
     }
-    OBJ_DROP_PROPERTY(cx, obj, prop);
+    OBJ_DROP_PROPERTY(cx, obj2, prop);
     return ok;
 }
 
@@ -3324,11 +3327,24 @@ static JSBool
 GetPropertyAttributes(JSContext *cx, JSObject *obj, JSAtom *atom,
                       uintN *attrsp, JSBool *foundp,
                       JSPropertyOp *getterp, JSPropertyOp *setterp)
+
 {
     if (!atom)
         return JS_FALSE;
-    return GetPropertyAttributesById(cx, obj, ATOM_TO_JSID(atom),
-                                     attrsp, foundp, getterp, setterp);
+
+    JSPropertyDescriptor desc;
+    if (!GetPropertyAttributesById(cx, obj, ATOM_TO_JSID(atom),
+                                   JSRESOLVE_QUALIFIED, JS_FALSE, &desc)) {
+        return JS_FALSE;
+    }
+
+    *attrsp = desc.attrs;
+    *foundp = (desc.obj != NULL);
+    if (getterp)
+        *getterp = desc.getter;
+    if (setterp)
+        *setterp = desc.setter;
+    return JS_TRUE;
 }
 
 static JSBool
@@ -3389,8 +3405,18 @@ JS_GetPropertyAttrsGetterAndSetterById(JSContext *cx, JSObject *obj,
                                        JSPropertyOp *setterp)
 {
     CHECK_REQUEST(cx);
-    return GetPropertyAttributesById(cx, obj, id, attrsp, foundp,
-                                     getterp, setterp);
+
+    JSPropertyDescriptor desc;
+    if (!GetPropertyAttributesById(cx, obj, id, JSRESOLVE_QUALIFIED, JS_FALSE, &desc))
+        return JS_FALSE;
+
+    *attrsp = desc.attrs;
+    *foundp = (desc.obj != NULL);
+    if (getterp)
+        *getterp = desc.getter;
+    if (setterp)
+        *setterp = desc.setter;
+    return JS_TRUE;
 }
 
 JS_PUBLIC_API(JSBool)
@@ -3548,6 +3574,15 @@ JS_LookupPropertyWithFlagsById(JSContext *cx, JSObject *obj, jsid id,
 }
 
 JS_PUBLIC_API(JSBool)
+JS_GetPropertyDescriptorById(JSContext *cx, JSObject *obj, jsid id, uintN flags,
+                             JSPropertyDescriptor *desc)
+{
+    CHECK_REQUEST(cx);
+
+    return GetPropertyAttributesById(cx, obj, id, flags, JS_TRUE, desc);
+}
+
+JS_PUBLIC_API(JSBool)
 JS_GetProperty(JSContext *cx, JSObject *obj, const char *name, jsval *vp)
 {
     JSAtom *atom;
@@ -3576,22 +3611,10 @@ JS_GetMethodById(JSContext *cx, JSObject *obj, jsid id, JSObject **objp,
     JSAutoResolveFlags rf(cx, JSRESOLVE_QUALIFIED);
 
     CHECK_REQUEST(cx);
-#if JS_HAS_XML_SUPPORT
-    if (OBJECT_IS_XML(cx, obj)) {
-        JSXMLObjectOps *ops;
-
-        ops = (JSXMLObjectOps *) obj->map->ops;
-        obj = ops->getMethod(cx, obj, id, vp);
-        if (!obj)
-            return JS_FALSE;
-    } else
-#endif
-    {
-        if (!OBJ_GET_PROPERTY(cx, obj, id, vp))
-            return JS_FALSE;
-    }
-
-    *objp = obj;
+    if (!js_GetMethod(cx, obj, id, vp, NULL))
+        return JS_FALSE;
+    if (objp)
+        *objp = obj;
     return JS_TRUE;
 }
 
@@ -5144,27 +5167,14 @@ JS_PUBLIC_API(JSBool)
 JS_CallFunctionName(JSContext *cx, JSObject *obj, const char *name, uintN argc,
                     jsval *argv, jsval *rval)
 {
-    JSBool ok;
-    jsval fval;
-
     CHECK_REQUEST(cx);
-#if JS_HAS_XML_SUPPORT
-    if (OBJECT_IS_XML(cx, obj)) {
-        JSXMLObjectOps *ops;
-        JSAtom *atom;
 
-        ops = (JSXMLObjectOps *) obj->map->ops;
-        atom = js_Atomize(cx, name, strlen(name), 0);
-        if (!atom)
-            return JS_FALSE;
-        obj = ops->getMethod(cx, obj, ATOM_TO_JSID(atom), &fval);
-        if (!obj)
-            return JS_FALSE;
-    } else
-#endif
-    if (!JS_GetProperty(cx, obj, name, &fval))
-        return JS_FALSE;
-    ok = js_InternalCall(cx, obj, fval, argc, argv, rval);
+    JSAutoTempValueRooter tvr(cx);
+    JSAtom *atom = js_Atomize(cx, name, strlen(name), 0);
+    JSBool ok = atom &&
+                JS_GetMethodById(cx, obj, ATOM_TO_JSID(atom), NULL,
+                                 tvr.addr()) &&
+                js_InternalCall(cx, obj, tvr.value(), argc, argv, rval);
     LAST_FRAME_CHECKS(cx, ok);
     return ok;
 }

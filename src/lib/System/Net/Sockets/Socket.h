@@ -20,15 +20,7 @@
 #define _SYSTEM_NET_SOCKET_H
 
 #include "lulzjs.h"
-
-#include <unistd.h>
-#include <netinet/in.h>
-#include <sys/types.h>
-#include <sys/socket.h>
-#include <arpa/inet.h>
-#include <netdb.h>
-#include <fcntl.h>
-#include <errno.h>
+#include "prnetdb.h"
 
 extern "C" JSBool exec (JSContext* cx);
 JSBool Socket_initialize (JSContext* cx);

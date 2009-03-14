@@ -1430,15 +1430,6 @@ struct JSObjectOps {
     JSSetRequiredSlotOp setRequiredSlot;
 };
 
-struct JSXMLObjectOps {
-    JSObjectOps         base;
-    JSGetMethodOp       getMethod;
-    JSSetMethodOp       setMethod;
-    JSEnumerateValuesOp enumerateValues;
-    JSEqualityOp        equality;
-    JSConcatenateOp     concatenate;
-};
-
 /*
  * Classes that expose JSObjectOps via a non-null getObjectOps class hook may
  * derive a property structure from this struct, return a pointer to it from
@@ -1730,6 +1721,23 @@ JS_LookupPropertyWithFlags(JSContext *cx, JSObject *obj, const char *name,
 extern JS_PUBLIC_API(JSBool)
 JS_LookupPropertyWithFlagsById(JSContext *cx, JSObject *obj, jsid id,
                                uintN flags, JSObject **objp, jsval *vp);
+
+struct JSPropertyDescriptor {
+    JSObject     *obj;
+    uintN        attrs;
+    JSPropertyOp getter;
+    JSPropertyOp setter;
+    jsval        value;
+};
+
+/*
+ * Like JS_GetPropertyAttrsGetterAndSetterById but will return a property on
+ * an object on the prototype chain (returned in objp). If data->obj is null,
+ * then this property was not found on the prototype chain.
+ */
+extern JS_PUBLIC_API(JSBool)
+JS_GetPropertyDescriptorById(JSContext *cx, JSObject *obj, jsid id, uintN flags,
+                             JSPropertyDescriptor *desc);
 
 extern JS_PUBLIC_API(JSBool)
 JS_GetProperty(JSContext *cx, JSObject *obj, const char *name, jsval *vp);
@@ -2486,7 +2494,7 @@ JS_EncodeString(JSContext *cx, JSString *str);
 typedef JSBool (* JSONWriteCallback)(const jschar *buf, uint32 len, void *data);
 
 /*
- * JSON.stringify as specificed by ES3.1 (draft)
+ * JSON.stringify as specified by ES3.1 (draft)
  */
 JS_PUBLIC_API(JSBool)
 JS_Stringify(JSContext *cx, jsval *vp, JSObject *replacer,
@@ -2499,7 +2507,7 @@ JS_PUBLIC_API(JSBool)
 JS_TryJSON(JSContext *cx, jsval *vp);
 
 /*
- * JSON.parse as specificed by ES3.1 (draft)
+ * JSON.parse as specified by ES3.1 (draft)
  */
 JS_PUBLIC_API(JSONParser *)
 JS_BeginJSONParse(JSContext *cx, jsval *vp);

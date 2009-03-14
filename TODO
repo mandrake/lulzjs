@@ -9,3 +9,9 @@ Implement signal management:
     Program.onStop      # SIGTSTP
 
 :O
+
+Class.Singleton
+
+System.Thread
+
+GOTO NSPR :O

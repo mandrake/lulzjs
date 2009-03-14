@@ -29,10 +29,7 @@ Socket_initialize (JSContext* cx)
     JS_BeginRequest(cx);
     JS_EnterLocalRootScope(cx);
 
-    jsval jsParent;
-    JS_GetProperty(cx, JS_GetGlobalObject(cx), "System", &jsParent);
-    JS_GetProperty(cx, JSVAL_TO_OBJECT(jsParent), "Net", &jsParent);
-    JSObject* parent = JSVAL_TO_OBJECT(jsParent);
+    JSObject* parent = JSVAL_TO_OBJECT(JS_EVAL(cx, "System.Net"));
 
     JSObject* object = JS_InitClass(
         cx, parent, NULL, &Socket_class,
@@ -40,27 +37,14 @@ Socket_initialize (JSContext* cx)
     );
 
     if (object) {
-        // Default properties
         jsval property;
     
-        // Address families.
-        property = INT_TO_JSVAL(AF_INET);
-        JS_SetProperty(cx, object, "AF_INET", &property);
-    
-        // Socket types.
-        property = INT_TO_JSVAL(SOCK_STREAM);
-        JS_SetProperty(cx, object, "SOCK_STREAM", &property);
-        property = INT_TO_JSVAL(SOCK_DGRAM);
-        JS_SetProperty(cx, object, "SOCK_DGRAM", &property);
-    
-        // Protocol type.
-        property = INT_TO_JSVAL(PF_UNSPEC);
-        JS_SetProperty(cx, object, "PF_UNSPEC", &property);
-
-        // Other
-        property = JSVAL_NULL;
-        JS_SetProperty(cx, object, "INADDR_ANY", &property);
-
+        JSObject* Type = JS_NewObject(cx, NULL, NULL, NULL);
+        property = OBJECT_TO_JSVAL(Type);
+        JS_SetProperty(cx, object, "Type", &property);
+            property = 0x01;
+            JS_SetProperty
+        
         JS_LeaveLocalRootScope(cx);
         JS_EndRequest(cx);
         return JS_TRUE;
