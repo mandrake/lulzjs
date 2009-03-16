@@ -22,7 +22,7 @@ patch -fs < tracemonkey-lulzjs.patch
 
 (autoconf-2.13 || autoconf2.13 || autoconf213) &> /dev/null
 
-CXXFLAGS=-Os ./configure --with-system-nspr --enable-threadsafe --bindir=/usr/bin --libdir=/usr/lib --includedir=/usr/include --enable-debug --enable-gczeal
+CXXFLAGS=-Os ./configure --with-system-nspr --enable-cpp-exceptions --enable-threadsafe --bindir=/usr/bin --libdir=/usr/lib --includedir=/usr/include --enable-debug --enable-gczeal
 make || bawww
 make install || bawww
 

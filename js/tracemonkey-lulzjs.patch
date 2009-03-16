@@ -1,6 +1,6 @@
 --- jsapi.h.old	2009-03-16 15:58:34.000000000 +0100
 +++ jsapi.h	2009-03-16 22:45:23.000000000 +0100
-@@ -2760,4 +2760,114 @@
+@@ -2760,4 +2760,115 @@
  
  JS_END_EXTERN_C
  
@@ -12,6 +12,7 @@
 +
 +/* JAVASCRIPT */
 +
++#include "jsxdrapi.h"
 +#include <stdio.h>
 +#include <stdlib.h>
 +#include <string.h>
