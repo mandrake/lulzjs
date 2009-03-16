@@ -18,12 +18,14 @@ if $FAIL; then
     exit 1
 fi
 
-mkdir -p /usr/include/lulzjs/js
+patch -fs < tracemonkey-lulzjs.patch 
+
+mkdir -p /usr/include/lulzjs
 mkdir -p /usr/lib/lulzjs
 
 (autoconf-2.13 || autoconf2.13 || autoconf213) &> /dev/null
 
-CXXFLAGS=-Os ./configure --with-system-nspr --enable-threadsafe --bindir=/usr/lib/lulzjs --libdir=/usr/lib/lulzjs --includedir=/usr/include/lulzjs --enable-debug --enable-gczeal
+CXXFLAGS=-Os ./configure --with-system-nspr --enable-threadsafe --bindir=/usr/bin --libdir=/usr/lib --includedir=/usr/include --enable-debug --enable-gczeal
 make || bawww
 make install || bawww
 

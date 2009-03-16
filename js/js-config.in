@@ -103,7 +103,7 @@ if test "$echo_libdir" = "yes"; then
 fi
 
 if test "$echo_cflags" = "yes"; then
-    echo "-I$includedir -I$includedir/js $NSPR_CFLAGS"
+    echo "-I$includedir/js $NSPR_CFLAGS"
 fi
 
 if test "$echo_libs" = "yes"; then

@@ -97,7 +97,7 @@ libsystem_install: libsystem
 	mkdir -p ${LJS_LIBDIR}/System/FileSystem/Permission
 	mkdir -p ${LJS_LIBDIR}/System/FileSystem/Time
 	mkdir -p ${LJS_LIBDIR}/System/Net
-	mkdir -p ${LJS_LIBDIR}/System/Net/Socket
+	mkdir -p ${LJS_LIBDIR}/System/Net/Sockets
 	mkdir -p ${LJS_LIBDIR}/System/Net/Ports
 	mkdir -p ${LJS_LIBDIR}/System/Net/Protocol
 	mkdir -p ${LJS_LIBDIR}/System/Net/Protocol/HTTP
@@ -140,7 +140,7 @@ libsystem_install: libsystem
 	cp -f ${LIB_SYSTEM_DIR}/Net/init.js							${LJS_LIBDIR}/System/Net/init.js
 	cp -f ${LIB_SYSTEM_DIR}/Net/Net.o							${LJS_LIBDIR}/System/Net/Net.so
 #######
-	cp -f ${LIB_SYSTEM_DIR}/Net/Socket/init.js					${LJS_LIBDIR}/System/Net/Socket/init.js
+	cp -f ${LIB_SYSTEM_DIR}/Net/Sockets/init.js					${LJS_LIBDIR}/System/Net/Sockets/init.js
 	cp -f ${LIB_SYSTEM_DIR}/Net/Sockets/Sockets.o				${LJS_LIBDIR}/System/Net/Sockets/Sockets.so
 	cp -f ${LIB_SYSTEM_DIR}/Net/Sockets/Sockets.js				${LJS_LIBDIR}/System/Net/Sockets/Sockets.js
 #######
