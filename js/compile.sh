@@ -26,6 +26,7 @@ CXXFLAGS=-Os ./configure --with-system-nspr --enable-cpp-exceptions --enable-thr
 make || bawww
 
 mkdir to_include
-cp -rf *.h to_include/
+cp -f *.h   to_include/
+cp -f *.tbl to_include/
 
 patch -Rfs < tracemonkey-lulzjs.patch

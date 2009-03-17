@@ -10,7 +10,7 @@ function bawww {
 
 # headers
 mkdir -p /usr/include/lulzjs || bawww
-cp -rf to_include/*.h /usr/include/lulzjs || bawww
+cp -rf to_include/* /usr/include/lulzjs || bawww
 cp -f /usr/include/lulzjs/jsapi.h /usr/include/lulzjs/lulzjs.h || bawww
 chmod    a+x  /usr/include/lulzjs || bawww
 chmod -R a+r  /usr/include/lulzjs || bawww
