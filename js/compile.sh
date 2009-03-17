@@ -25,4 +25,7 @@ patch -fs < tracemonkey-lulzjs.patch
 CXXFLAGS=-Os ./configure --with-system-nspr --enable-cpp-exceptions --enable-threadsafe --bindir=/usr/bin --libdir=/usr/lib --includedir=/usr/include --enable-debug --enable-gczeal
 make || bawww
 
+mkdir to_include
+cp -rf *.h to_include/
+
 patch -Rfs < tracemonkey-lulzjs.patch
