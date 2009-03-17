@@ -9,9 +9,9 @@ function bawww {
 }
 
 FAIL=true;
-which autoconf-2.13 &> /dev/null; if [ !$? ]; then FAIL=false; fi;
-which autoconf2.13  &> /dev/null; if [ !$? ]; then FAIL=false; fi;
-which autoconf213   &> /dev/null; if [ !$? ]; then FAIL=false; fi;
+which autoconf-2.13 &> /dev/null; if [ $? = 0 ]; then FAIL=false; fi;
+which autoconf2.13  &> /dev/null; if [ $? = 0 ]; then echo "LOL";FAIL=false; fi;
+which autoconf213   &> /dev/null; if [ $? = 0 ]; then echo "LOL";FAIL=false; fi;
 
 if $FAIL; then
     echo "Install autoconf 2.13 kthx"
