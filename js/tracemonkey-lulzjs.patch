@@ -749,3 +749,27 @@
  
  install:: $(LIBRARY) $(SHARED_LIBRARY) $(IMPORT_LIBRARY)
  ifneq (,$(LIBRARY))
+
+--- js-config.in.old	2009-03-17 01:20:20.000000000 +0100
++++ js-config.in	2009-03-17 01:21:08.000000000 +0100
+@@ -103,7 +103,7 @@
+ fi
+ 
+ if test "$echo_cflags" = "yes"; then
+-    echo "-I$includedir/js $NSPR_CFLAGS"
++    echo "-I$includedir/lulzjs $NSPR_CFLAGS"
+ fi
+ 
+ if test "$echo_libs" = "yes"; then
+
+--- configure.in.old	2009-03-17 01:22:19.000000000 +0100
++++ configure.in	2009-03-17 01:22:26.000000000 +0100
+@@ -917,7 +917,7 @@
+ HOST_AR='$(AR)'
+ HOST_AR_FLAGS='$(AR_FLAGS)'
+ 
+-MOZ_JS_LIBS='-L$(libdir) -lmozjs'
++MOZ_JS_LIBS='-L$(libdir) -llulzjs'
+ MOZ_FIX_LINK_PATHS='-Wl,-rpath-link,$(LIBXUL_DIST)/bin -Wl,-rpath-link,$(PREFIX)/lib'
+ 
+ MOZ_COMPONENT_NSPR_LIBS='-L$(LIBXUL_DIST)/bin $(NSPR_LIBS)'
