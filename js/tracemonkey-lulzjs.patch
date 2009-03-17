@@ -726,26 +726,25 @@
 +//// LULZJS END ////
 +
 
---- Makefile.in.old	2009-03-16 22:47:31.000000000 +0100
-+++ Makefile.in	2009-03-16 22:58:05.000000000 +0100
-@@ -56,9 +56,9 @@
+--- Makefile.in.old	2009-03-17 01:09:41.000000000 +0100
++++ Makefile.in	2009-03-17 01:08:29.000000000 +0100
+@@ -56,8 +56,8 @@
  # editline needs to get built before the shell
  DIRS += shell
  
 -MODULE		    = js
 -LIBRARY_NAME	    = mozjs
--STATIC_LIBRARY_NAME = js_static
 +MODULE		    = lulzjs
 +LIBRARY_NAME	    = lulzjs
-+STATIC_LIBRARY_NAME = lulzjs_static
+ STATIC_LIBRARY_NAME = js_static
  GRE_MODULE	    = 1
  
- LIBS		= $(NSPR_LIBS)
-@@ -596,7 +596,7 @@
+@@ -596,7 +596,8 @@
  	$(SYSINSTALL) $^ $(includedir)/$(MODULE)
  
  install:: $(SCRIPTS)
 -	$(SYSINSTALL) $^ $(bindir)
++	mv $^ lulz$^
 +	$(SYSINSTALL) lulz$^ $(bindir)
  
  install:: $(LIBRARY) $(SHARED_LIBRARY) $(IMPORT_LIBRARY)
