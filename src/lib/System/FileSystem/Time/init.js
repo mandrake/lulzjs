@@ -16,11 +16,11 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require("System/System.so");
-
-require(["System/FileSystem/FileSystem.so", "System/FileSystem/FileSystem.js"]);
-
-require("Time.js");
+require([
+    "System/System.so",
+        "System/FileSystem/FileSystem.so", "System/FileSystem/FileSystem.js",
+            "Time.js",
+]);
 
 Time = System.FileSystem.Time;
 

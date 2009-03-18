@@ -16,19 +16,18 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require("System/System.so");
-
-require("System/Net/Net.so");
-
-require(["System/Net/Socket/Socket.so", "System/Net/Socket/Socket.js"]);
-
-require("Protocol.so");
-
 require([
-    "HTTP/HTTP.so", "HTTP/HTTP.js",
-    "HTTP/Request.js", "HTTP/Response.js",
-    "HTTP/Client.js"
+    "System/System.so",
+        "Network.so",
+
+        "Sockets/Sockets.so", "Sockets/Socket.js",
+            "Sockets/TCP.so",  "Sockets/TCP.js",
+            "Sockets/UDP.so",  "Sockets/UDP.js",
+            "Sockets/ICMP.so", "Sockets/ICMP.js",
+            "Sockets/RAW.so",  "Sockets/RAW.js",
+
+        "Ports/Ports.js"
 ]);
 
-Program.Protocol = Program.System.Net.Protocol;
+Network = System.Network;
 

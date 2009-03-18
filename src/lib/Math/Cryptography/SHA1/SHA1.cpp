@@ -30,10 +30,7 @@ JSBool exec (JSContext* cx) { return SHA1_initialize(cx); }
 JSBool
 SHA1_initialize (JSContext* cx)
 {
-    jsval jsParent;
-    JS_GetProperty(cx, JS_GetGlobalObject(cx), "System", &jsParent);
-    JS_GetProperty(cx, JSVAL_TO_OBJECT(jsParent), "Crypt", &jsParent);
-    JSObject* parent = JSVAL_TO_OBJECT(jsParent);
+    JSObject* parent = JSVAL_TO_OBJECT(JS_EVAL(cx, "Math.Cryptography"));
 
     JSObject* object = JS_InitClass(
         cx, parent, NULL, &SHA1_class,

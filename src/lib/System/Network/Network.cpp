@@ -16,24 +16,22 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-#include "Net.h"
+#include "Network.h"
 
-JSBool exec (JSContext* cx) { return Net_initialize(cx); }
+JSBool exec (JSContext* cx) { return Network_initialize(cx); }
 
 JSBool
-Net_initialize (JSContext* cx)
+Network_initialize (JSContext* cx)
 {
-    jsval jsParent;
-    JS_GetProperty(cx, JS_GetGlobalObject(cx), "System", &jsParent);
-    JSObject* parent = JSVAL_TO_OBJECT(jsParent);
+    JSObject* parent = JSVAL_TO_OBJECT(JS_EVAL(cx, "System"));
 
     JSObject* object = JS_DefineObject(
         cx, parent,
-        Net_class.name, &Net_class, NULL, 
+        Network_class.name, &Network_class, NULL, 
         JSPROP_PERMANENT|JSPROP_READONLY|JSPROP_ENUMERATE);
 
     if (object) {
-        JS_DefineFunctions(cx, object, Net_methods);
+        JS_DefineFunctions(cx, object, Network_methods);
 
         return JS_TRUE;
     }

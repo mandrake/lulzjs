@@ -16,21 +16,21 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-#ifndef _SYSTEM_CRYPT_H
-#define _SYSTEM_CRYPT_H
+#ifndef _SYSTEM_NET_H
+#define _SYSTEM_NET_H
 
 #include "lulzjs.h"
 
 extern "C" JSBool exec (JSContext* cx);
-JSBool Crypt_initialize (JSContext* cx);
+JSBool Network_initialize (JSContext* cx);
 
-static JSClass Crypt_class = {
-    "Crypt", 0,
+static JSClass Network_class = {
+    "Network", 0,
     JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
     JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub
 };
 
-static JSFunctionSpec Crypt_methods[] = {
+static JSFunctionSpec Network_methods[] = {
     {NULL}
 };
 

@@ -16,23 +16,27 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require("System/System.so");
+#include "Protocol.h"
 
-require("System/Net/Net.so");
+JSBool exec (JSContext* cx) { return Protocol_initialize(cx); }
 
-require(["System/Net/Socket/Socket.so", "System/Net/Socket/Socket.js"]);
-require("System/Net/Ports/Ports.js");
+JSBool
+Protocol_initialize (JSContext* cx)
+{
+    JSObject* parent = JSVAL_TO_OBJECT(JS_EVAL(cx, "System.Network"));
 
-require("System/Net/Protocol/Protocol.so");
+    JSObject* object = JS_DefineObject(
+        cx, parent,
+        Protocol_class.name, &Protocol_class, NULL, 
+        JSPROP_PERMANENT|JSPROP_READONLY|JSPROP_ENUMERATE
+    );
 
-require([
-    "HTTP.so", "HTTP.js",
-    "Request.js", "Response.js",
-    "Client.js"
-]);
+    if (object) {
+        JS_DefineFunctions(cx, object, Protocol_methods);
 
-if (!Program.HTTP) {
-    Program.HTTP = new Object;
+        return JS_TRUE;
+    }
+
+    return JS_FALSE;
 }
 
-Object.extend(Program.HTTP, Program.System.Net.Protocol.HTTP);

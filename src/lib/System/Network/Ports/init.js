@@ -18,13 +18,9 @@
 
 require([
     "System/System.so",
-        "FileSystem.so", "FileSystem.js",
-            "Permission/Permission.js", "Permission/Mode.js",
-            "Time/Time.js",
-
-            "File/File.so", "File/File.js",
-            "Directory/Directory.so", "Directory/Directory.js"
+        "System/Network/Network.so",
+            "Ports.js"
 ]);
 
-FileSystem = System.FileSystem;
+Program.Ports = Program.System.Network.Ports;
 

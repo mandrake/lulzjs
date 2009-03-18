@@ -16,22 +16,24 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-#ifndef _SYSTEM_NET_H
-#define _SYSTEM_NET_H
+#include "Math.h"
 
-#include "lulzjs.h"
+JSBool exec (JSContext* cx) { return Math_initialize(cx); }
 
-extern "C" JSBool exec (JSContext* cx);
-JSBool Net_initialize (JSContext* cx);
+JSBool
+Math_initialize (JSContext* cx)
+{
+    JS_BeginRequest(cx);
 
-static JSClass Net_class = {
-    "Net", 0,
-    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
-    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub
-};
+    JSObject* object = JSVAL_TO_OBJECT(JS_EVAL(cx, "Math"));
 
-static JSFunctionSpec Net_methods[] = {
-    {NULL}
-};
+    if (object) {
+        JS_DefineFunctions(cx, object, Math_methods);
 
-#endif
+        JS_EndRequest(cx);
+        return JS_TRUE;
+    }
+
+    return JS_FALSE;
+}
+

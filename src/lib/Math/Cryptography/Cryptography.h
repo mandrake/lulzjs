@@ -16,9 +16,22 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-Object.extend(String.prototype, {
-    toSHA1: function () {
-        return new System.Crypt.SHA1(this).toString()
-    }
-});
+#ifndef _SYSTEM_CRYPT_H
+#define _SYSTEM_CRYPT_H
 
+#include "lulzjs.h"
+
+extern "C" JSBool exec (JSContext* cx);
+JSBool Cryptography_initialize (JSContext* cx);
+
+static JSClass Cryptography_class = {
+    "Cryptography", 0,
+    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
+    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub
+};
+
+static JSFunctionSpec Cryptography_methods[] = {
+    {NULL}
+};
+
+#endif

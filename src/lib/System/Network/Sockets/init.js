@@ -16,12 +16,12 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require("System/System.so");
+require([
+    "System/System.so",
+        "System/Network/Network.so",
+            "Socket.so", "Socket.js",
 
-require("System/Net/Net.so");
+    "System/Network/Ports/Ports.js",
+]);
 
-require(["Socket.so", "Socket.js"]);
-
-require("System/Net/Ports/Ports.js");
-
-var Socket = System.Net.Socket;
+Sockets = System.Network.Sockets;

@@ -16,8 +16,9 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require("System/System.so");
-
-require("Environment.so");
+require([
+    "System/System.so",
+        "Environment.so",
+]);
 
 Environment = System.Environment;

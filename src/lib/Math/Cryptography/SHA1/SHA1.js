@@ -16,11 +16,5 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require("System/System.so");
-
-require("System/Crypt/Crypt.so");
-
-require(["SHA1.so", "SHA1.js"]);
-
-Program.SHA1 = Program.System.Crypt.SHA1;
+Math.Cryptography.addAlgorithm("SHA1", Math.Cryptography.SHA1);
 

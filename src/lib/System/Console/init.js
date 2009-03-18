@@ -16,8 +16,9 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require("System/System.so");
-
-require(["Console.so", "Console.js"]);
+require([
+    "System/System.so",
+        "Console.so", "Console.js"
+]);
 
 Console = System.Console;

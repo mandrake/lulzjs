@@ -16,11 +16,19 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require("System/System.so");
+if (!String._crypt) {
+    String._crypt = new Object;
+}
 
-require("System/Net/Net.so");
+Object.extend(Math.Cryptography, {
+    addAlgorithm: function (name, class) {
+        String._crypt[name] = class;
+    },
+});
 
-require("Ports.js");
-
-Program.Ports = Program.System.Net.Ports;
+Object.extend(String.prototype, {
+    crypt: function (alg) {
+        return (String._crypt[alg]) ? new String._crypt[alg](this) : null;
+    },
+});
 

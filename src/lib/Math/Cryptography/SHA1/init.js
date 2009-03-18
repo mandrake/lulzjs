@@ -17,14 +17,10 @@
 ****************************************************************************/
 
 require([
-    "System/System.so",
-        "FileSystem.so", "FileSystem.js",
-            "Permission/Permission.js", "Permission/Mode.js",
-            "Time/Time.js",
-
-            "File/File.so", "File/File.js",
-            "Directory/Directory.so", "Directory/Directory.js"
+    "Math/Math.so",
+        "Math/Cryptography/Cryptography.so", "Math/Cryptography/Cryptography.js",
+            "SHA1.so", "SHA1.js",
 ]);
 
-FileSystem = System.FileSystem;
+Program.SHA1 = Program.Math.Cryptography.SHA1;
 

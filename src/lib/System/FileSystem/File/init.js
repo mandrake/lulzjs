@@ -16,16 +16,14 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require("System/System.so");
-
-require(["System/FileSystem/FileSystem.so", "System/FileSystem/FileSystem.js"]);
 require([
-    "System/FileSystem/Permission/Permission.js",
-    "System/FileSystem/Permission/Mode.js",
-    "System/FileSystem/Time/Time.js",
+    "System/System.so",
+        "System/FileSystem/FileSystem.so", "System/FileSystem/FileSystem.js",
+            "System/FileSystem/Permission/Permission.js",
+            "System/FileSystem/Permission/Mode.js",
+            "System/FileSystem/Time/Time.js",
+            "File.so", "File.js"
 ]);
-
-require(["File.so", "File.js"]);
 
 File = System.FileSystem.File;
 

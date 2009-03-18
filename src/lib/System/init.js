@@ -16,37 +16,32 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-// Global library object
-require("System.so")
-
-require("Environment/Environment.so");
-
-// Input output modules
-require("FileSystem/FileSystem.so")
-
-require(["FileSystem/File/File.so", "FileSystem/File/File.js"]);
-require(["FileSystem/Directory/Directory.so", "FileSystem/Directory/Directory.js"]);
-
-// Networking modules
-require("Net/Net.so");
-
-require(["Net/Socket/Socket.so", "Net/Socket/Socket.js"]);
-
-require("Net/Ports/Ports.js");
-
-require("Net/Protocol/Protocol.so");
-
 require([
-    "Net/Protocol/HTTP/HTTP.so", "Net/Protocol/HTTP/HTTP.js",
-    "Net/Protocol/HTTP/Request.js", "Net/Protocol/HTTP/Response.js",
-    "Net/Protocol/HTTP/Client.js", "Net/Protocol/HTTP/Simple/Simple.js"
+    "System.so",
+        "Environment/Environment.so",
+
+        "FileSystem/FileSystem.so",
+            "FileSystem/File/File.so", "FileSystem/File/File.js",
+            "FileSystem/Directory/Directory.so", "FileSystem/Directory/Directory.js",
+
+        "Network/Network.so",
+            "Network/Sockets/Sockets.so", "Network/Sockets/Socket.js",
+                "Network/Sockets/TCP.so",  "Network/Sockets/TCP.js",
+                "Network/Sockets/UDP.so",  "Network/Sockets/UDP.js",
+                "Network/Sockets/ICMP.so", "Network/Sockets/ICMP.js",
+                "Network/Sockets/RAW.so",  "Network/Sockets/RAW.js",
+
+            "Network/Ports/Ports.js",
+
+            "Network/Protocol/Protocol.so",
+                "Network/Protocol/HTTP/HTTP.so", "Network/Protocol/HTTP/HTTP.js",
+                    "Network/Protocol/HTTP/Request.js", "Network/Protocol/HTTP/Response.js",
+                    "Network/Protocol/HTTP/Client.js", "Network/Protocol/HTTP/Simple/Simple.js",
+
+        "Math/Math.so",
+            "Math/Crypt/Crypt.so",
+                "Crypt/SHA1/SHA1.so", "Crypt/SHA1/SHA1.js",
+
+        "Console/Console.so", "Console/Console.js",
 ]);
-
-// Crypt modules
-require("Crypt/Crypt.so");
-
-require(["Crypt/SHA1/SHA1.so", "Crypt/SHA1/SHA1.js"]);
-
-// Console module
-require(["Console/Console.so", "Console/Console.js"]);
 

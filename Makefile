@@ -5,7 +5,7 @@ CXX        = g++
 BINDIR     = /usr/bin
 LJS_LIBDIR = /usr/lib/lulzjs
 CFLAGS     = -D__LJS_LIBRARY_PATH__="\"${LJS_LIBDIR}\"" -D__LJS_VERSION__="\"${VERSION}\"" $(shell lulzjs-config --cflags) -I./src/core -I./src/lib 
-LDFLAGS    = $(shell lulzjs-config --libs | sed 's/-dynamic.*/-lm/') -llulzjs
+LDFLAGS    = $(shell lulzjs-config --libs | sed 's/-dynamic.*/-lm/')
 
 ifdef DEBUG
 CFLAGS += -g3 -DWORKING -Wall
@@ -23,7 +23,7 @@ endif
 CORE_DIR     = src/core
 CORE         = ${CORE_DIR}/main.o ${CORE_DIR}/Interactive.o
 CORE_CFLAGS  = ${CFLAGS}
-CORE_LDFLAGS = ${LDFLAGS} -ldl -lreadline -lncurses
+CORE_LDFLAGS = ${LDFLAGS} -lreadline -lncurses
 
 ## LIB_CORE ##
 LIB_CORE_DIR = src/core/Core
@@ -42,14 +42,23 @@ LIB_SYSTEM = \
 	${LIB_SYSTEM_DIR}/Environment/Environment.o \
 	${LIB_SYSTEM_DIR}/Console/Console.o \
 	${LIB_SYSTEM_DIR}/FileSystem/FileSystem.o ${LIB_SYSTEM_DIR}/FileSystem/File/File.o ${LIB_SYSTEM_DIR}/FileSystem/Directory/Directory.o \
-	${LIB_SYSTEM_DIR}/Net/Net.o ${LIB_SYSTEM_DIR}/Net/Sockets/Sockets.o ${LIB_SYSTEM_DIR}/Net/Protocol/Protocol.o \
-	${LIB_SYSTEM_DIR}/Net/Protocol/HTTP/HTTP.o \
-	${LIB_SYSTEM_DIR}/Crypt/Crypt.o ${LIB_SYSTEM_DIR}/Crypt/SHA1/SHA1.o
+	${LIB_SYSTEM_DIR}/Network/Network.o ${LIB_SYSTEM_DIR}/Network/Sockets/Sockets.o ${LIB_SYSTEM_DIR}/Network/Protocol/Protocol.o \
+	${LIB_SYSTEM_DIR}/Network/Protocol/HTTP/HTTP.o \
 
 LIB_SYSTEM_CFLAGS  = ${CFLAGS}
 LIB_SYSTEM_LDFLAGS = ${LDFLAGS}
 
-all: ljs libcore libsystem
+## LIB_MATH ##
+
+LIB_MATH_DIR = src/lib/Math
+LIB_MATH = \
+	${LIB_MATH_DIR}/Math.o \
+	${LIB_MATH_DIR}/Cryptography/Cryptography.o ${LIB_MATH_DIR}/Cryptography/SHA1/SHA1.o
+
+LIB_MATH_CFLAGS  = ${CFLAGS}
+LIB_MATH_LDFLAGS = ${LDFLAGS}
+
+all: ljs libcore libsystem libmath
 
 ljs: $(CORE)
 	${CXX} ${CORE_LDFLAGS} ${CORE_CFLAGS} $(CORE:.o=.cpp) -o ljs
@@ -96,80 +105,99 @@ libsystem_install: libsystem
 	mkdir -p ${LJS_LIBDIR}/System/FileSystem/Directory
 	mkdir -p ${LJS_LIBDIR}/System/FileSystem/Permission
 	mkdir -p ${LJS_LIBDIR}/System/FileSystem/Time
-	mkdir -p ${LJS_LIBDIR}/System/Net
-	mkdir -p ${LJS_LIBDIR}/System/Net/Sockets
-	mkdir -p ${LJS_LIBDIR}/System/Net/Ports
-	mkdir -p ${LJS_LIBDIR}/System/Net/Protocol
-	mkdir -p ${LJS_LIBDIR}/System/Net/Protocol/HTTP
-	mkdir -p ${LJS_LIBDIR}/System/Net/Protocol/HTTP/Simple
+	mkdir -p ${LJS_LIBDIR}/System/Network
+	mkdir -p ${LJS_LIBDIR}/System/Network/Sockets
+	mkdir -p ${LJS_LIBDIR}/System/Network/Ports
+	mkdir -p ${LJS_LIBDIR}/System/Network/Protocol
+	mkdir -p ${LJS_LIBDIR}/System/Network/Protocol/HTTP
+	mkdir -p ${LJS_LIBDIR}/System/Network/Protocol/HTTP/Simple
 	mkdir -p ${LJS_LIBDIR}/System/Crypt
 	mkdir -p ${LJS_LIBDIR}/System/Crypt/SHA1
 ########
-	cp -f ${LIB_SYSTEM_DIR}/init.js								${LJS_LIBDIR}/System/init.js
-	cp -f ${LIB_SYSTEM_DIR}/System.o							${LJS_LIBDIR}/System/System.so
+	cp -f ${LIB_SYSTEM_DIR}/init.js										${LJS_LIBDIR}/System/init.js
+	cp -f ${LIB_SYSTEM_DIR}/System.o									${LJS_LIBDIR}/System/System.so
 ########
-	cp -f ${LIB_SYSTEM_DIR}/Thread/init.js						${LJS_LIBDIR}/System/Thread/init.js
-	cp -f ${LIB_SYSTEM_DIR}/Thread/Thread.o						${LJS_LIBDIR}/System/Thread/Thread.so
+	cp -f ${LIB_SYSTEM_DIR}/Thread/init.js								${LJS_LIBDIR}/System/Thread/init.js
+	cp -f ${LIB_SYSTEM_DIR}/Thread/Thread.o								${LJS_LIBDIR}/System/Thread/Thread.so
 ########
-	cp -f ${LIB_SYSTEM_DIR}/Environment/init.js					${LJS_LIBDIR}/System/Environment/init.js
-	cp -f ${LIB_SYSTEM_DIR}/Environment/Environment.o			${LJS_LIBDIR}/System/Environment/Environment.so
+	cp -f ${LIB_SYSTEM_DIR}/Environment/init.js							${LJS_LIBDIR}/System/Environment/init.js
+	cp -f ${LIB_SYSTEM_DIR}/Environment/Environment.o					${LJS_LIBDIR}/System/Environment/Environment.so
 ########
-	cp -f ${LIB_SYSTEM_DIR}/FileSystem/init.js					${LJS_LIBDIR}/System/FileSystem/init.js
-	cp -f ${LIB_SYSTEM_DIR}/FileSystem/FileSystem.o				${LJS_LIBDIR}/System/FileSystem/FileSystem.so
-	cp -f ${LIB_SYSTEM_DIR}/FileSystem/FileSystem.js			${LJS_LIBDIR}/System/FileSystem/FileSystem.js
+	cp -f ${LIB_SYSTEM_DIR}/FileSystem/init.js							${LJS_LIBDIR}/System/FileSystem/init.js
+	cp -f ${LIB_SYSTEM_DIR}/FileSystem/FileSystem.o						${LJS_LIBDIR}/System/FileSystem/FileSystem.so
+	cp -f ${LIB_SYSTEM_DIR}/FileSystem/FileSystem.js					${LJS_LIBDIR}/System/FileSystem/FileSystem.js
 ########
-	cp -f ${LIB_SYSTEM_DIR}/FileSystem/File/init.js				${LJS_LIBDIR}/System/FileSystem/File/init.js
-	cp -f ${LIB_SYSTEM_DIR}/FileSystem/File/File.o				${LJS_LIBDIR}/System/FileSystem/File/File.so
-	cp -f ${LIB_SYSTEM_DIR}/FileSystem/File/File.js				${LJS_LIBDIR}/System/FileSystem/File/File.js
+	cp -f ${LIB_SYSTEM_DIR}/FileSystem/File/init.js						${LJS_LIBDIR}/System/FileSystem/File/init.js
+	cp -f ${LIB_SYSTEM_DIR}/FileSystem/File/File.o						${LJS_LIBDIR}/System/FileSystem/File/File.so
+	cp -f ${LIB_SYSTEM_DIR}/FileSystem/File/File.js						${LJS_LIBDIR}/System/FileSystem/File/File.js
 ########
-	cp -f ${LIB_SYSTEM_DIR}/FileSystem/Directory/init.js		${LJS_LIBDIR}/System/FileSystem/Directory/init.js
-	cp -f ${LIB_SYSTEM_DIR}/FileSystem/Directory/Directory.o	${LJS_LIBDIR}/System/FileSystem/Directory/Directory.so
-	cp -f ${LIB_SYSTEM_DIR}/FileSystem/Directory/Directory.js	${LJS_LIBDIR}/System/FileSystem/Directory/Directory.js
+	cp -f ${LIB_SYSTEM_DIR}/FileSystem/Directory/init.js				${LJS_LIBDIR}/System/FileSystem/Directory/init.js
+	cp -f ${LIB_SYSTEM_DIR}/FileSystem/Directory/Directory.o			${LJS_LIBDIR}/System/FileSystem/Directory/Directory.so
+	cp -f ${LIB_SYSTEM_DIR}/FileSystem/Directory/Directory.js			${LJS_LIBDIR}/System/FileSystem/Directory/Directory.js
 ########
-	cp -f ${LIB_SYSTEM_DIR}/FileSystem/Permission/init.js		${LJS_LIBDIR}/System/FileSystem/Permission/init.js
-	cp -f ${LIB_SYSTEM_DIR}/FileSystem/Permission/Permission.js	${LJS_LIBDIR}/System/FileSystem/Permission/Permission.js
-	cp -f ${LIB_SYSTEM_DIR}/FileSystem/Permission/Mode.js		${LJS_LIBDIR}/System/FileSystem/Permission/Mode.js
+	cp -f ${LIB_SYSTEM_DIR}/FileSystem/Permission/init.js				${LJS_LIBDIR}/System/FileSystem/Permission/init.js
+	cp -f ${LIB_SYSTEM_DIR}/FileSystem/Permission/Permission.js			${LJS_LIBDIR}/System/FileSystem/Permission/Permission.js
+	cp -f ${LIB_SYSTEM_DIR}/FileSystem/Permission/Mode.js				${LJS_LIBDIR}/System/FileSystem/Permission/Mode.js
 ########
-	cp -f ${LIB_SYSTEM_DIR}/FileSystem/Time/init.js				${LJS_LIBDIR}/System/FileSystem/Time/init.js
-	cp -f ${LIB_SYSTEM_DIR}/FileSystem/Time/Time.js				${LJS_LIBDIR}/System/FileSystem/Time/Time.js
+	cp -f ${LIB_SYSTEM_DIR}/FileSystem/Time/init.js						${LJS_LIBDIR}/System/FileSystem/Time/init.js
+	cp -f ${LIB_SYSTEM_DIR}/FileSystem/Time/Time.js						${LJS_LIBDIR}/System/FileSystem/Time/Time.js
 ########
-	cp -f ${LIB_SYSTEM_DIR}/Console/init.js						${LJS_LIBDIR}/System/Console/init.js
-	cp -f ${LIB_SYSTEM_DIR}/Console/Console.o					${LJS_LIBDIR}/System/Console/Console.so
-	cp -f ${LIB_SYSTEM_DIR}/Console/Console.js					${LJS_LIBDIR}/System/Console/Console.js
+	cp -f ${LIB_SYSTEM_DIR}/Console/init.js								${LJS_LIBDIR}/System/Console/init.js
+	cp -f ${LIB_SYSTEM_DIR}/Console/Console.o							${LJS_LIBDIR}/System/Console/Console.so
+	cp -f ${LIB_SYSTEM_DIR}/Console/Console.js							${LJS_LIBDIR}/System/Console/Console.js
 #######
-	cp -f ${LIB_SYSTEM_DIR}/Net/init.js							${LJS_LIBDIR}/System/Net/init.js
-	cp -f ${LIB_SYSTEM_DIR}/Net/Net.o							${LJS_LIBDIR}/System/Net/Net.so
+	cp -f ${LIB_SYSTEM_DIR}/Network/init.js								${LJS_LIBDIR}/System/Network/init.js
+	cp -f ${LIB_SYSTEM_DIR}/Network/Network.o							${LJS_LIBDIR}/System/Network/Network.so
 #######
-	cp -f ${LIB_SYSTEM_DIR}/Net/Sockets/init.js					${LJS_LIBDIR}/System/Net/Sockets/init.js
-	cp -f ${LIB_SYSTEM_DIR}/Net/Sockets/Sockets.o				${LJS_LIBDIR}/System/Net/Sockets/Sockets.so
-	cp -f ${LIB_SYSTEM_DIR}/Net/Sockets/Sockets.js				${LJS_LIBDIR}/System/Net/Sockets/Sockets.js
+	cp -f ${LIB_SYSTEM_DIR}/Network/Sockets/init.js						${LJS_LIBDIR}/System/Network/Sockets/init.js
+	cp -f ${LIB_SYSTEM_DIR}/Network/Sockets/Sockets.o					${LJS_LIBDIR}/System/Network/Sockets/Sockets.so
+	cp -f ${LIB_SYSTEM_DIR}/Network/Sockets/Sockets.js					${LJS_LIBDIR}/System/Network/Sockets/Sockets.js
 #######
-	cp -f ${LIB_SYSTEM_DIR}/Net/Ports/init.js					${LJS_LIBDIR}/System/Net/Ports/init.js
-	cp -f ${LIB_SYSTEM_DIR}/Net/Ports/Ports.js					${LJS_LIBDIR}/System/Net/Ports/Ports.js
+	cp -f ${LIB_SYSTEM_DIR}/Network/Ports/init.js						${LJS_LIBDIR}/System/Network/Ports/init.js
+	cp -f ${LIB_SYSTEM_DIR}/Network/Ports/Ports.js						${LJS_LIBDIR}/System/Network/Ports/Ports.js
 #######
-	cp -f ${LIB_SYSTEM_DIR}/Net/Protocol/init.js				${LJS_LIBDIR}/System/Net/Protocol/init.js
-	cp -f ${LIB_SYSTEM_DIR}/Net/Protocol/Protocol.o				${LJS_LIBDIR}/System/Net/Protocol/Protocol.so
+	cp -f ${LIB_SYSTEM_DIR}/Network/Protocol/init.js					${LJS_LIBDIR}/System/Network/Protocol/init.js
+	cp -f ${LIB_SYSTEM_DIR}/Network/Protocol/Protocol.o					${LJS_LIBDIR}/System/Network/Protocol/Protocol.so
 #######
-	cp -f ${LIB_SYSTEM_DIR}/Net/Protocol/HTTP/init.js			${LJS_LIBDIR}/System/Net/Protocol/HTTP/init.js
-	cp -f ${LIB_SYSTEM_DIR}/Net/Protocol/HTTP/HTTP.o			${LJS_LIBDIR}/System/Net/Protocol/HTTP/HTTP.so
-	cp -f ${LIB_SYSTEM_DIR}/Net/Protocol/HTTP/HTTP.js			${LJS_LIBDIR}/System/Net/Protocol/HTTP/HTTP.js
-	cp -f ${LIB_SYSTEM_DIR}/Net/Protocol/HTTP/Request.js 		${LJS_LIBDIR}/System/Net/Protocol/HTTP/Request.js
-	cp -f ${LIB_SYSTEM_DIR}/Net/Protocol/HTTP/Response.js		${LJS_LIBDIR}/System/Net/Protocol/HTTP/Response.js
-	cp -f ${LIB_SYSTEM_DIR}/Net/Protocol/HTTP/Client.js			${LJS_LIBDIR}/System/Net/Protocol/HTTP/Client.js
+	cp -f ${LIB_SYSTEM_DIR}/Network/Protocol/HTTP/init.js				${LJS_LIBDIR}/System/Network/Protocol/HTTP/init.js
+	cp -f ${LIB_SYSTEM_DIR}/Network/Protocol/HTTP/HTTP.o				${LJS_LIBDIR}/System/Network/Protocol/HTTP/HTTP.so
+	cp -f ${LIB_SYSTEM_DIR}/Network/Protocol/HTTP/HTTP.js				${LJS_LIBDIR}/System/Network/Protocol/HTTP/HTTP.js
+	cp -f ${LIB_SYSTEM_DIR}/Network/Protocol/HTTP/Request.js 			${LJS_LIBDIR}/System/Network/Protocol/HTTP/Request.js
+	cp -f ${LIB_SYSTEM_DIR}/Network/Protocol/HTTP/Response.js			${LJS_LIBDIR}/System/Network/Protocol/HTTP/Response.js
+	cp -f ${LIB_SYSTEM_DIR}/Network/Protocol/HTTP/Client.js				${LJS_LIBDIR}/System/Network/Protocol/HTTP/Client.js
 #######
-	cp -f ${LIB_SYSTEM_DIR}/Net/Protocol/HTTP/Simple/init.js	${LJS_LIBDIR}/System/Net/Protocol/HTTP/Simple/init.js
-	cp -f ${LIB_SYSTEM_DIR}/Net/Protocol/HTTP/Simple/Simple.js	${LJS_LIBDIR}/System/Net/Protocol/HTTP/Simple/Simple.js
-#######
-	cp -f ${LIB_SYSTEM_DIR}/Crypt/init.js						${LJS_LIBDIR}/System/Crypt/init.js
-	cp -f ${LIB_SYSTEM_DIR}/Crypt/Crypt.o						${LJS_LIBDIR}/System/Crypt/Crypt.so
-#######
-	cp -f ${LIB_SYSTEM_DIR}/Crypt/SHA1/init.js					${LJS_LIBDIR}/System/Crypt/SHA1/init.js
-	cp -f ${LIB_SYSTEM_DIR}/Crypt/SHA1/SHA1.o					${LJS_LIBDIR}/System/Crypt/SHA1/SHA1.so
-	cp -f ${LIB_SYSTEM_DIR}/Crypt/SHA1/SHA1.js					${LJS_LIBDIR}/System/Crypt/SHA1/SHA1.js
+	cp -f ${LIB_SYSTEM_DIR}/Network/Protocol/HTTP/Simple/init.js		${LJS_LIBDIR}/System/Network/Protocol/HTTP/Simple/init.js
+	cp -f ${LIB_SYSTEM_DIR}/Network/Protocol/HTTP/Simple/Simple.js		${LJS_LIBDIR}/System/Network/Protocol/HTTP/Simple/Simple.js
 
 libsystem_uninstall:
 
-install: all core_install libcore_install libsystem_install
+libmath: $(LIB_MATH)
+
+$(LIB_MATH): $(LIB_MATH:.o=.cpp)
+	${CXX} ${LIB_MATH_CFLAGS} -fPIC -c $*.cpp -o $*.lo
+	${CXX} ${LIB_MATH_LDFLAGS} -dynamiclib -shared -o $*.o $*.lo -lc
+
+libmath_install: libmath
+	mkdir -p ${LJS_LIBDIR}
+	mkdir -p ${LJS_LIBDIR}/Math
+	mkdir -p ${LJS_LIBDIR}/Math/Cryptography
+	mkdir -p ${LJS_LIBDIR}/Math/Cryptography/SHA1
+########
+	cp -f ${LIB_MATH_DIR}/init.js							${LJS_LIBDIR}/Math/init.js
+	cp -f ${LIB_MATH_DIR}/Math.o							${LJS_LIBDIR}/Math/Math.so
+########
+	cp -f ${LIB_MATH_DIR}/Cryptography/init.js				${LJS_LIBDIR}/Math/Cryptography/init.js
+	cp -f ${LIB_MATH_DIR}/Cryptography/Cryptography.o					${LJS_LIBDIR}/Math/Cryptography/Cryptography.so
+	cp -f ${LIB_MATH_DIR}/Cryptography/Cryptography.js					${LJS_LIBDIR}/Math/Cryptography/Cryptography.js
+########
+	cp -f ${LIB_MATH_DIR}/Cryptography/SHA1/init.js			${LJS_LIBDIR}/Math/Cryptography/SHA1/init.js
+	cp -f ${LIB_MATH_DIR}/Cryptography/SHA1/SHA1.o			${LJS_LIBDIR}/Math/Cryptography/SHA1/SHA1.so
+	cp -f ${LIB_MATH_DIR}/Cryptography/SHA1/SHA1.js			${LJS_LIBDIR}/Math/Cryptography/SHA1/SHA1.js
+
+libmath_uninstall:
+
+
+install: all core_install libcore_install libsystem_install libmath_install
 	chmod -R a+rx ${LJS_LIBDIR}
 	chmod a+rx ${BINDIR}/ljs
 
@@ -178,6 +206,7 @@ uninstall:
 	rm -f  ${LJS_LIBDIR}/ljs_arguments.js
 	rm -rf ${LJS_LIBDIR}/Core
 	rm -rf ${LJS_LIBDIR}/System
+	rm -rf ${LJS_LIBDIR}/Math
 	
 
 clean:

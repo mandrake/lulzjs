@@ -18,13 +18,18 @@
 
 require([
     "System/System.so",
-        "FileSystem.so", "FileSystem.js",
-            "Permission/Permission.js", "Permission/Mode.js",
-            "Time/Time.js",
+        "System/Network/Network.so",
+            "System/Network/Sockets/Sockets.so", "System/Network/Sockets/Sockets.js",
+                "System/Network/Sockets/TCP.so", "System/Network/Sockets/TCP.js",
+                
+            "System/Network/Ports/Ports.js",
 
-            "File/File.so", "File/File.js",
-            "Directory/Directory.so", "Directory/Directory.js"
+            "System/Network/Protocol/Protocol.so",
+                "HTTP.so", "HTTP.js", "Request.js", "Response.js", "Client.js",
 ]);
 
-FileSystem = System.FileSystem;
+if (!Program.HTTP) {
+    Program.HTTP = new Object;
+}
 
+Object.extend(Program.HTTP, Program.System.Network.Protocol.HTTP);

@@ -16,13 +16,16 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require("System/System.so");
+#ifndef _MATH_H
+#define _MATH_H
 
-require("Net.so");
+#include "lulzjs.h"
 
-require(["Sockets/Sockets.so", "Sockets/Socket.js"]);
+extern "C" JSBool exec (JSContext* cx);
+JSBool Math_initialize (JSContext* cx);
 
-require("Ports/Ports.js");
+static JSFunctionSpec Math_methods[] = {
+    {NULL}
+};
 
-Program.Net = Program.System.Net;
-
+#endif

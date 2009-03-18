@@ -18,13 +18,13 @@
 
 require([
     "System/System.so",
-        "FileSystem.so", "FileSystem.js",
-            "Permission/Permission.js", "Permission/Mode.js",
-            "Time/Time.js",
+        "System/Network/Network.so",
+            "System/Network/Sockets/Sockets.so", "System/Network/Sockets/Sockets.js",
+                "System/Network/Sockets/TCP.so", "System/Network/Sockets/TCP.js",
 
-            "File/File.so", "File/File.js",
-            "Directory/Directory.so", "Directory/Directory.js"
+        "Protocol.so",
+            "HTTP/HTTP.so", "HTTP/HTTP.js", "HTTP/Request.js", "HTTP/Response.js", "HTTP/Client.js",
 ]);
 
-FileSystem = System.FileSystem;
+Program.Protocol = Program.System.Network.Protocol;
 

@@ -16,30 +16,11 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-#include "Protocol.h"
+require([
+    "Math/Math.so",
+        "Cryptography.so", "Cryptography.js",
+            "SHA1/SHA1.so", "SHA1/SHA1.js",
+]);
 
-JSBool exec (JSContext* cx) { return Protocol_initialize(cx); }
-
-JSBool
-Protocol_initialize (JSContext* cx)
-{
-    jsval jsParent;
-    JS_GetProperty(cx, JS_GetGlobalObject(cx), "System", &jsParent);
-    JS_GetProperty(cx, JSVAL_TO_OBJECT(jsParent), "Net", &jsParent);
-    JSObject* parent = JSVAL_TO_OBJECT(jsParent);
-
-    JSObject* object = JS_DefineObject(
-        cx, parent,
-        Protocol_class.name, &Protocol_class, NULL, 
-        JSPROP_PERMANENT|JSPROP_READONLY|JSPROP_ENUMERATE
-    );
-
-    if (object) {
-        JS_DefineFunctions(cx, object, Protocol_methods);
-
-        return JS_TRUE;
-    }
-
-    return JS_FALSE;
-}
+Program.Cryptography = Program.Math.Cryptography;
 
