@@ -16,30 +16,27 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require("System/System.so");
-
-require("System/Net/Net.so");
-
-require(["System/Net/Socket/Socket.so", "System/Net/Socket/Socket.js"]);
-
-require("System/Net/Ports/Ports.js");
-
-require("System/Net/Protocol/Protocol.so");
-
 require([
-    "System/Net/Protocol/HTTP/HTTP.so", "System/Net/Protocol/HTTP/HTTP.js",
-    "System/Net/Protocol/HTTP/Request.js", "System/Net/Protocol/HTTP/Response.js",
-    "System/Net/Protocol/HTTP/Client.js"
-]);
+    "System/System.so",
+        "System/Network/Network.so",
+            "System/Network/Sockets/Sockets.so", "System/Network/Sockets/Sockets.js",
+                "System/Network/Sockets/TCP.so", "System/Network/Sockets/TCP.js",
+            
+            "System/Network/Ports/Ports.js",
 
-require("Simple.js");
+            "System/Network/Protocol/Protocol.so",
+                "System/Network/Protocol/HTTP/HTTP.so", "System/Network/Protocol/HTTP/HTTP.js",
+                "System/Network/Protocol/HTTP/Request.js", "System/Network/Protocol/HTTP/Response.js",
+                "System/Network/Protocol/HTTP/Client.js",
+                    "Simple.js",
+]);
 
 if (!Program.HTTP) {
     Program.HTTP = new Object;
 }
 
-Program.HTTP = Object.extend(Program.HTTP, {
-    Get:  System.Net.Protocol.HTTP.Simple.Get,
-    Post: System.Net.Protocol.HTTP.Simple.Post
+Object.extend(Program.HTTP, {
+    Get:  System.Network.Protocol.HTTP.Simple.Get,
+    Post: System.Network.Protocol.HTTP.Simple.Post
 });
 
