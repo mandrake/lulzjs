@@ -38,6 +38,20 @@ Sockets_initialize (JSContext* cx)
     );
 
     if (object) {
+        jsval property;
+
+        JSObject* prototype = JS_NewObject(cx, NULL, NULL, NULL);
+        property = OBJECT_TO_JSVAL(prototype);
+        JS_SetProperty(cx, object, "prototype", &property);
+            JS_DefineFunctions(cx, prototype, Sockets_methods);
+
+        JSObject* static_prototype = JS_NewObject(cx, NULL, NULL, NULL);
+        property = OBJECT_TO_JSVAL(static_prototype);
+        JS_SetProperty(cx, object, "static_prototype", &property);
+            JS_DefineFunctions(cx, static_prototype, Sockets_static_inherited_methods);
+
+        JS_DefineFunctions(cx, object, Sockets_static_methods);
+
         JS_LeaveLocalRootScope(cx);
         JS_EndRequest(cx);
         return JS_TRUE;
@@ -84,7 +98,6 @@ Sockets_connect (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval
         delete ip;
     }
 
-    jsval jsConnected;
     if (PR_Connect(data->socket, &addr, (timeout == -1)
         ? PR_INTERVAL_NO_TIMEOUT
         : PR_MicrosecondsToInterval(timeout*1000000)) == PR_FAILURE)
@@ -107,7 +120,7 @@ Sockets_listen (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval*
 
     JS_BeginRequest(cx);
 
-    if (argc != 2) {
+    if (argc < 2) {
         JS_ReportError(cx, "Not enough parameters.");
         JS_EndRequest(cx);
         return JS_FALSE;
@@ -149,6 +162,7 @@ Sockets_listen (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval*
     if (PR_Bind(data->socket, &addr) == PR_FAILURE) {
         JS_ResumeRequest(cx, req);
         PR_THROW_ERROR(cx);
+        JS_LeaveLocalRootScope(cx);
         JS_EndRequest(cx);
         return JS_FALSE;
     }
@@ -325,6 +339,136 @@ Sockets_read (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval *r
     JS_EndRequest(cx);
     return JS_TRUE;
 }
+
+JSBool
+Sockets_writeTo (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
+{
+    JSString* stringObject;
+    uint16    flags   = 0;
+    jsdouble  timeout = -1;
+
+    JS_BeginRequest(cx);
+
+    if (argc < 1) {
+        JS_ReportError(cx, "Not enough parameters.");
+        JS_EndRequest(cx);
+        return JS_FALSE;
+    }
+
+    JS_EnterLocalRootScope(cx);
+
+    switch (argc) {
+        case 3: JS_ValueToNumber(cx, argv[2], &timeout);
+        case 2: JS_ValueToUint16(cx, argv[1], &flags);
+        case 1: stringObject = JS_ValueToString(cx, argv[0]);
+    }
+
+    SocketsInformation* data = (SocketsInformation*) JS_GetPrivate(cx, object);
+
+    jsval jsConnected; JS_GetProperty(cx, object, "connected", &jsConnected);
+    JSBool connected; JS_ValueToBoolean(cx, jsConnected, &connected);
+
+    if (!connected) {
+        JS_ReportError(cx, "The socket isn't connected.");
+        JS_LeaveLocalRootScope(cx);
+        JS_EndRequest(cx);
+        return JS_FALSE;
+    }
+
+    char*  string = JS_GetStringBytes(stringObject); 
+    size_t offset = 0;
+    int    sent   = 0;
+    size_t length = JS_GetStringLength(stringObject);
+
+    jsrefcount req = JS_SuspendRequest(cx);
+    while (offset < length) {
+        sent = PR_Send(data->socket, (string+offset), (length-offset)*sizeof(char), flags,
+            (timeout == -1) ? PR_INTERVAL_NO_TIMEOUT : PR_MicrosecondsToInterval(timeout*1000000));
+
+        if (sent < 0) {
+            break;
+        }
+    }
+    JS_ResumeRequest(cx, req);
+
+    if (sent < 0) {
+        PR_THROW_ERROR(cx);
+        JS_LeaveLocalRootScope(cx);
+        JS_EndRequest(cx);
+        return JS_FALSE;
+    }
+
+    JS_LeaveLocalRootScope(cx);
+    JS_EndRequest(cx);
+    return JS_TRUE;
+}
+
+JSBool
+Sockets_readFrom (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval *rval)
+{
+    int32    size;
+    uint16   flags   = 0;
+    jsdouble timeout = -1;
+
+    JS_BeginRequest(cx);
+
+    if (argc < 1) {
+        JS_ReportError(cx, "Not enough parameters.");
+        JS_EndRequest(cx);
+        return JS_FALSE;
+    }
+
+    JS_EnterLocalRootScope(cx);
+
+    switch (argc) {
+        case 3: JS_ValueToNumber(cx, argv[2], &timeout);
+        case 2: JS_ValueToUint16(cx, argv[1], &flags);
+        case 1: JS_ValueToInt32(cx, argv[0], &size);
+    }
+
+    SocketsInformation* data = (SocketsInformation*) JS_GetPrivate(cx, object);
+
+    jsval jsConnected; JS_GetProperty(cx, object, "connected", &jsConnected);
+    JSBool connected; JS_ValueToBoolean(cx, jsConnected, &connected);
+
+    if (!connected) {
+        JS_ReportError(cx, "The socket isn't connected.");
+        JS_LeaveLocalRootScope(cx);
+        JS_EndRequest(cx);
+        return JS_FALSE;
+    }
+
+    char* string = (char*) JS_malloc(cx, size*sizeof(char));
+
+    jsrefcount req = JS_SuspendRequest(cx);
+    size_t offset   = 0;
+    size_t received = 0;
+    while (offset < size) {
+        received = PR_Recv(data->socket, (string+offset), (size-offset)*sizeof(char), flags,
+            (timeout == -1) ? PR_INTERVAL_NO_TIMEOUT : PR_MicrosecondsToInterval(timeout*1000000));
+
+        if (received == -1) {
+            break;
+        }
+        
+        offset += received;
+    }
+    JS_ResumeRequest(cx, req);
+
+    if (received < 0) {
+        PR_THROW_ERROR(cx);
+        JS_LeaveLocalRootScope(cx);
+        JS_EndRequest(cx);
+        return JS_FALSE;
+    }
+
+    *rval = STRING_TO_JSVAL(JS_NewString(cx, string, offset));
+
+    JS_LeaveLocalRootScope(cx);
+    JS_EndRequest(cx);
+    return JS_TRUE;
+}
+
 
 JSBool
 Sockets_static_getHostByName (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)

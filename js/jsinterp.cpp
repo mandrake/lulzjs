@@ -2713,12 +2713,14 @@ js_Interpret(JSContext *cx)
     JS_BEGIN_MACRO                                                            \
         regs.pc += (n);                                                       \
         op = (JSOp) *regs.pc;                                                 \
-        if (op == JSOP_NOP) {                                                 \
-            op = (JSOp) *++regs.pc;                                           \
-        } else if (op == JSOP_LOOP) {                                         \
+        if ((n) <= 0) {                                                       \
             CHECK_BRANCH();                                                   \
-            MONITOR_BRANCH();                                                 \
-            op = (JSOp) *regs.pc;                                             \
+            if (op == JSOP_NOP) {                                             \
+                op = (JSOp) *++regs.pc;                                       \
+            } else if (op == JSOP_LOOP) {                                     \
+                MONITOR_BRANCH();                                             \
+                op = (JSOp) *regs.pc;                                         \
+            }                                                                 \
         }                                                                     \
         DO_OP();                                                              \
     JS_END_MACRO
@@ -6963,7 +6965,7 @@ js_Interpret(JSContext *cx)
         atoms = script->atomMap.vector;
     }
 
-    JS_ASSERT((size_t)(regs.pc - script->code) < script->length);
+    JS_ASSERT((size_t)((fp->imacpc ? fp->imacpc : regs.pc) - script->code) < script->length);
 
 #ifdef JS_TRACER
     /* 

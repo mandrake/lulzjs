@@ -16,7 +16,7 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-Object.extend(System.Net.Socket.prototype, {
+Object.extend(System.Network.Sockets.prototype, {
     writeLine: function (str, options) {
         options = options || {};
         var flags     = options.flags || 0;

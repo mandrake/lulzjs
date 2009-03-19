@@ -40,8 +40,9 @@ JSBool Sockets_listen (JSContext* cx, JSObject* object, uintN argc, jsval* argv,
 JSBool Sockets_accept (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
 JSBool Sockets_write (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-JSBool Sockets_writeTo (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 JSBool Sockets_read (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+
+JSBool Sockets_writeTo (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 JSBool Sockets_readFrom (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
 JSBool Sockets_static_getHostByName (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
@@ -54,18 +55,25 @@ static JSFunctionSpec Sockets_methods[] = {
     {"listen", Sockets_listen, 0, 0, 0},
     {"accept", Sockets_accept, 0, 0, 0},
 
-    {"write",    Sockets_write,    0, 0, 0},
-    {"writeTo",  Sockets_writeTo,  0, 0, 0},
-    {"read",     Sockets_read,     0, 0, 0},
-    {"readFrom", Sockets_readFrom, 0, 0, 0},
-    {NULL}
+    {"write", Sockets_write,    0, 0, 0},
+    {"read",  Sockets_read,     0, 0, 0},
+ 
+    JS_FS_END
 };
+
+static JSFunctionSpec Sockets_static_inherited_methods[] = {
+    {"writeTo",  Sockets_writeTo,    0, 0, 0},
+    {"readFrom", Sockets_readFrom,     0, 0, 0},
+
+    JS_FS_END
+};
+
 
 static JSFunctionSpec Sockets_static_methods[] = {
     {"getHostByName", Sockets_static_getHostByName, 0, 0, 0},
     {"isIPv4",        Sockets_static_isIPv4,        0, 0, 0},
 
-    {NULL}
+    JS_FS_END
 };
 
 #endif
