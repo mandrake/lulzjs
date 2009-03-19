@@ -2,7 +2,10 @@
 #define TRACEMONKEY_LULZJS_H
 
 /* NSPR */
-#define PR_GET_FD(fd) fd->secret->md.osfd
+#include "private/prpriv.h"
+#include "prerror.h"
+#define PR_GET_FD(fd) PR_FileDesc2NativeHandle(fd)
+#define PR_THROW_ERROR(cx) char* error = new char[PR_GetErrorTextLength()]; PR_GetErrorText(error); JS_ReportError(cx, error); delete error;
 
 /* JAVASCRIPT */
 #include "jsapi.h"

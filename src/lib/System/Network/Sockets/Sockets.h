@@ -21,47 +21,49 @@
 
 #include "lulzjs.h"
 #include "prnetdb.h"
+#include "prinrval.h"
 
 extern "C" JSBool exec (JSContext* cx);
-JSBool Socket_initialize (JSContext* cx);
+JSBool Sockets_initialize (JSContext* cx);
 
-JSBool Socket_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-void  Socket_finalize (JSContext* cx, JSObject* object); 
-
-static JSClass Socket_class = {
-    "Socket", JSCLASS_HAS_PRIVATE,
+static JSClass Sockets_class = {
+    "Sockets", 0,
     JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
-    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, Socket_finalize
+    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub
 };
 
 #include "private.h"
 
-JSBool Socket_connect (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool Sockets_connect (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
-JSBool Socket_listen (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-JSBool Socket_accept (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool Sockets_listen (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool Sockets_accept (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
-JSBool Socket_write (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-JSBool Socket_read (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool Sockets_write (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool Sockets_writeTo (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool Sockets_read (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool Sockets_readFrom (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
-JSBool Socket_static_getHostByName (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool Sockets_static_getHostByName (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
-JSBool Socket_static_isIPv4 (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool Sockets_static_isIPv4 (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
-static JSFunctionSpec Socket_methods[] = {
-    {"connect", Socket_connect, 0, 0, 0},
+static JSFunctionSpec Sockets_methods[] = {
+    {"connect", Sockets_connect, 0, 0, 0},
 
-    {"listen", Socket_listen, 0, 0, 0},
-    {"accept", Socket_accept, 0, 0, 0},
+    {"listen", Sockets_listen, 0, 0, 0},
+    {"accept", Sockets_accept, 0, 0, 0},
 
-    {"write", Socket_write,    0, 0, 0},
-    {"read",  Socket_read, 0, 0, 0},
+    {"write",    Sockets_write,    0, 0, 0},
+    {"writeTo",  Sockets_writeTo,  0, 0, 0},
+    {"read",     Sockets_read,     0, 0, 0},
+    {"readFrom", Sockets_readFrom, 0, 0, 0},
     {NULL}
 };
 
-static JSFunctionSpec Socket_static_methods[] = {
-    {"getHostByName", Socket_static_getHostByName, 0, 0, 0},
-    {"isIPv4",        Socket_static_isIPv4,        0, 0, 0},
+static JSFunctionSpec Sockets_static_methods[] = {
+    {"getHostByName", Sockets_static_getHostByName, 0, 0, 0},
+    {"isIPv4",        Sockets_static_isIPv4,        0, 0, 0},
 
     {NULL}
 };

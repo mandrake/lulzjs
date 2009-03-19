@@ -21,10 +21,6 @@
 
 typedef struct {
     PRFileDesc* socket;
-    unsigned    family;
-    unsigned    type;
-    unsigned    protocol;
-    int         sd;
-} SocketInformation;
+} SocketsInformation;
 
 #endif

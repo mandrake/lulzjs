@@ -17,34 +17,27 @@
 ****************************************************************************/
 
 #include "Sockets.h"
-/*
-char* __Socket_getHostByName (const char* host);
-JSBool __Socket_isIPv4 (const char* host);
 
-JSBool exec (JSContext* cx) { return Socket_initialize(cx); }
+char* __Sockets_getHostByName (const char* host);
+JSBool __Sockets_isIPv4 (const char* host);
+
+JSBool exec (JSContext* cx) { return Sockets_initialize(cx); }
 
 JSBool
-Socket_initialize (JSContext* cx)
+Sockets_initialize (JSContext* cx)
 {
     JS_BeginRequest(cx);
     JS_EnterLocalRootScope(cx);
 
-    JSObject* parent = JSVAL_TO_OBJECT(JS_EVAL(cx, "System.Net"));
+    JSObject* parent = JSVAL_TO_OBJECT(JS_EVAL(cx, "System.Network"));
 
-    JSObject* object = JS_InitClass(
-        cx, parent, NULL, &Socket_class,
-        Socket_constructor, 0, NULL, Socket_methods, NULL, Socket_static_methods
+    JSObject* object = JS_DefineObject(
+        cx, parent,
+        Sockets_class.name, &Sockets_class, NULL,
+        JSPROP_PERMANENT|JSPROP_READONLY|JSPROP_ENUMERATE
     );
 
     if (object) {
-        jsval property;
-    
-        JSObject* Type = JS_NewObject(cx, NULL, NULL, NULL);
-        property = OBJECT_TO_JSVAL(Type);
-        JS_SetProperty(cx, object, "Type", &property);
-            property = 0x01;
-            JS_SetProperty
-        
         JS_LeaveLocalRootScope(cx);
         JS_EndRequest(cx);
         return JS_TRUE;
@@ -54,64 +47,11 @@ Socket_initialize (JSContext* cx)
 }
 
 JSBool
-Socket_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
+Sockets_connect (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
 {
-    uint16 family   = AF_INET;
-    uint16 type     = SOCK_STREAM;
-    uint16 protocol = PF_UNSPEC;
-
-    JS_BeginRequest(cx);
-
-    if (argc > 3) {
-        JS_ReportError(cx, "Too many arguments.");
-        JS_EndRequest(cx);
-        return JS_FALSE;
-    }
-
-    JS_EnterLocalRootScope(cx);
-
-    switch (argc) {
-        case 3: JS_ValueToUint16(cx, argv[2], &protocol);
-        case 2: JS_ValueToUint16(cx, argv[1], &type);
-        case 1: JS_ValueToUint16(cx, argv[0], &family);
-    }
-
-    SocketInformation* data = new SocketInformation;
-    JS_SetPrivate(cx, object, data);
-
-    data->socket    = socket(family, type, protocol);
-    data->family    = family;
-    data->type      = type;
-    data->protocol  = protocol;
-
-    jsval jsConnected = JS_FALSE;
-    JS_SetProperty(cx, object, "connected", &jsConnected);
-
-    JS_LeaveLocalRootScope(cx);
-    JS_EndRequest(cx);
-    return JS_TRUE;
-}
-
-void
-Socket_finalize (JSContext* cx, JSObject* object)
-{
-    SocketInformation* data = (SocketInformation*) JS_GetPrivate(cx, object);
-
-    if (data) {
-        if (data->addr) {
-            delete data->addr;
-        }
-
-        close(data->socket);
-        delete data;
-    }
-}
-
-JSBool
-Socket_connect (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
-{
-    char* host;
-    int port;
+    char*    host;
+    int      port;
+    jsdouble timeout = -1;
 
     JS_BeginRequest(cx);
     JS_EnterLocalRootScope(cx);
@@ -123,18 +63,15 @@ Socket_connect (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval*
         return JS_FALSE;
     }
 
-    SocketInformation* data = (SocketInformation*) JS_GetPrivate(cx, object);
-
-    sockaddr_in* addrin = new sockaddr_in;
-
-    addrin->sin_family = data->family;
-    addrin->sin_port   = htons((u_short) port);
-
-    if (__Socket_isIPv4(host)) {
-        addrin->sin_addr.s_addr = inet_addr(host);
+    if (argc == 3) {
+        JS_ValueToNumber(cx, argv[2], &timeout);
     }
-    else {
-        char* ip = __Socket_getHostByName(host);
+
+    SocketsInformation* data = (SocketsInformation*) JS_GetPrivate(cx, object);
+    PRNetAddr addr;
+
+    if (PR_StringToNetAddr(host, &addr) == PR_FAILURE) {
+        char* ip = __Sockets_getHostByName(host);
 
         if (!ip) {
             *rval = JSVAL_FALSE;
@@ -143,22 +80,19 @@ Socket_connect (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval*
             return JS_TRUE;
         }
 
-        addrin->sin_addr.s_addr = inet_addr(ip);
+        PR_StringToNetAddr(ip, &addr);
         delete ip;
     }
 
     jsval jsConnected;
-    if (connect(data->socket, (sockaddr*) addrin, sizeof(sockaddr_in)) < 0) {
-        jsConnected = JSVAL_FALSE;
+    if (PR_Connect(data->socket, &addr, (timeout == -1)
+        ? PR_INTERVAL_NO_TIMEOUT
+        : PR_MicrosecondsToInterval(timeout*1000000)) == PR_FAILURE)
+    {
+        PR_THROW_ERROR(cx);
+        JS_LeaveLocalRootScope(cx);
+        JS_EndRequest(cx);
     }
-    else {
-        jsConnected = JSVAL_TRUE;
-    }
-    JS_SetProperty(cx, object, "connected", &jsConnected);
-
-    data->addr = (struct sockaddr*) addrin;
-
-    *rval = jsConnected;
 
     JS_LeaveLocalRootScope(cx);
     JS_EndRequest(cx);
@@ -166,7 +100,7 @@ Socket_connect (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval*
 }
 
 JSBool
-Socket_listen (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
+Sockets_listen (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
 {
     int port;
     int maxconn = 255;
@@ -186,18 +120,14 @@ Socket_listen (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* 
         case 2: JS_ValueToInt32(cx, argv[1], &port);
     }
 
-    SocketInformation* data = (SocketInformation*) JS_GetPrivate(cx, object);
-
-    sockaddr_in* addrin = new sockaddr_in;
-
-    addrin->sin_family = data->family;
-    addrin->sin_port   = htons((u_short) port);
+    SocketsInformation* data = (SocketsInformation*) JS_GetPrivate(cx, object);
+    PRNetAddr addr;
 
     if (JSVAL_IS_NULL(argv[0])) {
-        addrin->sin_addr.s_addr = INADDR_ANY;
+        PR_InitializeNetAddr(PR_IpAddrAny, port, &addr);
     }
     else {
-        char* ip = __Socket_getHostByName(JS_GetStringBytes(JS_ValueToString(cx, argv[0])));
+        char* ip = __Sockets_getHostByName(JS_GetStringBytes(JS_ValueToString(cx, argv[0])));
         
         if (!ip) {
             JS_ReportError(cx, "Couldn't resolve the hostname.");
@@ -206,32 +136,30 @@ Socket_listen (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* 
             return JS_FALSE;
         }
 
-        addrin->sin_addr.s_addr = inet_addr(ip);
+        PR_StringToNetAddr(ip, &addr);
+        PR_InitializeNetAddr(PR_IpAddrNull, port, &addr);
         delete ip;
     }
 
     int on = 1;
-    setsockopt(data->socket, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
+    setsockopt(PR_GET_FD(data->socket), SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 
     jsrefcount req = JS_SuspendRequest(cx);
 
-    if (bind(data->socket, (struct sockaddr*) addrin, sizeof(struct sockaddr_in)) < 0) {
+    if (PR_Bind(data->socket, &addr) == PR_FAILURE) {
         JS_ResumeRequest(cx, req);
-        JS_ReportError(cx, "Bind failed, probably the port is already in use.");
-        JS_LeaveLocalRootScope(cx);
+        PR_THROW_ERROR(cx);
         JS_EndRequest(cx);
         return JS_FALSE;
     }
 
-    if (listen(data->socket, maxconn) < 0) {
+    if (PR_Listen(data->socket, maxconn) == PR_FAILURE) {
         JS_ResumeRequest(cx, req);
-        JS_ReportError(cx, "Listen failed.");
+        PR_THROW_ERROR(cx);
         JS_LeaveLocalRootScope(cx);
         JS_EndRequest(cx);
         return JS_FALSE;
     }
-
-    data->addr = (struct sockaddr*) addrin;
 
     JS_ResumeRequest(cx, req);
     JS_LeaveLocalRootScope(cx);
@@ -240,26 +168,27 @@ Socket_listen (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* 
 }
 
 JSBool
-Socket_accept (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
+Sockets_accept (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
 {
-    SocketInformation* data = (SocketInformation*) JS_GetPrivate(cx, object);
+    jsdouble timeout = -1;
+
+    if (argc) {
+        JS_ValueToNumber(cx, argv[0], &timeout);
+    }
+
+    SocketsInformation* data = (SocketsInformation*) JS_GetPrivate(cx, object);
     
     JS_BeginRequest(cx);
     JS_EnterLocalRootScope(cx);
 
-    JSObject* sock = JS_NewObject(cx, &Socket_class, JS_GetPrototype(cx, object), NULL);
-
-    socklen_t size = sizeof(struct sockaddr);
-
-    SocketInformation* newData = new SocketInformation;
+    JSObject* sock = JS_NewObject(cx, &Sockets_class, JS_GetPrototype(cx, object), NULL);
+    SocketsInformation* newData = new SocketsInformation;
     JS_SetPrivate(cx, sock, newData);
 
-    newData->addr   = new sockaddr;
-    newData->socket = accept(data->socket, newData->addr, &size);
-    newData->family = ((sockaddr_in*)newData->addr)->sin_family;
-
-    jsval property = JSVAL_TRUE;
-    JS_SetProperty(cx, sock, "connected", &property);
+    PRNetAddr addr;
+    newData->socket = PR_Accept(data->socket, &addr, (timeout == -1)
+        ? PR_INTERVAL_NO_TIMEOUT
+        : PR_MicrosecondsToInterval(timeout*1000000));
 
     *rval = OBJECT_TO_JSVAL(sock);
 
@@ -269,10 +198,11 @@ Socket_accept (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* 
 }
 
 JSBool
-Socket_write (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
+Sockets_write (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
 {
     JSString* stringObject;
-    uint16 flags = 0;
+    uint16    flags   = 0;
+    jsdouble  timeout = -1;
 
     JS_BeginRequest(cx);
 
@@ -285,11 +215,12 @@ Socket_write (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* r
     JS_EnterLocalRootScope(cx);
 
     switch (argc) {
+        case 3: JS_ValueToNumber(cx, argv[2], &timeout);
         case 2: JS_ValueToUint16(cx, argv[1], &flags);
         case 1: stringObject = JS_ValueToString(cx, argv[0]);
     }
 
-    SocketInformation* data = (SocketInformation*) JS_GetPrivate(cx, object);
+    SocketsInformation* data = (SocketsInformation*) JS_GetPrivate(cx, object);
 
     jsval jsConnected; JS_GetProperty(cx, object, "connected", &jsConnected);
     JSBool connected; JS_ValueToBoolean(cx, jsConnected, &connected);
@@ -303,13 +234,26 @@ Socket_write (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* r
 
     char*  string = JS_GetStringBytes(stringObject); 
     size_t offset = 0;
+    int    sent   = 0;
     size_t length = JS_GetStringLength(stringObject);
 
     jsrefcount req = JS_SuspendRequest(cx);
     while (offset < length) {
-        offset += send(data->socket, (string+offset), (length-offset)*sizeof(char), flags);
+        sent = PR_Send(data->socket, (string+offset), (length-offset)*sizeof(char), flags,
+            (timeout == -1) ? PR_INTERVAL_NO_TIMEOUT : PR_MicrosecondsToInterval(timeout*1000000));
+
+        if (sent < 0) {
+            break;
+        }
     }
     JS_ResumeRequest(cx, req);
+
+    if (sent < 0) {
+        PR_THROW_ERROR(cx);
+        JS_LeaveLocalRootScope(cx);
+        JS_EndRequest(cx);
+        return JS_FALSE;
+    }
 
     JS_LeaveLocalRootScope(cx);
     JS_EndRequest(cx);
@@ -317,10 +261,11 @@ Socket_write (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* r
 }
 
 JSBool
-Socket_read (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval *rval)
+Sockets_read (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval *rval)
 {
-    int32 size;
-    uint16 flags = 0;
+    int32    size;
+    uint16   flags   = 0;
+    jsdouble timeout = -1;
 
     JS_BeginRequest(cx);
 
@@ -333,11 +278,12 @@ Socket_read (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval *rv
     JS_EnterLocalRootScope(cx);
 
     switch (argc) {
+        case 3: JS_ValueToNumber(cx, argv[2], &timeout);
         case 2: JS_ValueToUint16(cx, argv[1], &flags);
         case 1: JS_ValueToInt32(cx, argv[0], &size);
     }
 
-    SocketInformation* data = (SocketInformation*) JS_GetPrivate(cx, object);
+    SocketsInformation* data = (SocketsInformation*) JS_GetPrivate(cx, object);
 
     jsval jsConnected; JS_GetProperty(cx, object, "connected", &jsConnected);
     JSBool connected; JS_ValueToBoolean(cx, jsConnected, &connected);
@@ -352,31 +298,25 @@ Socket_read (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval *rv
     char* string = (char*) JS_malloc(cx, size*sizeof(char));
 
     jsrefcount req = JS_SuspendRequest(cx);
-    size_t offset = 0;
-    size_t tmp;
+    size_t offset   = 0;
+    size_t received = 0;
     while (offset < size) {
-        tmp = recv(data->socket, (string+offset), (size-offset)*sizeof(char), flags);
+        received = PR_Recv(data->socket, (string+offset), (size-offset)*sizeof(char), flags,
+            (timeout == -1) ? PR_INTERVAL_NO_TIMEOUT : PR_MicrosecondsToInterval(timeout*1000000));
 
-        if (tmp == -1 || tmp == 0) {
+        if (received == -1) {
             break;
         }
         
-        offset += tmp;
-    }
-
-    if (!(tmp == -1 || tmp == 0) && offset != size) {
-        string = (char*) JS_realloc(cx, string, offset);
+        offset += received;
     }
     JS_ResumeRequest(cx, req);
 
-    if (tmp == -1) {
-        JS_ReportError(cx, "An error occurred with the socket.");
-        JS_free(cx, string);
+    if (received < 0) {
+        PR_THROW_ERROR(cx);
+        JS_LeaveLocalRootScope(cx);
+        JS_EndRequest(cx);
         return JS_FALSE;
-    }
-    else if (tmp == 0) {
-        jsConnected = JSVAL_FALSE;
-        JS_SetProperty(cx, object, "connected", &jsConnected);
     }
 
     *rval = STRING_TO_JSVAL(JS_NewString(cx, string, offset));
@@ -387,7 +327,7 @@ Socket_read (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval *rv
 }
 
 JSBool
-Socket_static_getHostByName (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
+Sockets_static_getHostByName (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
 {
     const char* host;
 
@@ -399,7 +339,7 @@ Socket_static_getHostByName (JSContext* cx, JSObject* object, uintN argc, jsval*
         return JS_FALSE;
     }
 
-    char* tmpHost = __Socket_getHostByName(host);
+    char* tmpHost = __Sockets_getHostByName(host);
 
     if (!tmpHost) {
         JS_ReportError(cx, "An error occurred while resolving the hostname.");
@@ -414,27 +354,28 @@ Socket_static_getHostByName (JSContext* cx, JSObject* object, uintN argc, jsval*
 }
 
 char*
-__Socket_getHostByName (const char* host)
+__Sockets_getHostByName (const char* host)
 {
-    struct hostent* hp = gethostbyname(host);
-
-    if (!hp) {
+    char* buf = new char[PR_NETDB_BUF_SIZE];
+    PRHostEnt hp; 
+    if (PR_GetHostByName(host, buf, PR_NETDB_BUF_SIZE, &hp) == PR_FAILURE) {
         return NULL;
     }
+    delete [] buf;
 
     char* ip = new char[INET6_ADDRSTRLEN];
     int offset = 0;
 
-    offset += sprintf(&ip[offset], "%u.", (unsigned char) hp->h_addr[0]);
-    offset += sprintf((ip+offset), "%u.", (unsigned char) hp->h_addr[1]);
-    offset += sprintf((ip+offset), "%u.", (unsigned char) hp->h_addr[2]);
-    offset += sprintf((ip+offset), "%u",  (unsigned char) hp->h_addr[3]);
+    offset += sprintf(&ip[offset], "%u.", (unsigned char) hp.h_name[0]);
+    offset += sprintf((ip+offset), "%u.", (unsigned char) hp.h_name[1]);
+    offset += sprintf((ip+offset), "%u.", (unsigned char) hp.h_name[2]);
+    offset += sprintf((ip+offset), "%u",  (unsigned char) hp.h_name[3]);
 
     return ip;
 }
 
 JSBool
-Socket_static_isIPv4 (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
+Sockets_static_isIPv4 (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
 {
     const char* host;
 
@@ -446,12 +387,12 @@ Socket_static_isIPv4 (JSContext* cx, JSObject* object, uintN argc, jsval* argv, 
     }
     JS_EndRequest(cx);
 
-    *rval = BOOLEAN_TO_JSVAL(__Socket_isIPv4(host));
+    *rval = BOOLEAN_TO_JSVAL(__Sockets_isIPv4(host));
     return JS_TRUE;
 }
 
 JSBool
-__Socket_isIPv4 (const char* host)
+__Sockets_isIPv4 (const char* host)
 {
     char klass[4];
     memset(klass, 0, 4);
@@ -480,4 +421,4 @@ __Socket_isIPv4 (const char* host)
 
     return JS_TRUE;
 }
-*/
+
