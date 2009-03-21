@@ -4559,6 +4559,9 @@ function testLengthInString()
   var res = "length" in s;
   for (var i = 0; i < 5; i++)
     res = res && ("length" in s);
+  res = res && s.hasOwnProperty("length");
+  for (var i = 0; i < 5; i++)
+    res = res && s.hasOwnProperty("length");
   return res;
 }
 testLengthInString.expected = true;
@@ -4646,6 +4649,67 @@ function testNEWINIT()
 }
 testNEWINIT.expected = "[{}]";
 test(testNEWINIT);
+
+function testNEWINIT_DOUBLE()
+{
+    for (var z = 0; z < 2; ++z) { ({ 0.1: null })}
+    return "ok";
+}
+testNEWINIT_DOUBLE.expected = "ok";
+test(testNEWINIT_DOUBLE);
+
+function testIntOverflow() {
+    // int32_max - 7
+    var ival = 2147483647 - 7;
+    for (var i = 0; i < 30; i++) {
+        ival += 2;
+    }
+    return (ival < 2147483647);
+}
+testIntOverflow.expected = false;
+testIntOverflow.jitstats = {
+    recorderStarted: 2,
+    recorderAborted: 0,
+    traceCompleted: 2,
+    traceTriggered: 2,
+};
+test(testIntOverflow);
+
+function testIntUnderflow() {
+    // int32_min + 8
+    var ival = -2147483648 + 8;
+    for (var i = 0; i < 30; i++) {
+        ival -= 2;
+    }
+    return (ival > -2147483648);
+}
+testIntUnderflow.expected = false;
+testIntUnderflow.jitstats = {
+    recorderStarted: 2,
+    recorderAborted: 0,
+    traceCompleted: 2,
+    traceTriggered: 2,
+};
+test(testIntUnderflow);
+
+function testCALLELEM()
+{
+    function f() {
+        return 5;
+    }
+
+    function g() {
+        return 7;
+    }
+
+    var x = [f,f,f,f,g];
+    var y = 0;
+    for (var i = 0; i < 5; ++i)
+        y = x[i]();
+    return y;
+}
+testCALLELEM.expected = 7;
+test(testCALLELEM);
 
 /*****************************************************************************
  *                                                                           *

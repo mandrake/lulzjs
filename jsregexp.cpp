@@ -1266,7 +1266,14 @@ ParseTerm(CompilerState *state)
                 /* Treat this as an octal escape. */
                 goto doOctal;
             }
-            JS_ASSERT(1 <= num && num <= 0x10000);
+
+            /*
+             * When FindParenCount calls the regex parser recursively (to find
+             * the number of backrefs) num can be arbitrary and the maximum
+             * supported number of backrefs does not bound it.
+             */
+            JS_ASSERT_IF(!(state->flags & JSREG_FIND_PAREN_COUNT),
+                         1 <= num && num <= 0x10000);
             state->result = NewRENode(state, REOP_BACKREF);
             if (!state->result)
                 return JS_FALSE;
@@ -4895,7 +4902,7 @@ regexp_test(JSContext *cx, uintN argc, jsval *vp)
 }
 
 #ifdef JS_TRACER
-static jsint FASTCALL
+static JSBool FASTCALL
 Regexp_p_test(JSContext* cx, JSObject* regexp, JSString* str)
 {
     jsval vp[3] = { JSVAL_NULL, OBJECT_TO_JSVAL(regexp), STRING_TO_JSVAL(str) };
