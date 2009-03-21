@@ -1,0 +1,5 @@
+You need autoconf 2.13 and NSPR.
+
+To compile:
+./compile.sh
+sudo ./install.sh
