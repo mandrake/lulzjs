@@ -1,0 +1,53 @@
+--- js-config.in.old	2009-03-17 01:20:20.000000000 +0100
++++ js-config.in	2009-03-17 01:21:08.000000000 +0100
+@@ -103,7 +103,7 @@
+ fi
+ 
+ if test "$echo_cflags" = "yes"; then
+-    echo "-I$includedir/js $NSPR_CFLAGS"
++    echo "-I$includedir/lulzjs $NSPR_CFLAGS"
+ fi
+ 
+ if test "$echo_libs" = "yes"; then
+
+--- configure.in.old	2009-03-17 01:22:19.000000000 +0100
++++ configure.in	2009-03-17 01:22:26.000000000 +0100
+@@ -917,7 +917,7 @@
+ HOST_AR='$(AR)'
+ HOST_AR_FLAGS='$(AR_FLAGS)'
+ 
+-MOZ_JS_LIBS='-L$(libdir) -lmozjs'
++MOZ_JS_LIBS='-L$(libdir) -llulzjs'
+ MOZ_FIX_LINK_PATHS='-Wl,-rpath-link,$(LIBXUL_DIST)/bin -Wl,-rpath-link,$(PREFIX)/lib'
+ 
+ MOZ_COMPONENT_NSPR_LIBS='-L$(LIBXUL_DIST)/bin $(NSPR_LIBS)'
+
+--- Makefile.in.old	2009-03-17 07:36:48.000000000 +0100
++++ Makefile.in	2009-03-17 07:44:33.000000000 +0100
+@@ -56,8 +56,8 @@
+ # editline needs to get built before the shell
+ DIRS += shell
+ 
+-MODULE		    = js
+-LIBRARY_NAME	    = mozjs
++MODULE		    = lulzjs
++LIBRARY_NAME	    = lulzjs
+ STATIC_LIBRARY_NAME = js_static
+ GRE_MODULE	    = 1
+ 
+@@ -146,6 +146,7 @@
+ 		jsxdrapi.cpp \
+ 		jsxml.cpp \
+ 		prmjtime.cpp \
++		lulzjs.cpp \
+ 		$(NULL)
+ 
+ ifdef HAVE_DTRACE
+@@ -204,6 +205,7 @@
+ 		jsversion.h \
+ 		jsxdrapi.h \
+ 		jsxml.h \
++		lulzjs.h \
+ 		$(NULL)
+ 
+ ifdef ENABLE_JIT

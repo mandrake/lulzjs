@@ -27,8 +27,8 @@ Object.extend(Number.prototype, (function() {
     };
 
     function upTo (num, iterator, context) {
-        $R(this, num, true).each(iterator, context);
-        return num;
+        $R(this, num+1, true).each(iterator, context);
+        return this;
     };
 
     function toPaddedString (length, radix) {
