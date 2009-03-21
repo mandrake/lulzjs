@@ -1,14 +1,9 @@
 A cool javascript interpreter that embeds Tracemonkey.
 
-You need the nspr library installed (libnspr4.so) [Probably if you have firefox you have that lib]
+You have to compile and install the tracemonkey branch first.
+
 You also need the readline library with headers (it's a GNU standard)
-And finally you need autoconf 2.13, just install it.
 
 To compile the project do:
-
-cd js
-./compile.sh
-sudo ./install.sh
-cd ..
 make
 sudo make install
