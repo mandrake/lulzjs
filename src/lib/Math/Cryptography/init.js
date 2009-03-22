@@ -19,7 +19,10 @@
 require([
     "Math/Math.so",
         "Cryptography.so", "Cryptography.js",
-            "SHA1/SHA1.so", "SHA1/SHA1.js",
+            "Hashing/Hashing.so", "Hashing/Hashing.js",
+                "Hashing/SHA1/SHA1.so", "Hashing/SHA1/SHA1.js",
+
+            "Crypting/Crypting.so", "Crypting/Crypting.js",
 ]);
 
 Program.Cryptography = Program.Math.Cryptography;

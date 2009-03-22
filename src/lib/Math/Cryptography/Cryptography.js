@@ -17,18 +17,66 @@
 ****************************************************************************/
 
 if (!String._crypt) {
-    String._crypt = new Object;
+    String._crypt          = new Object;
+    String._crypt.hashing  = new Object;
+    String._crypt.crypting = new Object;
 }
 
 Object.extend(Math.Cryptography, {
-    addAlgorithm: function (name, class) {
-        String._crypt[name] = class;
+    addAlgorithm: function (name, type, class) {
+        if (type.toLowerCase() == "hash") {
+            String._crypt.hashing[name] = class;
+        }
+        else if (type.toLowerCase() == "crypt") {
+            String._crypt.crypting[name] = class;
+        }
     },
 });
 
 Object.extend(String.prototype, {
-    crypt: function (alg) {
-        return (String._crypt[alg]) ? new String._crypt[alg](this) : null;
+    encrypt: function (alg, params) {
+        if (String._crypt.crypting[alg]) {
+            let parms = "";
+
+            if (params) {
+                for (let i = 0; i < params.length; i++) {
+                    parms += "params["+i+"], ";
+                }
+                parms = parms.substr(0, parms.length-2);
+            }
+
+            return eval("new String._crypt.crypting[alg](this).encrypt("+parms+")");
+        }
+        else {
+            return null;
+        }
+    },
+
+    decrypt: function (alg, params) {
+        if (String._crypt.crypting[alg]) {
+            let parms = "";
+
+            if (params) {
+                for (let i = 0; i < params.length; i++) {
+                    parms += "params["+i+"], ";
+                }
+                parms = parms.substr(0, parms.length-2);
+            }
+
+            return eval("new String._crypt.crypting[alg](this).decrypt("+parms+")");
+        }
+        else {
+            return null;
+        }
+    },
+
+    hash: function (alg) {
+        if (String._crypt.hashing[alg]) {
+            return new String._crypt.hashing[alg](this).toString();
+        }
+        else {
+            return null;
+        }
     },
 });
 

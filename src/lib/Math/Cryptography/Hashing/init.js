@@ -19,8 +19,9 @@
 require([
     "Math/Math.so",
         "Math/Cryptography/Cryptography.so", "Math/Cryptography/Cryptography.js",
-            "SHA1.so", "SHA1.js",
+            "Hashing.so", "Hashing.js",
+                "SHA1/SHA1.so", "SHA1/SHA1.js",
 ]);
 
-Program.SHA1 = Program.Math.Cryptography.SHA1;
+Program.Hashing = Program.Math.Cryptography.Hashing;
 

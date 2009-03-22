@@ -53,7 +53,9 @@ LIB_SYSTEM_LDFLAGS = ${LDFLAGS}
 LIB_MATH_DIR = src/lib/Math
 LIB_MATH = \
 	${LIB_MATH_DIR}/Math.o \
-	${LIB_MATH_DIR}/Cryptography/Cryptography.o ${LIB_MATH_DIR}/Cryptography/SHA1/SHA1.o
+	${LIB_MATH_DIR}/Cryptography/Cryptography.o \
+	${LIB_MATH_DIR}/Cryptography/Hashing/Hashing.o ${LIB_MATH_DIR}/Cryptography/Hashing/SHA1/SHA1.o \
+	${LIB_MATH_DIR}/Cryptography/Crypting/Crypting.o
 
 LIB_MATH_CFLAGS  = ${CFLAGS}
 LIB_MATH_LDFLAGS = ${LDFLAGS}
@@ -181,18 +183,28 @@ libmath_install: libmath
 	mkdir -p ${LJS_LIBDIR}
 	mkdir -p ${LJS_LIBDIR}/Math
 	mkdir -p ${LJS_LIBDIR}/Math/Cryptography
-	mkdir -p ${LJS_LIBDIR}/Math/Cryptography/SHA1
+	mkdir -p ${LJS_LIBDIR}/Math/Cryptography/Hashing
+	mkdir -p ${LJS_LIBDIR}/Math/Cryptography/Hashing/SHA1
+	mkdir -p ${LJS_LIBDIR}/Math/Cryptography/Crypting
 ########
-	cp -f ${LIB_MATH_DIR}/init.js							${LJS_LIBDIR}/Math/init.js
-	cp -f ${LIB_MATH_DIR}/Math.o							${LJS_LIBDIR}/Math/Math.so
+	cp -f ${LIB_MATH_DIR}/init.js									${LJS_LIBDIR}/Math/init.js
+	cp -f ${LIB_MATH_DIR}/Math.o									${LJS_LIBDIR}/Math/Math.so
 ########
-	cp -f ${LIB_MATH_DIR}/Cryptography/init.js				${LJS_LIBDIR}/Math/Cryptography/init.js
-	cp -f ${LIB_MATH_DIR}/Cryptography/Cryptography.o					${LJS_LIBDIR}/Math/Cryptography/Cryptography.so
-	cp -f ${LIB_MATH_DIR}/Cryptography/Cryptography.js					${LJS_LIBDIR}/Math/Cryptography/Cryptography.js
+	cp -f ${LIB_MATH_DIR}/Cryptography/init.js						${LJS_LIBDIR}/Math/Cryptography/init.js
+	cp -f ${LIB_MATH_DIR}/Cryptography/Cryptography.o				${LJS_LIBDIR}/Math/Cryptography/Cryptography.so
+	cp -f ${LIB_MATH_DIR}/Cryptography/Cryptography.js				${LJS_LIBDIR}/Math/Cryptography/Cryptography.js
 ########
-	cp -f ${LIB_MATH_DIR}/Cryptography/SHA1/init.js			${LJS_LIBDIR}/Math/Cryptography/SHA1/init.js
-	cp -f ${LIB_MATH_DIR}/Cryptography/SHA1/SHA1.o			${LJS_LIBDIR}/Math/Cryptography/SHA1/SHA1.so
-	cp -f ${LIB_MATH_DIR}/Cryptography/SHA1/SHA1.js			${LJS_LIBDIR}/Math/Cryptography/SHA1/SHA1.js
+	cp -f ${LIB_MATH_DIR}/Cryptography/Hashing/init.js				${LJS_LIBDIR}/Math/Cryptography/Hashing/init.js
+	cp -f ${LIB_MATH_DIR}/Cryptography/Hashing/Hashing.o			${LJS_LIBDIR}/Math/Cryptography/Hashing/Hashing.so
+	cp -f ${LIB_MATH_DIR}/Cryptography/Hashing/Hashing.js			${LJS_LIBDIR}/Math/Cryptography/Hashing/Hashing.js
+########
+	cp -f ${LIB_MATH_DIR}/Cryptography/Hashing/SHA1/init.js			${LJS_LIBDIR}/Math/Cryptography/Hashing/SHA1/init.js
+	cp -f ${LIB_MATH_DIR}/Cryptography/Hashing/SHA1/SHA1.o			${LJS_LIBDIR}/Math/Cryptography/Hashing/SHA1/SHA1.so
+	cp -f ${LIB_MATH_DIR}/Cryptography/Hashing/SHA1/SHA1.js			${LJS_LIBDIR}/Math/Cryptography/Hashing/SHA1/SHA1.js
+########
+	cp -f ${LIB_MATH_DIR}/Cryptography/Crypting/init.js				${LJS_LIBDIR}/Math/Cryptography/Crypting/init.js
+	cp -f ${LIB_MATH_DIR}/Cryptography/Crypting/Crypting.o			${LJS_LIBDIR}/Math/Cryptography/Crypting/Crypting.so
+	cp -f ${LIB_MATH_DIR}/Cryptography/Crypting/Crypting.js			${LJS_LIBDIR}/Math/Cryptography/Crypting/Crypting.js
 
 libmath_uninstall:
 

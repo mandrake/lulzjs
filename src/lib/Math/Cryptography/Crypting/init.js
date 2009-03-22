@@ -16,5 +16,11 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-Math.Cryptography.addAlgorithm("SHA1", Math.Cryptography.SHA1);
+require([
+    "Math/Math.so",
+        "Math/Cryptography/Cryptography.so", "Math/Cryptography/Cryptography.js",
+            "Crypting.so", "Crypting.js",
+]);
+
+Program.Crypting = Program.Math.Cryptography.Crypting;
 

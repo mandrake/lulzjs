@@ -8,20 +8,12 @@
 * (at your option) any later version.                                       *
 *                                                                           *
 * lulzJS is distributed in the hope that it will be useful.                 *
-* but WITHOUT ANY WARRANTY; without even the implied warranty o.            *
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See th.             *
+* but WITHOUT ANY WARRANTY; without even the implied warranty or            *
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the             *
 * GNU General Public License for more details.                              *
 *                                                                           *
 * You should have received a copy of the GNU General Public License         *
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require([
-    "Math.so",
-        "Cryptography/Cryptography.so", "Cryptography/Cryptography.js",
-            "Cryptography/Hashing/Hashing.so", "Cryptography/Hashing/Hashing.js",
-                "Cryptography/Hashing/SHA1/SHA1.so", "Cryptography/Hashing/SHA1/SHA1.js",
-
-            "Cryptography/Crypting/Crypting.so", "Cryptography/Crypting/Crypting.js",
-]);
 

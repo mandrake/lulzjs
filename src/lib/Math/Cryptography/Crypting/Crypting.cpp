@@ -16,12 +16,26 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require([
-    "Math.so",
-        "Cryptography/Cryptography.so", "Cryptography/Cryptography.js",
-            "Cryptography/Hashing/Hashing.so", "Cryptography/Hashing/Hashing.js",
-                "Cryptography/Hashing/SHA1/SHA1.so", "Cryptography/Hashing/SHA1/SHA1.js",
+#include "Crypting.h"
 
-            "Cryptography/Crypting/Crypting.so", "Cryptography/Crypting/Crypting.js",
-]);
+JSBool exec (JSContext* cx) { return Crypting_initialize(cx); }
+
+JSBool
+Crypting_initialize (JSContext* cx)
+{
+    JSObject* parent = JSVAL_TO_OBJECT(JS_EVAL(cx, "Math.Cryptography"));
+
+    JSObject* object = JS_DefineObject(
+        cx, parent,
+        Crypting_class.name, &Crypting_class, NULL, 
+        JSPROP_PERMANENT|JSPROP_READONLY|JSPROP_ENUMERATE);
+
+    if (object) {
+        JS_DefineFunctions(cx, object, Crypting_methods);
+
+        return JS_TRUE;
+    }
+
+    return JS_FALSE;
+}
 

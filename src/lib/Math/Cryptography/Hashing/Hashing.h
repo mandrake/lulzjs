@@ -16,12 +16,22 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require([
-    "Math.so",
-        "Cryptography/Cryptography.so", "Cryptography/Cryptography.js",
-            "Cryptography/Hashing/Hashing.so", "Cryptography/Hashing/Hashing.js",
-                "Cryptography/Hashing/SHA1/SHA1.so", "Cryptography/Hashing/SHA1/SHA1.js",
+#ifndef _SYSTEM_CRYPT_H
+#define _SYSTEM_CRYPT_H
 
-            "Cryptography/Crypting/Crypting.so", "Cryptography/Crypting/Crypting.js",
-]);
+#include "lulzjs.h"
 
+extern "C" JSBool exec (JSContext* cx);
+JSBool Hashing_initialize (JSContext* cx);
+
+static JSClass Hashing_class = {
+    "Hashing", 0,
+    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
+    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub
+};
+
+static JSFunctionSpec Hashing_methods[] = {
+    {NULL}
+};
+
+#endif

@@ -18,8 +18,9 @@
 
 #include "Sockets.h"
 
-char* __Sockets_getHostByName (const char* host);
+char*  __Sockets_getHostByName (const char* host);
 JSBool __Sockets_isIPv4 (const char* host);
+bool   __Sockets_initAddr (const char* host, int port, PRNetAddr* addr);
 
 JSBool exec (JSContext* cx) { return Sockets_initialize(cx); }
 
@@ -82,20 +83,13 @@ Sockets_connect (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval
     }
 
     SocketsInformation* data = (SocketsInformation*) JS_GetPrivate(cx, object);
-    PRNetAddr addr;
-
-    if (PR_StringToNetAddr(host, &addr) == PR_FAILURE) {
-        char* ip = __Sockets_getHostByName(host);
-
-        if (!ip) {
-            *rval = JSVAL_FALSE;
-            JS_LeaveLocalRootScope(cx);
-            JS_EndRequest(cx);
-            return JS_TRUE;
-        }
-
-        PR_StringToNetAddr(ip, &addr);
-        delete ip;
+    PRNetAddr addr; 
+    
+    if (!__Sockets_initAddr(host, port, &addr)) {
+        *rval = JSVAL_FALSE;
+        JS_LeaveLocalRootScope(cx);
+        JS_EndRequest(cx);
+        return JS_TRUE;
     }
 
     if (PR_Connect(data->socket, &addr, (timeout == -1)
@@ -140,18 +134,7 @@ Sockets_listen (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval*
         PR_InitializeNetAddr(PR_IpAddrAny, port, &addr);
     }
     else {
-        char* ip = __Sockets_getHostByName(JS_GetStringBytes(JS_ValueToString(cx, argv[0])));
-        
-        if (!ip) {
-            JS_ReportError(cx, "Couldn't resolve the hostname.");
-            JS_LeaveLocalRootScope(cx);
-            JS_EndRequest(cx);
-            return JS_FALSE;
-        }
-
-        PR_StringToNetAddr(ip, &addr);
-        PR_InitializeNetAddr(PR_IpAddrNull, port, &addr);
-        delete ip;
+        __Sockets_initAddr(JS_GetStringBytes(JS_ValueToString(cx, argv[0])), port, &addr);
     }
 
     int on = 1;
@@ -564,5 +547,43 @@ __Sockets_isIPv4 (const char* host)
     }
 
     return JS_TRUE;
+}
+
+bool
+__Sockets_initAddr (const char* host, int port, PRNetAddr* addr)
+{
+    std::string sHost = host;
+
+    if (PR_StringToNetAddr(sHost.c_str(), addr) == PR_FAILURE) {
+        char* ip = __Sockets_getHostByName(host);
+
+        if (!ip) {
+            std::string sIp;
+            std::string sPort;
+
+            if (sHost[0] == '[') {
+                std::string sIp   = sHost.substr(1, sHost.find_last_of("]")-1);
+                std::string sPort = sHost.substr(sHost.find_last_of("]")+1);
+            }
+            else {
+                std::string sIp   = sHost.substr(0, sHost.find_last_of(":"));
+                std::string sPort = sHost.substr(sHost.find_last_of(":")+1);
+            }
+
+            if (PR_StringToNetAddr(sHost.c_str(), addr) == PR_FAILURE) {
+                return false;
+            }
+
+            port = atoi(sPort.c_str());
+        }
+        else {
+            PR_StringToNetAddr(ip, addr);
+            delete ip;
+        }
+    }
+
+    if (port != -1) {
+        PR_InitializeNetAddr(PR_IpAddrNull, port, addr);
+    }
 }
 
