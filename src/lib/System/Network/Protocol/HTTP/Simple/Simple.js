@@ -16,7 +16,7 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-System.Net.Protocol.HTTP.Simple = {
+System.Network.Protocol.HTTP.Simple = {
     Get: function (url, options) {
         return new System.Net.Protocol.HTTP.Request(url, options).readToEnd();
     },

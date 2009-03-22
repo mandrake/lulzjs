@@ -16,14 +16,3 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require([
-    "System/System.so",
-        "System/Network/Network.so",
-            "Socket.so", "Socket.js",
-                "TCP.so",  "TCP.js",
-                "UDP.so",  "UDP.js",
-                "ICMP.so", "ICMP.js";
-                "RAW.so",  "RAW.js",
-]);
-
-Sockets = System.Network.Sockets;

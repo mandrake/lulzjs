@@ -16,7 +16,7 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-System.Net.Ports = {
+System.Network.Ports = {
     HTTP: 80,
     HTTPS: 443,
 

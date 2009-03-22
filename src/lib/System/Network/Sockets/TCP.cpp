@@ -16,14 +16,53 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require([
-    "System/System.so",
-        "System/Network/Network.so",
-            "Socket.so", "Socket.js",
-                "TCP.so",  "TCP.js",
-                "UDP.so",  "UDP.js",
-                "ICMP.so", "ICMP.js";
-                "RAW.so",  "RAW.js",
-]);
+#include "TCP.h"
 
-Sockets = System.Network.Sockets;
+JSBool exec (JSContext* cx) { return TCP_initialize(cx); }
+
+JSBool
+TCP_initialize (JSContext* cx)
+{
+    JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
+
+    JSObject* parent = JSVAL_TO_OBJECT(JS_EVAL(cx, "System.Network.Sockets"));
+
+    JSObject* object = JS_InitClass(
+        cx, parent, parent, &TCP_class,
+        TCP_constructor, 1, TCP_attributes, TCP_methods, NULL, TCP_static_methods
+    );
+
+    if (object) {
+        JS_LeaveLocalRootScope(cx);
+        JS_EndRequest(cx);
+        return JS_TRUE;
+    }
+
+    return JS_FALSE;
+}
+
+JSBool
+TCP_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
+{
+    TCPInformation* data = new TCPInformation;
+    JS_SetPrivate(cx, object, data);
+    data->socket = NULL;
+
+    return JS_TRUE;
+}
+
+void
+TCP_finalize (JSContext* cx, JSObject* object)
+{
+    JS_BeginRequest(cx);
+
+    TCPInformation* data = (TCPInformation*) JS_GetPrivate(cx, object);
+
+    if (data) {
+        delete data;
+    }
+
+    JS_EndRequest(cx);
+}
+

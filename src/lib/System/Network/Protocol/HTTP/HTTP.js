@@ -16,7 +16,7 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-Object.extend(System.Net.Protocol.HTTP, {
+Object.extend(System.Network.Protocol.HTTP, {
     parseResponse: function (text) {
         var matches = /^HTTP\/(.+) (\d+) (.*)$/.exec(text);
 

@@ -16,14 +16,53 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require([
-    "System/System.so",
-        "System/Network/Network.so",
-            "Socket.so", "Socket.js",
-                "TCP.so",  "TCP.js",
-                "UDP.so",  "UDP.js",
-                "ICMP.so", "ICMP.js";
-                "RAW.so",  "RAW.js",
-]);
+#include "UDP.h"
 
-Sockets = System.Network.Sockets;
+JSBool exec (JSContext* cx) { return UDP_initialize(cx); }
+
+JSBool
+UDP_initialize (JSContext* cx)
+{
+    JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
+
+    JSObject* parent = JSVAL_TO_OBJECT(JS_EVAL(cx, "System.Network.Sockets"));
+
+    JSObject* object = JS_InitClass(
+        cx, parent, parent, &UDP_class,
+        UDP_constructor, 1, UDP_attributes, UDP_methods, NULL, UDP_static_methods
+    );
+
+    if (object) {
+        JS_LeaveLocalRootScope(cx);
+        JS_EndRequest(cx);
+        return JS_TRUE;
+    }
+
+    return JS_FALSE;
+}
+
+JSBool
+UDP_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
+{
+    UDPInformation* data = new UDPInformation;
+    JS_SetPrivate(cx, object, data);
+    data->socket = NULL;
+
+    return JS_TRUE;
+}
+
+void
+UDP_finalize (JSContext* cx, JSObject* object)
+{
+    JS_BeginRequest(cx);
+
+    UDPInformation* data = (UDPInformation*) JS_GetPrivate(cx, object);
+
+    if (data) {
+        delete data;
+    }
+
+    JS_EndRequest(cx);
+}
+

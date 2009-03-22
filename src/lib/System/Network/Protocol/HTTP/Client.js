@@ -16,9 +16,7 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-System.Net.Protocol.HTTP.Client = Class.create({
-    __type__: "HTTPClient",
-
+System.Network.Protocol.HTTP.Client = Class.create({
     initialize: function (options) {
         this.options = Object.extend({
             timeout: 10,

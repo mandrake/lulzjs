@@ -16,14 +16,11 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require([
-    "System/System.so",
-        "System/Network/Network.so",
-            "Socket.so", "Socket.js",
-                "TCP.so",  "TCP.js",
-                "UDP.so",  "UDP.js",
-                "ICMP.so", "ICMP.js";
-                "RAW.so",  "RAW.js",
-]);
+#ifndef _SYSTEM_NETWORK_SOCKETS_ICMP_PRIVATE_H
+#define _SYSTEM_NETWORK_SOCKETS_ICMP_PRIVATE_H
 
-Sockets = System.Network.Sockets;
+typedef struct {
+    PRFileDesc* socket;
+} ICMPInformation;
+
+#endif

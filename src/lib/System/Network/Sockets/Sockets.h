@@ -16,8 +16,8 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-#ifndef _SYSTEM_NET_SOCKET_H
-#define _SYSTEM_NET_SOCKET_H
+#ifndef _SYSTEM_NETWORK_SOCKETS_H
+#define _SYSTEM_NETWORK_SOCKET_H
 
 #include "lulzjs.h"
 #include "prnetdb.h"
@@ -58,14 +58,14 @@ static JSFunctionSpec Sockets_methods[] = {
     {"write", Sockets_write,    0, 0, 0},
     {"read",  Sockets_read,     0, 0, 0},
  
-    JS_FS_END
+    {NULL}
 };
 
 static JSFunctionSpec Sockets_static_inherited_methods[] = {
-    {"writeTo",  Sockets_writeTo,    0, 0, 0},
-    {"readFrom", Sockets_readFrom,     0, 0, 0},
+    {"writeTo",  Sockets_writeTo,  0, 0, 0},
+    {"readFrom", Sockets_readFrom, 0, 0, 0},
 
-    JS_FS_END
+    {NULL}
 };
 
 
@@ -73,7 +73,7 @@ static JSFunctionSpec Sockets_static_methods[] = {
     {"getHostByName", Sockets_static_getHostByName, 0, 0, 0},
     {"isIPv4",        Sockets_static_isIPv4,        0, 0, 0},
 
-    JS_FS_END
+    {NULL}
 };
 
 #endif

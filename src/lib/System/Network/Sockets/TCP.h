@@ -16,14 +16,35 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require([
-    "System/System.so",
-        "System/Network/Network.so",
-            "Socket.so", "Socket.js",
-                "TCP.so",  "TCP.js",
-                "UDP.so",  "UDP.js",
-                "ICMP.so", "ICMP.js";
-                "RAW.so",  "RAW.js",
-]);
+#ifndef _SYSTEM_NETWORK_SOCKETS_TCP_H
+#define _SYSTEM_NETWORK_SOCKETS_TCP_H
 
-Sockets = System.Network.Sockets;
+#include "Sockets.h"
+
+extern "C" JSBool exec (JSContext* cx);
+JSBool TCP_initialize (JSContext* cx);
+
+JSBool TCP_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+void  TCP_finalize (JSContext* cx, JSObject* object); 
+
+static JSClass TCP_class = {
+    "TCP", JSCLASS_HAS_PRIVATE,
+    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
+    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, TCP_finalize
+};
+
+#include "TCP_private.h"
+
+static JSPropertySpec TCP_attributes[] = {
+    {NULL}
+};
+
+static JSFunctionSpec TCP_methods[] = {
+    JS_FS_END
+};
+
+static JSFunctionSpec TCP_static_methods[] = {
+    JS_FS_END
+};
+
+#endif

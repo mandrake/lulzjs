@@ -42,8 +42,9 @@ LIB_SYSTEM = \
 	${LIB_SYSTEM_DIR}/Environment/Environment.o \
 	${LIB_SYSTEM_DIR}/Console/Console.o \
 	${LIB_SYSTEM_DIR}/FileSystem/FileSystem.o ${LIB_SYSTEM_DIR}/FileSystem/File/File.o ${LIB_SYSTEM_DIR}/FileSystem/Directory/Directory.o \
-	${LIB_SYSTEM_DIR}/Network/Network.o ${LIB_SYSTEM_DIR}/Network/Sockets/Sockets.o ${LIB_SYSTEM_DIR}/Network/Protocol/Protocol.o \
-	${LIB_SYSTEM_DIR}/Network/Protocol/HTTP/HTTP.o \
+	${LIB_SYSTEM_DIR}/Network/Network.o \
+	${LIB_SYSTEM_DIR}/Network/Sockets/Sockets.o ${LIB_SYSTEM_DIR}/Network/Sockets/TCP.o ${LIB_SYSTEM_DIR}/Network/Sockets/UDP.o ${LIB_SYSTEM_DIR}/Network/Sockets/ICMP.o ${LIB_SYSTEM_DIR}/Network/Sockets/RAW.o \
+	${LIB_SYSTEM_DIR}/Network/Protocol/Protocol.o ${LIB_SYSTEM_DIR}/Network/Protocol/HTTP/HTTP.o \
 
 LIB_SYSTEM_CFLAGS  = ${CFLAGS}
 LIB_SYSTEM_LDFLAGS = ${LDFLAGS}
@@ -154,6 +155,13 @@ libsystem_install: libsystem
 	cp -f ${LIB_SYSTEM_DIR}/Network/Sockets/init.js						${LJS_LIBDIR}/System/Network/Sockets/init.js
 	cp -f ${LIB_SYSTEM_DIR}/Network/Sockets/Sockets.o					${LJS_LIBDIR}/System/Network/Sockets/Sockets.so
 	cp -f ${LIB_SYSTEM_DIR}/Network/Sockets/Sockets.js					${LJS_LIBDIR}/System/Network/Sockets/Sockets.js
+	cp -f ${LIB_SYSTEM_DIR}/Network/Sockets/TCP.o						${LJS_LIBDIR}/System/Network/Sockets/TCP.so
+	cp -f ${LIB_SYSTEM_DIR}/Network/Sockets/TCP.js						${LJS_LIBDIR}/System/Network/Sockets/TCP.js
+	cp -f ${LIB_SYSTEM_DIR}/Network/Sockets/UDP.o						${LJS_LIBDIR}/System/Network/Sockets/UDP.so
+	cp -f ${LIB_SYSTEM_DIR}/Network/Sockets/ICMP.o						${LJS_LIBDIR}/System/Network/Sockets/ICMP.so
+	cp -f ${LIB_SYSTEM_DIR}/Network/Sockets/ICMP.js						${LJS_LIBDIR}/System/Network/Sockets/ICMP.js
+	cp -f ${LIB_SYSTEM_DIR}/Network/Sockets/RAW.o						${LJS_LIBDIR}/System/Network/Sockets/RAW.so
+	cp -f ${LIB_SYSTEM_DIR}/Network/Sockets/RAW.js						${LJS_LIBDIR}/System/Network/Sockets/RAW.js
 #######
 	cp -f ${LIB_SYSTEM_DIR}/Network/Ports/init.js						${LJS_LIBDIR}/System/Network/Ports/init.js
 	cp -f ${LIB_SYSTEM_DIR}/Network/Ports/Ports.js						${LJS_LIBDIR}/System/Network/Ports/Ports.js

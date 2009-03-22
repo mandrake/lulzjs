@@ -16,7 +16,7 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-System.Net.Protocol.HTTP.Response = Class.create({
+System.Network.Protocol.HTTP.Response = Class.create({
     constructor: function (answer, headers, content) {
         this.answer  = answer;
         this.headers = headers;

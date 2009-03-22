@@ -18,9 +18,9 @@
 
 #include "Sockets.h"
 
-char*  __Sockets_getHostByName (const char* host);
-JSBool __Sockets_isIPv4 (const char* host);
-bool   __Sockets_initAddr (const char* host, int port, PRNetAddr* addr);
+char*    __Sockets_getHostByName (const char* host);
+JSBool   __Sockets_isIPv4 (const char* host);
+PRStatus __Sockets_initAddr (PRNetAddr* addr, const char* host, int port = -1);
 
 JSBool exec (JSContext* cx) { return Sockets_initialize(cx); }
 
@@ -65,29 +65,28 @@ JSBool
 Sockets_connect (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
 {
     char*    host;
-    int      port;
+    int      port    = -1;
     jsdouble timeout = -1;
 
     JS_BeginRequest(cx);
-    JS_EnterLocalRootScope(cx);
 
-    if (argc < 2 || !JS_ConvertArguments(cx, argc, argv, "si", &host, &port)) {
+    if (argc < 1) {
         JS_ReportError(cx, "Not enough parameters.");
-        JS_LeaveLocalRootScope(cx);
         JS_EndRequest(cx);
         return JS_FALSE;
     }
 
-    if (argc == 3) {
-        JS_ValueToNumber(cx, argv[2], &timeout);
+    switch (argc) {
+        case 3: JS_ValueToNumber(cx, argv[2], &timeout);
+        case 2: JS_ValueToInt32(cx, argv[1], &port);
+        case 1: host = JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
     }
 
     SocketsInformation* data = (SocketsInformation*) JS_GetPrivate(cx, object);
     PRNetAddr addr; 
     
-    if (!__Sockets_initAddr(host, port, &addr)) {
+    if (__Sockets_initAddr(&addr, host, port) == PR_FAILURE) {
         *rval = JSVAL_FALSE;
-        JS_LeaveLocalRootScope(cx);
         JS_EndRequest(cx);
         return JS_TRUE;
     }
@@ -97,11 +96,9 @@ Sockets_connect (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval
         : PR_MicrosecondsToInterval(timeout*1000000)) == PR_FAILURE)
     {
         PR_THROW_ERROR(cx);
-        JS_LeaveLocalRootScope(cx);
         JS_EndRequest(cx);
     }
 
-    JS_LeaveLocalRootScope(cx);
     JS_EndRequest(cx);
     return JS_TRUE;
 }
@@ -109,12 +106,13 @@ Sockets_connect (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval
 JSBool
 Sockets_listen (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
 {
-    int port;
-    int maxconn = 255;
+    char* host;
+    int   port    = -1;
+    int   maxconn = 255;
 
     JS_BeginRequest(cx);
 
-    if (argc < 2) {
+    if (argc < 1) {
         JS_ReportError(cx, "Not enough parameters.");
         JS_EndRequest(cx);
         return JS_FALSE;
@@ -125,17 +123,19 @@ Sockets_listen (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval*
     switch (argc) {
         case 3: JS_ValueToInt32(cx, argv[2], &maxconn);
         case 2: JS_ValueToInt32(cx, argv[1], &port);
+        case 1: host = JS_GetStringBytes(JS_ValueToString(cx, argv[0]));
     }
 
     SocketsInformation* data = (SocketsInformation*) JS_GetPrivate(cx, object);
     PRNetAddr addr;
 
-    if (JSVAL_IS_NULL(argv[0])) {
+    if (JSVAL_IS_NULL(argv[0]) || JSVAL_IS_VOID(argv[0])) {
         PR_InitializeNetAddr(PR_IpAddrAny, port, &addr);
     }
     else {
-        __Sockets_initAddr(JS_GetStringBytes(JS_ValueToString(cx, argv[0])), port, &addr);
+        __Sockets_initAddr(&addr, host, port);
     }
+    JS_LeaveLocalRootScope(cx);
 
     int on = 1;
     setsockopt(PR_GET_FD(data->socket), SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
@@ -145,7 +145,6 @@ Sockets_listen (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval*
     if (PR_Bind(data->socket, &addr) == PR_FAILURE) {
         JS_ResumeRequest(cx, req);
         PR_THROW_ERROR(cx);
-        JS_LeaveLocalRootScope(cx);
         JS_EndRequest(cx);
         return JS_FALSE;
     }
@@ -153,13 +152,11 @@ Sockets_listen (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval*
     if (PR_Listen(data->socket, maxconn) == PR_FAILURE) {
         JS_ResumeRequest(cx, req);
         PR_THROW_ERROR(cx);
-        JS_LeaveLocalRootScope(cx);
         JS_EndRequest(cx);
         return JS_FALSE;
     }
 
     JS_ResumeRequest(cx, req);
-    JS_LeaveLocalRootScope(cx);
     JS_EndRequest(cx);
     return JS_TRUE;
 }
@@ -244,15 +241,14 @@ Sockets_write (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* 
         }
     }
     JS_ResumeRequest(cx, req);
+    JS_LeaveLocalRootScope(cx);
 
     if (sent < 0) {
         PR_THROW_ERROR(cx);
-        JS_LeaveLocalRootScope(cx);
         JS_EndRequest(cx);
         return JS_FALSE;
     }
 
-    JS_LeaveLocalRootScope(cx);
     JS_EndRequest(cx);
     return JS_TRUE;
 }
@@ -271,8 +267,6 @@ Sockets_read (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval *r
         JS_EndRequest(cx);
         return JS_FALSE;
     }
-
-    JS_EnterLocalRootScope(cx);
 
     switch (argc) {
         case 3: JS_ValueToNumber(cx, argv[2], &timeout);
@@ -311,14 +305,12 @@ Sockets_read (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval *r
 
     if (received < 0) {
         PR_THROW_ERROR(cx);
-        JS_LeaveLocalRootScope(cx);
         JS_EndRequest(cx);
         return JS_FALSE;
     }
 
     *rval = STRING_TO_JSVAL(JS_NewString(cx, string, offset));
 
-    JS_LeaveLocalRootScope(cx);
     JS_EndRequest(cx);
     return JS_TRUE;
 }
@@ -373,15 +365,14 @@ Sockets_writeTo (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval
         }
     }
     JS_ResumeRequest(cx, req);
+    JS_LeaveLocalRootScope(cx);
 
     if (sent < 0) {
         PR_THROW_ERROR(cx);
-        JS_LeaveLocalRootScope(cx);
         JS_EndRequest(cx);
         return JS_FALSE;
     }
 
-    JS_LeaveLocalRootScope(cx);
     JS_EndRequest(cx);
     return JS_TRUE;
 }
@@ -494,9 +485,9 @@ __Sockets_getHostByName (const char* host)
     int offset = 0;
 
     offset += sprintf(&ip[offset], "%u.", (unsigned char) hp.h_name[0]);
-    offset += sprintf((ip+offset), "%u.", (unsigned char) hp.h_name[1]);
-    offset += sprintf((ip+offset), "%u.", (unsigned char) hp.h_name[2]);
-    offset += sprintf((ip+offset), "%u",  (unsigned char) hp.h_name[3]);
+    offset += sprintf(&ip[offset], "%u.", (unsigned char) hp.h_name[1]);
+    offset += sprintf(&ip[offset], "%u.", (unsigned char) hp.h_name[2]);
+    offset += sprintf(&ip[offset], "%u",  (unsigned char) hp.h_name[3]);
 
     return ip;
 }
@@ -549,41 +540,52 @@ __Sockets_isIPv4 (const char* host)
     return JS_TRUE;
 }
 
-bool
-__Sockets_initAddr (const char* host, int port, PRNetAddr* addr)
+PRStatus
+__Sockets_initAddr (PRNetAddr* addr, const char* host, int port)
 {
     std::string sHost = host;
 
     if (PR_StringToNetAddr(sHost.c_str(), addr) == PR_FAILURE) {
-        char* ip = __Sockets_getHostByName(host);
+        std::string sIp;
+        std::string sPort;
 
-        if (!ip) {
-            std::string sIp;
-            std::string sPort;
-
-            if (sHost[0] == '[') {
-                std::string sIp   = sHost.substr(1, sHost.find_last_of("]")-1);
-                std::string sPort = sHost.substr(sHost.find_last_of("]")+1);
-            }
-            else {
-                std::string sIp   = sHost.substr(0, sHost.find_last_of(":"));
-                std::string sPort = sHost.substr(sHost.find_last_of(":")+1);
-            }
-
-            if (PR_StringToNetAddr(sHost.c_str(), addr) == PR_FAILURE) {
-                return false;
-            }
-
-            port = atoi(sPort.c_str());
+        if (sHost[0] == '[') {
+            sIp   = sHost.substr(1, sHost.find_last_of("]")-1);
+            sPort = sHost.substr(sHost.find_last_of("]")+2);
         }
         else {
-            PR_StringToNetAddr(ip, addr);
-            delete ip;
+            sIp   = sHost.substr(0, sHost.find_last_of(":"));
+            sPort = sHost.substr(sHost.find_last_of(":")+1);
+        }
+
+        if (PR_StringToNetAddr(sIp.c_str(), addr) == PR_FAILURE) {
+            sPort = "";
+            if (sHost.find(":") != std::string::npos) {
+                sHost = sHost.substr(0, sHost.find_last_of(":"));
+                sPort = sHost.substr(sHost.find_last_of(":")+1);
+            }
+
+            char* ip = __Sockets_getHostByName(sHost.c_str());
+            sIp      = ip; delete [] ip;
+
+            if (PR_StringToNetAddr(sIp.c_str(), addr) == PR_FAILURE) {
+                return PR_FAILURE;
+            }
+        }
+
+        if (!sPort.empty()) {
+            port = atoi(sPort.c_str());
         }
     }
+    else {
+        return PR_FAILURE;
+    }
 
-    if (port != -1) {
+    if (port >= 0) {
         PR_InitializeNetAddr(PR_IpAddrNull, port, addr);
     }
+
+    return PR_SUCCESS;
 }
+
 

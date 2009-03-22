@@ -16,7 +16,7 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-System.Net.Protocol.HTTP.Request = Class.create({
+System.Network.Protocol.HTTP.Request = Class.create({
     constructor: function (url, options) {
         if (!url) {
             throw "You have to pass at least a url.";
