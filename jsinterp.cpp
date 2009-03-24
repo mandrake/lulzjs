@@ -169,7 +169,13 @@ js_FillPropertyCache(JSContext *cx, JSObject *obj, jsuword kshape,
         tmp = obj;
         for (;;) {
             tmp = OBJ_GET_PROTO(cx, tmp);
-            if (!tmp) {
+
+            /*
+             * We cannot cache properties coming from native objects behind
+             * non-native ones on the prototype chain. The non-natives can
+             * mutate in arbitrary way without changing any shapes.
+             */
+            if (!tmp || !OBJ_IS_NATIVE(tmp)) {
                 PCMETER(cache->noprotos++);
                 *entryp = NULL;
                 return;
@@ -425,11 +431,8 @@ js_FullTestPropertyCache(JSContext *cx, jsbytecode *pc,
 JS_STATIC_ASSERT(PCVAL_NULL == 0);
 
 void
-js_FlushPropertyCache(JSContext *cx)
+js_PurgePropertyCache(JSContext *cx, JSPropertyCache *cache)
 {
-    JSPropertyCache *cache;
-
-    cache = &JS_PROPERTY_CACHE(cx);
     if (cache->empty) {
         ASSERT_CACHE_IS_EMPTY(cache);
         return;
@@ -497,7 +500,7 @@ js_FlushPropertyCache(JSContext *cx)
 }
 
 void
-js_FlushPropertyCacheForScript(JSContext *cx, JSScript *script)
+js_PurgePropertyCacheForScript(JSContext *cx, JSScript *script)
 {
     JSPropertyCache *cache;
     JSPropCacheEntry *entry;

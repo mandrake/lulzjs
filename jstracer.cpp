@@ -1224,7 +1224,7 @@ TraceRecorder::TraceRecorder(JSContext* cx, VMSideExit* _anchor, Fragment* _frag
     this->outer = outer;
     this->generatedTraceableNative = new JSTraceableNative();
     JS_ASSERT(generatedTraceableNative);
-    
+
     debug_only_v(printf("recording starting from %s:%u@%u\n",
                         ti->treeFileName, ti->treeLineNumber, ti->treePCOffset);)
     debug_only_v(printf("globalObj=%p, shape=%d\n", (void*)this->globalObj, OBJ_SHAPE(this->globalObj));)
@@ -4303,6 +4303,9 @@ TraceRecorder::monitorRecording(JSContext* cx, TraceRecorder* tr, JSOp op)
        the if (JSOP_IS_IMACOP(x)) conditions at compile time. */
 
     bool flag;
+#ifdef DEBUG
+    bool wasInImacro = (cx->fp->imacpc != NULL);
+#endif
     switch (op) {
       default: goto stop_recording;
 # define OPDEF(x,val,name,token,length,nuses,ndefs,prec,format)               \
@@ -4314,6 +4317,8 @@ TraceRecorder::monitorRecording(JSContext* cx, TraceRecorder* tr, JSOp op)
 # include "jsopcode.tbl"
 # undef OPDEF
     }
+
+    JS_ASSERT_IF(!wasInImacro, cx->fp->imacpc == NULL);
 
     /* Process deepAbort() requests now. */
     if (tr->wasDeepAborted()) {
@@ -4678,19 +4683,17 @@ TraceRecorder::popAbortStack()
 }
 
 void
-js_FlushJITOracle(JSContext* cx)
+js_PurgeJITOracle()
 {
-    if (!TRACING_ENABLED(cx))
-        return;
     oracle.clear();
 }
 
 JS_REQUIRES_STACK void
-js_FlushScriptFragments(JSContext* cx, JSScript* script)
+js_PurgeScriptFragments(JSContext* cx, JSScript* script)
 {
     if (!TRACING_ENABLED(cx))
         return;
-    debug_only_v(printf("Flushing fragments for JSScript %p.\n", (void*)script);)
+    debug_only_v(printf("Purging fragments for JSScript %p.\n", (void*)script);)
     JSTraceMonitor* tm = &JS_TRACE_MONITOR(cx);
     for (size_t i = 0; i < FRAGMENT_TABLE_SIZE; ++i) {
         for (VMFragment **f = &(tm->vmfragments[i]); *f; ) {
@@ -6674,6 +6677,24 @@ TraceRecorder::newArray(JSObject *ctor, uint32 argc, jsval *argv, jsval *rval)
     return true;
 }
 
+bool
+TraceRecorder::newString(JSObject* ctor, jsval& arg, jsval* rval)
+{
+    if (!JSVAL_IS_PRIMITIVE(arg))
+        return call_imacro(new_imacros.String);
+
+    LIns* proto_ins;
+    if (!getClassPrototype(ctor, proto_ins))
+        return false;
+
+    LIns* args[] = { stringify(arg), proto_ins, cx_ins };
+    LIns* obj_ins = lir->insCall(&js_String_tn_ci, args);
+    guard(false, lir->ins_eq0(obj_ins), OOM_EXIT);
+
+    set(rval, obj_ins);
+    return true;
+}
+
 JS_REQUIRES_STACK bool
 TraceRecorder::emitNativeCall(JSTraceableNative* known, uintN argc, LIns* args[])
 {
@@ -6936,9 +6957,14 @@ TraceRecorder::functionCall(bool constructing, uintN argc)
     if (FUN_SLOW_NATIVE(fun)) {
         JSNative native = fun->u.n.native;
         if (native == js_Array)
-            return newArray(FUN_OBJECT(fun), argc, &tval + 1, &fval);
-        if (native == js_String && argc == 1 && !constructing) {
+            return newArray(JSVAL_TO_OBJECT(fval), argc, &tval + 1, &fval);
+        if (native == js_String) {
+            if (argc != 1)
+                ABORT_TRACE("can't trace String when not called with a single argument");
+
             jsval& v = stackval(0 - argc);
+            if (constructing)
+                return newString(JSVAL_TO_OBJECT(fval), v, &fval);
             if (!JSVAL_IS_PRIMITIVE(v))
                 return call_imacro(call_imacros.String);
             set(&fval, stringify(v));
@@ -9555,8 +9581,10 @@ TraceRecorder::record_JSOP_LENGTH()
     LIns* v_ins;
     if (OBJ_IS_ARRAY(cx, obj)) {
         if (OBJ_IS_DENSE_ARRAY(cx, obj)) {
-            if (!guardDenseArray(obj, obj_ins, BRANCH_EXIT))
+            if (!guardDenseArray(obj, obj_ins, BRANCH_EXIT)) {
                 JS_NOT_REACHED("OBJ_IS_DENSE_ARRAY but not?!?");
+                return false;
+            }
         } else {
             if (!guardClass(obj, obj_ins, &js_SlowArrayClass, snapshot(BRANCH_EXIT)))
                 ABORT_TRACE("can't trace length property access on non-array");
