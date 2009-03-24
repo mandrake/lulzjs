@@ -38,7 +38,7 @@ require(["Object.so", "Object.js"]);
 
 require([
     "Class.js", "Function.js", "Date.js", "RegExp.js",
-    "String.js", "Template.js", "Enumerable.js", "Array.js",
+    "Enumerable.js", "String.js", "Template.js", "Array.js",
     "Bytes.js", "Hash.js", "Number.js", "Range.js",
     "JSON.js", "XML.js", "random.js"
 ]);

@@ -35,6 +35,8 @@ Object.extend(String, {
     }
 }, Object.Flags.None);
 
+Object.extend(String.prototype, Enumerable, true);
+
 Object.extend(String.prototype, (function() {
     function prepareReplacement (replacement) {
         if (Object.is(replacement, Function)) return replacement;
@@ -71,6 +73,17 @@ Object.extend(String.prototype, (function() {
                 result += source;
                 source  = "";
             }
+        }
+
+        return result;
+    };
+
+    function splitEvery (num) {
+        var result = new Array;
+        var str    = this.toArray();
+
+        for (let i = 0; i < this.length; i += num) {
+            result.push(str.slice(i, i+num).join(''));
         }
 
         return result;
@@ -273,6 +286,7 @@ Object.extend(String.prototype, (function() {
         strip:          strip,
         toArray:        toArray,
         next:           next,
+        splitEvery:     splitEvery,
         times:          times,
         count:          count,
         inspect:        inspect,
