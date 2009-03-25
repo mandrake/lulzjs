@@ -34,13 +34,12 @@ Try = {
 }
 
 // Standard classes stuff
-require(["Object.so", "Object.js"]);
-
 require([
-    "Class.js", "Function.js", "Date.js", "RegExp.js",
-    "Enumerable.js", "String.js", "Template.js", "Array.js",
-    "Bytes.js", "Hash.js", "Number.js", "Range.js",
-    "JSON.js", "XML.js", "random.js"
+    "Object.so", "Object.js",
+        "Class.js", "Function.js", "Date.js", "RegExp.js",
+        "Enumerable.js", "String.js", "Template.js", "Array.js",
+        "Bytes.js", "Hash.js", "Number.js", "Range.js",
+        "JSON.js", "XML.js", "random.js"
 ]);
 
 [Function, Array, String, Number, RegExp, Date, XML].each(function (obj) {
@@ -51,30 +50,4 @@ require([
 
 //Program.GCExecution = new PeriodicalExecuter(function(){Program.GC()}, 60);
 
-// Isolate the used variables.
-(function(){
-    require("System/System.so");
-    require("System/Environment/Environment.so");
-
-    // Include the environment paths in the current script.
-    var PATH = System.Environment.JSPATH;
-    if (PATH) {
-        let re = /([^:])+/g;
-    
-        let path;
-        while (path = re.exec(PATH)) {
-            __PATH__.push(path[0]);
-        }
-    }
-
-    // Include the standards include following the environment variable.
-    var INCLUDE = System.Environment.JSINCLUDE;
-    if (INCLUDE) {
-        let re = /([^:])+/g;
-    
-        let file;
-        while (file = re.exec(INCLUDE)) {
-            include(file[0]);
-        }
-    }
-})();
+require("init.so");

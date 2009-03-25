@@ -28,7 +28,7 @@ CORE_LDFLAGS = ${LDFLAGS} -lreadline -lncurses
 ## LIB_CORE ##
 LIB_CORE_DIR = src/core/Core
 LIB_CORE = \
-	${LIB_CORE_DIR}/Core.o ${LIB_CORE_DIR}/Object.o
+	${LIB_CORE_DIR}/Core.o ${LIB_CORE_DIR}/Object.o ${LIB_CORE_DIR}/init.o
 
 LIB_CORE_CFLAGS  = ${CFLAGS}
 LIB_CORE_LDFLAGS = ${LDFLAGS}
@@ -85,6 +85,7 @@ libcore_install: libcore
 	mkdir -p ${LJS_LIBDIR}/Core
 ########
 	cp -f  ${LIB_CORE_DIR}/init.js				${LJS_LIBDIR}/Core/init.js
+	cp -f  ${LIB_CORE_DIR}/init.o				${LJS_LIBDIR}/Core/init.so
 	cp -f  ${LIB_CORE_DIR}/Core.o				${LJS_LIBDIR}/Core/Core.so
 ########
 	cp -rf ${LIB_CORE_DIR}/Object.o				${LJS_LIBDIR}/Core/Object.so

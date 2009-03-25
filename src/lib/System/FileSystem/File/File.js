@@ -40,7 +40,7 @@ File.addMethods((function() {
 
     function readToEnd () {
         var tmp       = this.position;
-        var ret       = this.read(this.size);
+        var ret       = this.read(this.size-1);
         this.position = tmp;
 
         return ret;

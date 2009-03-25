@@ -307,9 +307,13 @@ __Core_getRootPath (JSContext* cx, std::string fileName)
 const char*
 __Core_getScriptName (JSContext* cx)
 {
-    JSStackFrame* fp = NULL;
-    fp = JS_FrameIterator(cx, &fp); fp = JS_FrameIterator(cx, &fp);
-    JSScript* script = JS_GetFrameScript(cx, fp);
+    JSStackFrame* fp     = NULL;
+    JSScript*     script = NULL;
+    
+    while (!script) {
+        fp = JS_FrameIterator(cx, &fp);
+        script = JS_GetFrameScript(cx, fp);
+    }
 
     return JS_GetScriptFilename(cx, script);
 }
