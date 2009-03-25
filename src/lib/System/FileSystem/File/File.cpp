@@ -72,11 +72,17 @@ File_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsva
 
     FileInformation* data = new FileInformation;
     data->descriptor      = NULL;
+    data->desc            = NULL;
     JS_SetPrivate(cx, object, data);
 
     if (argc) {
         jsval ret;
         JS_CallFunctionName(cx, object, "open", argc, argv, &ret);
+
+        if (JS_IsExceptionPending(cx)) {
+            JS_ReportPendingException(cx);
+            return JS_FALSE;
+        }
     }
 
     JS_EndRequest(cx);
@@ -93,6 +99,9 @@ File_finalize (JSContext* cx, JSObject* object)
     if (data) {
         if (data->descriptor) {
             fclose(data->descriptor);
+        }
+        if (data->desc) {
+            delete data->desc;
         }
 
         delete data;
@@ -170,7 +179,7 @@ File_position_set (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
     JS_BeginRequest(cx);
     jsdouble offset; JS_ValueToNumber(cx, *vp, &offset);
 
-    if (offset > data->desc.st_size) {
+    if (offset > data->desc->st_size) {
         JS_ReportError(cx, "The offset is bigger than the file size.");
         return JS_FALSE;
     }
@@ -184,8 +193,13 @@ JSBool
 File_size_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
 {
     FileInformation* data = (FileInformation*) JS_GetPrivate(cx, obj);
+
+    if (!data->desc) {
+        *vp = JSVAL_NULL;
+        return JS_TRUE;
+    }
     
-    JS_NewNumberValue(cx, data->desc.st_size, vp);
+    JS_NewNumberValue(cx, data->desc->st_size, vp);
     return JS_TRUE;
 }
 
@@ -194,10 +208,15 @@ File_permission_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
 {
     FileInformation* data = (FileInformation*) JS_GetPrivate(cx, obj);
 
+    if (!data->desc) {
+        *vp = JSVAL_NULL;
+        return JS_TRUE;
+    }
+
     JS_BeginRequest(cx);
     JS_EnterLocalRootScope(cx);
 
-    char bitString[10]; snprintf(bitString, 9, "%lo", (long unsigned) data->desc.st_mode);
+    char bitString[10]; snprintf(bitString, 9, "%lo", (long unsigned) data->desc->st_mode);
     int  bits = atoi(bitString);
 
     // % 1000 gets the file mode bits.
@@ -228,9 +247,9 @@ File_last_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
     JS_EnterLocalRootScope(cx);
 
     jsval access, modification, change;
-    JS_NewNumberValue(cx, data->desc.st_atime*1000, &access);
-    JS_NewNumberValue(cx, data->desc.st_mtime*1000, &modification);
-    JS_NewNumberValue(cx, data->desc.st_ctime*1000, &change);
+    JS_NewNumberValue(cx, data->desc->st_atime*1000, &access);
+    JS_NewNumberValue(cx, data->desc->st_mtime*1000, &modification);
+    JS_NewNumberValue(cx, data->desc->st_ctime*1000, &change);
 
     jsval argv[] = {access, modification, change};
     JSObject* last;
@@ -292,15 +311,18 @@ File_open (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval
 
     data->path = filename;
     data->mode = mode;
+    data->desc = new struct stat;
 
-    if (stat(data->path.c_str(), &data->desc)) {
-        JS_ReportError(cx, "The file couldn't be found.");
-        return JS_FALSE;
-    }
+    if (mode == MODE_READ || mode == MODE_NONE) {
+        if (stat(data->path.c_str(), data->desc)) {
+            JS_ReportError(cx, "The file couldn't be found.");
+            return JS_FALSE;
+        }
 
-    if (!S_ISREG(data->desc.st_mode)) {
-        JS_ReportError(cx, "The path doesn't lead to a regular file.");
-        return JS_FALSE;
+        if (!S_ISREG(data->desc->st_mode)) {
+            JS_ReportError(cx, "The path doesn't lead to a regular file.");
+            return JS_FALSE;
+        }
     }
 
     if (mode != MODE_NONE) {
@@ -319,6 +341,10 @@ File_open (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval
             break;
         }
         data->descriptor = fopen64(data->path.c_str(), realMode.c_str());
+
+        if (mode != MODE_READ) {
+            stat(data->path.c_str(), data->desc);
+        }
     }
 
     JS_LeaveLocalRootScope(cx);
@@ -335,6 +361,11 @@ File_close (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rva
     JS_BeginRequest(cx);
 
     FileInformation* data = (FileInformation*) JS_GetPrivate(cx, object);
+
+    if (data->desc) {
+        delete data->desc;
+        data->desc = NULL;
+    }
 
     if (data->descriptor) {
         fclose(data->descriptor);
