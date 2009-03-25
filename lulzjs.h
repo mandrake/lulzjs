@@ -14,6 +14,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 #include <ctype.h>
 #include <limits.h>
 #include <time.h>
@@ -39,6 +40,9 @@ extern JS_PUBLIC_API(jsdouble) js_parseFloat (JSContext* cx, jsval number);
 
 extern JS_PUBLIC_API(jsval) js_eval (JSContext* cx, const char* string);
 #define JS_EVAL(cx, string) js_eval(cx, string)
+
+extern JS_PUBLIC_API(char*) js_strndup (JSContext* cx, const char* string, size_t n);
+#define JS_strndup(cx, string, n) js_strndup(cx, string, n)
 
 typedef struct {
     char*  bytecode;

@@ -15,8 +15,13 @@ js_CallFunctionWithNew (JSContext* cx, jsval obj, uintN argc, jsval *argv, JSObj
         return JS_FALSE;
     }
 
-    JSClass* klass = FUN_CLASP(GET_FUNCTION_PRIVATE(cx, classObj));
-    *newObject     = JS_NewObject(cx, klass, NULL, NULL);
+    if (FUN_NATIVE(GET_FUNCTION_PRIVATE(cx, classObj))) {
+        JSClass* klass = FUN_CLASP(GET_FUNCTION_PRIVATE(cx, classObj));
+        *newObject     = JS_NewObject(cx, klass, NULL, NULL);
+    }
+    else {
+        *newObject = JS_NewObject(cx, NULL, NULL, NULL);
+    }
 
     if (!*newObject) {
         return JS_FALSE;
@@ -136,6 +141,27 @@ js_eval (JSContext* cx, const char* string)
     JS_LeaveLocalRootScope(cx);
     JS_EndRequest(cx);
     return ret;
+}
+
+char*
+js_strndup (JSContext* cx, const char* string, size_t n)
+{
+    size_t len = strlen(string);
+    if (n > len) {
+        n = len;
+    }
+
+    JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
+
+    char* newString = (char*) JS_malloc(cx, (len+1)*sizeof(char));
+    memcpy(newString, string, n);
+    newString[n] = '\0';
+
+    JS_LeaveLocalRootScope(cx);
+    JS_EndRequest(cx);
+
+    return newString;
 }
 
 JSBool
