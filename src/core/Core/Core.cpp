@@ -309,11 +309,11 @@ __Core_getScriptName (JSContext* cx)
 {
     JSStackFrame* fp     = NULL;
     JSScript*     script = NULL;
-    
-    while (!script) {
-        fp = JS_FrameIterator(cx, &fp);
+
+    do {
+        fp     = JS_FrameIterator(cx, &fp);
         script = JS_GetFrameScript(cx, fp);
-    }
+    } while (!script && fp);
 
     return JS_GetScriptFilename(cx, script);
 }
