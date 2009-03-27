@@ -4740,6 +4740,57 @@ testNewString.jitstats = {
 };
 test(testNewString);
 
+function testStringIndexOf()
+{
+  var passed = true;
+  var str = "foo";
+  for (var i = 0; passed && i < 5; i++)
+    passed = str.indexOf("f") == 0;
+  for (var i = 0; passed && i < 5; i++)
+    passed = str.indexOf("f", 1) == -1;
+  for (var i = 0; passed && i < 5; i++)
+    passed = str.lastIndexOf("o") == 2;
+  for (var i = 0; passed && i < 5; i++)
+    passed = str.lastIndexOf("o", 1) == 1;
+  return passed;
+}
+testStringIndexOf.expected = true;
+testStringIndexOf.jitstats = {
+  recorderStarted:  4,
+  recorderAborted: 0,
+  traceCompleted: 4,
+  sideExitIntoInterpreter: 4
+};
+test(testStringIndexOf);
+
+function testCallConv()
+{
+    var a = 0, b = 0, c = 0, d = 0, e = 0;
+
+    for (var i = 0; i < 20; i++) {
+        a += TestCallConv_i_idi(1,2,3);
+    }
+
+    for (var i = 0; i < 20; i++) {
+        b += TestCallConv_i_iiiiii(1,2,3,4,5,6);
+    }
+
+    for (var i = 0; i < 20; i++) {
+        c += TestCallConv_i_iidi(1,2,3,4);
+    }
+
+    for (var i = 0; i < 20; i++) {
+        d += TestCallConv_i_ididd(1,2,3,4,5);
+    }
+
+    for (var i = 0; i < 20; i++) {
+        e += TestCallConv_d_dd(1,2);
+    }
+
+    return [a, b, c, d, e].toString();
+}
+testCallConv.expected = "120,420,200,300,60";
+test(testCallConv);
 
 /*****************************************************************************
  *                                                                           *

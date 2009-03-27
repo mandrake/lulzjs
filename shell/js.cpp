@@ -110,7 +110,12 @@ size_t gStackChunkSize = 8192;
 
 /* Assume that we can not use more than 5e5 bytes of C stack by default. */
 static size_t gMaxStackSize = 500000;
+
+#ifdef JS_THREADSAFE
+static PRUintn gStackBaseThreadIndex;
+#else
 static jsuword gStackBase;
+#endif
 
 static size_t gScriptStackQuota = JS_DEFAULT_SCRIPT_STACK_QUOTA;
 
@@ -314,7 +319,7 @@ ShellOperationCallback(JSContext *cx)
 }
 
 static void
-SetContextOptions(JSContext *cx)
+SetThreadStackLimit(JSContext *cx)
 {
     jsuword stackLimit;
 
@@ -324,13 +329,27 @@ SetContextOptions(JSContext *cx)
          */
         stackLimit = 0;
     } else {
-#if JS_STACK_GROWTH_DIRECTION > 0
-        stackLimit = gStackBase + gMaxStackSize;
+        jsuword stackBase;
+#ifdef JS_THREADSAFE
+        stackBase = (jsuword) PR_GetThreadPrivate(gStackBaseThreadIndex);
 #else
-        stackLimit = gStackBase - gMaxStackSize;
+        stackBase = gStackBase;
+#endif
+        JS_ASSERT(stackBase != 0);
+#if JS_STACK_GROWTH_DIRECTION > 0
+        stackLimit = stackBase + gMaxStackSize;
+#else
+        stackLimit = stackBase - gMaxStackSize;
 #endif
     }
     JS_SetThreadStackLimit(cx, stackLimit);
+
+}
+
+static void
+SetContextOptions(JSContext *cx)
+{
+    SetThreadStackLimit(cx);
     JS_SetScriptStackQuota(cx, gScriptStackQuota);
     JS_SetOperationCallback(cx, ShellOperationCallback);
 }
@@ -2974,9 +2993,13 @@ DoScatteredWork(JSContext *cx, ScatterThreadData *td)
 static void
 RunScatterThread(void *arg)
 {
+    int stackDummy;
     ScatterThreadData *td;
     ScatterStatus st;
     JSContext *cx;
+
+    if (PR_FAILURE == PR_SetThreadPrivate(gStackBaseThreadIndex, &stackDummy))
+        return;
 
     td = (ScatterThreadData *)arg;
     cx = td->cx;
@@ -2992,7 +3015,7 @@ RunScatterThread(void *arg)
 
     /* We are good to go. */
     JS_SetContextThread(cx);
-    JS_SetThreadStackLimit(cx, 0);
+    SetThreadStackLimit(cx);
     JS_BeginRequest(cx);
     DoScatteredWork(cx, td);
     JS_EndRequest(cx);
@@ -3536,6 +3559,48 @@ Snarf(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return JS_TRUE;
 }
 
+#ifdef JS_TRACER
+#define MAKE_TCC_FN(_x)                                                 \
+static JSBool                                                           \
+_x(JSContext *cx, uintN argc, jsval *vp) {                              \
+    jsdouble dv = 0;                                                    \
+    for (uintN i = 0; i < argc; i++) {                                  \
+        jsdouble d;                                                     \
+        if (!JS_ValueToNumber(cx, JS_ARGV(cx, vp)[i], &d))              \
+            return JS_FALSE;                                            \
+        dv += d;                                                        \
+    }                                                                   \
+    return JS_NewNumberValue(cx, dv, vp);                               \
+}
+
+MAKE_TCC_FN(TestCallConv_i_idi)
+MAKE_TCC_FN(TestCallConv_i_iiiiii)
+MAKE_TCC_FN(TestCallConv_i_iidi)
+MAKE_TCC_FN(TestCallConv_i_ididd)
+MAKE_TCC_FN(TestCallConv_d_dd)
+
+static int32 JS_FASTCALL TestCallConv_i_idi_tn(int32 a, jsdouble b, int32 c)
+{ return a + b + c; }
+
+static int32 JS_FASTCALL TestCallConv_i_iiiiii_tn(int32 a, int32 b, int32 c, int32 d, int32 e, int32 f)
+{ return a + b + c + d + e + f; }
+
+static int32 JS_FASTCALL TestCallConv_i_iidi_tn(int32 a, int32 b, jsdouble c, int32 d)
+{ return a + b + c + d; }
+
+static int32 JS_FASTCALL TestCallConv_i_ididd_tn(int32 a, jsdouble c, int32 d, double e, double f)
+{ return a + c + d + e + f; }
+
+static jsdouble JS_FASTCALL TestCallConv_d_dd_tn(jsdouble a, jsdouble b)
+{ return a + b; }
+
+JS_DEFINE_TRCINFO_1(TestCallConv_i_idi, (3, (static, INT32, TestCallConv_i_idi_tn, INT32, DOUBLE, INT32, 0, 0)))
+JS_DEFINE_TRCINFO_1(TestCallConv_i_iiiiii, (6, (static, INT32, TestCallConv_i_iiiiii_tn, INT32, INT32, INT32, INT32, INT32, INT32, 0, 0)))
+JS_DEFINE_TRCINFO_1(TestCallConv_i_iidi, (4, (static, INT32, TestCallConv_i_iidi_tn, INT32, INT32, DOUBLE, INT32, 0, 0)))
+JS_DEFINE_TRCINFO_1(TestCallConv_i_ididd, (5, (static, INT32, TestCallConv_i_ididd_tn, INT32, DOUBLE, INT32, DOUBLE, DOUBLE, 0, 0)))
+JS_DEFINE_TRCINFO_1(TestCallConv_d_dd, (2, (static, DOUBLE, TestCallConv_d_dd_tn, DOUBLE, DOUBLE, 0, 0)))
+#endif
+
 /* We use a mix of JS_FS and JS_FN to test both kinds of natives. */
 static JSFunctionSpec shell_functions[] = {
     JS_FS("version",        Version,        0,0,0),
@@ -3609,6 +3674,13 @@ static JSFunctionSpec shell_functions[] = {
     JS_FS("snarf",          Snarf,        0,0,0),
     JS_FN("timeout",        Timeout,        1,0),
     JS_FN("elapsed",        Elapsed,        0,0),
+#ifdef JS_TRACER
+    JS_TN("TestCallConv_i_idi", TestCallConv_i_idi_tn, 3, 0, TestCallConv_i_idi_trcinfo),
+    JS_TN("TestCallConv_i_iiiiii", TestCallConv_i_iiiiii_tn, 3, 0, TestCallConv_i_iiiiii_trcinfo),
+    JS_TN("TestCallConv_i_iidi", TestCallConv_i_iidi_tn, 3, 0, TestCallConv_i_iidi_trcinfo),
+    JS_TN("TestCallConv_i_ididd", TestCallConv_i_ididd_tn, 3, 0, TestCallConv_i_ididd_trcinfo),
+    JS_TN("TestCallConv_d_dd", TestCallConv_d_dd_tn, 3, 0, TestCallConv_d_dd_trcinfo),
+#endif
     JS_FS_END
 };
 
@@ -3703,6 +3775,13 @@ static const char *const shell_help_messages[] = {
 "  Get/Set the limit in seconds for the execution time for the current context.\n"
 "  A negative value (default) means that the execution time is unlimited.",
 "elapsed()                Execution time elapsed for the current context.\n",
+#ifdef JS_TRACER
+"TestCallConv_i_idi(a,b,c) Sum arguments",
+"TestCallConv_i_iiiiii(a,b,c,d,e,f) Sum arguments",
+"TestCallConv_i_iidi(a,b,c,d) Sum arguments",
+"TestCallConv_i_ididd(a,b,c,d,e) Sum arguments",
+"TestCallConv_d_dd(a,b) Sum arguments",
+#endif
 };
 
 /* Help messages must match shell functions. */
@@ -3821,8 +3900,47 @@ split_setup(JSContext *cx)
  * they're being called for tutorial purposes.
  */
 enum its_tinyid {
-    ITS_COLOR, ITS_HEIGHT, ITS_WIDTH, ITS_FUNNY, ITS_ARRAY, ITS_RDONLY
+    ITS_COLOR, ITS_HEIGHT, ITS_WIDTH, ITS_FUNNY, ITS_ARRAY, ITS_RDONLY,
+    ITS_CUSTOM, ITS_CUSTOMRDONLY
 };
+
+static JSBool
+its_getter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+  jsval *val = (jsval *) JS_GetPrivate(cx, obj);
+  *vp = val ? *val : JSVAL_VOID;
+  return JS_TRUE;
+}
+
+static JSBool
+its_setter(JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+  jsval *val = (jsval *) JS_GetPrivate(cx, obj);
+  if (val) {
+      *val = *vp;
+      return JS_TRUE;
+  }
+
+  val = new jsval;
+  if (!val) {
+      JS_ReportOutOfMemory(cx);
+      return JS_FALSE;
+  }
+
+  if (!JS_AddRoot(cx, val)) {
+      delete val;
+      return JS_FALSE;
+  }
+
+  if (!JS_SetPrivate(cx, obj, (void*)val)) {
+      JS_RemoveRoot(cx, val);
+      delete val;
+      return JS_FALSE;
+  }
+
+  *val = *vp;
+  return JS_TRUE;
+}
 
 static JSPropertySpec its_props[] = {
     {"color",           ITS_COLOR,      JSPROP_ENUMERATE,       NULL, NULL},
@@ -3831,6 +3949,10 @@ static JSPropertySpec its_props[] = {
     {"funny",           ITS_FUNNY,      JSPROP_ENUMERATE,       NULL, NULL},
     {"array",           ITS_ARRAY,      JSPROP_ENUMERATE,       NULL, NULL},
     {"rdonly",          ITS_RDONLY,     JSPROP_READONLY,        NULL, NULL},
+    {"custom",          ITS_CUSTOM,     JSPROP_ENUMERATE,
+                        its_getter,     its_setter},
+    {"customRdOnly",    ITS_CUSTOMRDONLY, JSPROP_ENUMERATE | JSPROP_READONLY,
+                        its_getter,     its_setter},
     {NULL,0,0,NULL,NULL}
 };
 
@@ -4046,12 +4168,19 @@ its_convert(JSContext *cx, JSObject *obj, JSType type, jsval *vp)
 static void
 its_finalize(JSContext *cx, JSObject *obj)
 {
+    jsval *rootedVal;
     if (its_noisy)
         fprintf(gOutFile, "finalizing it\n");
+    rootedVal = (jsval *) JS_GetPrivate(cx, obj);
+    if (rootedVal) {
+      JS_RemoveRoot(cx, rootedVal);
+      JS_SetPrivate(cx, obj, NULL);
+      delete rootedVal;
+    }
 }
 
 static JSClass its_class = {
-    "It", JSCLASS_NEW_RESOLVE | JSCLASS_NEW_ENUMERATE,
+    "It", JSCLASS_NEW_RESOLVE | JSCLASS_NEW_ENUMERATE | JSCLASS_HAS_PRIVATE,
     its_addProperty,  its_delProperty,  its_getProperty,  its_setProperty,
     (JSEnumerateOp)its_enumerate, (JSResolveOp)its_resolve,
     its_convert,      its_finalize,
@@ -4284,11 +4413,11 @@ global_resolve(JSContext *cx, JSObject *obj, jsval id, uintN flags,
 }
 
 JSClass global_class = {
-    "global", JSCLASS_NEW_RESOLVE | JSCLASS_GLOBAL_FLAGS,
+    "global", JSCLASS_NEW_RESOLVE | JSCLASS_GLOBAL_FLAGS | JSCLASS_HAS_PRIVATE,
     JS_PropertyStub,  JS_PropertyStub,
     JS_PropertyStub,  JS_PropertyStub,
     global_enumerate, (JSResolveOp) global_resolve,
-    JS_ConvertStub,   JS_FinalizeStub,
+    JS_ConvertStub,   its_finalize,
     JSCLASS_NO_OPTIONAL_MEMBERS
 };
 
@@ -4522,7 +4651,15 @@ main(int argc, char **argv, char **envp)
 #ifdef HAVE_SETLOCALE
     setlocale(LC_ALL, "");
 #endif
-    gStackBase = (jsuword)&stackDummy;
+
+#ifdef JS_THREADSAFE
+    if (PR_FAILURE == PR_NewThreadPrivateIndex(&gStackBaseThreadIndex, NULL) ||
+        PR_FAILURE == PR_SetThreadPrivate(gStackBaseThreadIndex, &stackDummy)) {
+        return 1;
+    }
+#else
+    gStackBase = (jsuword) &stackDummy;
+#endif
 
 #ifdef XP_OS2
    /* these streams are normally line buffered on OS/2 and need a \n, *
@@ -4572,6 +4709,13 @@ main(int argc, char **argv, char **envp)
     if (!JS_DefineProperties(cx, it, its_props))
         return 1;
     if (!JS_DefineFunctions(cx, it, its_methods))
+        return 1;
+
+    if (!JS_DefineProperty(cx, glob, "custom", JSVAL_VOID, its_getter,
+                           its_setter, 0))
+        return 1;
+    if (!JS_DefineProperty(cx, glob, "customRdOnly", JSVAL_VOID, its_getter,
+                           its_setter, JSPROP_READONLY))
         return 1;
 
 #ifdef JSDEBUGGER
