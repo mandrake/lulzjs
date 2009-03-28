@@ -95,6 +95,21 @@ Directory_finalize (JSContext* cx, JSObject* object)
 }
 
 JSBool
+Directory_opened_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
+{
+    DirectoryInformation* data = (DirectoryInformation*) JS_GetPrivate(cx, obj);
+
+    if (data->descriptor) {
+        *vp = JSVAL_TRUE;
+    }
+    else {
+        *vp = JSVAL_FALSE;
+    }
+
+    return JS_TRUE;
+}
+
+JSBool
 Directory_name_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
 {
     DirectoryInformation* data = (DirectoryInformation*) JS_GetPrivate(cx, obj);

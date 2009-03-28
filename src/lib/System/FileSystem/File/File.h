@@ -49,6 +49,10 @@ static JSClass File_class = {
 
 #include "private.h"
 
+JSBool File_opened_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
+
+JSBool File_path_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
+
 JSBool File_path_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
 JSBool File_path_set (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
 
@@ -61,6 +65,8 @@ JSBool File_last_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
 
 
 static JSPropertySpec File_attributes[] = {
+    {"opened", 0, 0, File_opened_get, NULL},
+
     {"path",     0, 0, File_path_get,     File_path_set},
     {"position", 0, 0, File_position_get, File_position_set},
 

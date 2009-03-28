@@ -111,6 +111,21 @@ File_finalize (JSContext* cx, JSObject* object)
 }
 
 JSBool
+File_opened_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
+{
+    FileInformation* data = (FileInformation*) JS_GetPrivate(cx, obj);
+
+    if (data->descriptor) {
+        *vp = JSVAL_TRUE;
+    }
+    else {
+        *vp = JSVAL_FALSE;
+    }
+
+    return JS_TRUE;
+}
+
+JSBool
 File_path_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
 {
     FileInformation* data = (FileInformation*) JS_GetPrivate(cx, obj);

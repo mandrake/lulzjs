@@ -39,6 +39,8 @@ static JSClass Directory_class = {
     JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, Directory_finalize
 };
 
+JSBool Directory_opened_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
+
 JSBool Directory_name_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
 JSBool Directory_path_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
 JSBool Directory_length_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
@@ -51,6 +53,8 @@ JSBool Directory_permission_get (JSContext *cx, JSObject *obj, jsval idval, jsva
 JSBool Directory_last_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
 
 static JSPropertySpec Directory_attributes[] = {
+    {"opened", 0, 0, Directory_opened_get, NULL},
+
     {"path",   0, 0, Directory_path_get,   NULL},
     {"length", 0, 0, Directory_length_get, NULL},
 
