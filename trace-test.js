@@ -4740,57 +4740,56 @@ testNewString.jitstats = {
 };
 test(testNewString);
 
-function testStringIndexOf()
+function testWhileObjectOrNull()
 {
-  var passed = true;
-  var str = "foo";
-  for (var i = 0; passed && i < 5; i++)
-    passed = str.indexOf("f") == 0;
-  for (var i = 0; passed && i < 5; i++)
-    passed = str.indexOf("f", 1) == -1;
-  for (var i = 0; passed && i < 5; i++)
-    passed = str.lastIndexOf("o") == 2;
-  for (var i = 0; passed && i < 5; i++)
-    passed = str.lastIndexOf("o", 1) == 1;
-  return passed;
+  try
+  {
+    for (var i = 0; i < 3; i++)
+    {
+      var o = { p: { p: null } };
+      while (o.p)
+        o = o.p;
+    }
+    return "pass";
+  }
+  catch (e)
+  {
+    return "threw exception: " + e;
+  }
 }
-testStringIndexOf.expected = true;
-testStringIndexOf.jitstats = {
-  recorderStarted:  4,
+testWhileObjectOrNull.expected = "pass";
+test(testWhileObjectOrNull);
+
+function testDenseArrayProp()
+{
+    [].__proto__.x = 1;
+    ({}).__proto__.x = 2;
+    var a = [[],[],[],({}).__proto__];
+    for (var i = 0; i < a.length; ++i)
+        uneval(a[i].x);
+    delete [].__proto__.x;
+    delete ({}).__proto__.x;
+    return "ok";
+}
+testDenseArrayProp.expected = "ok";
+test(testDenseArrayProp);
+
+function testNewWithNonNativeProto()
+{
+  function f() { }
+  var a = f.prototype = [];
+  for (var i = 0; i < 5; i++)
+    var o = new f();
+  return Object.getPrototypeOf(o) === a && o.splice === Array.prototype.splice;
+}
+testNewWithNonNativeProto.expected = true;
+testNewWithNonNativeProto.jitstats = {
+  recorderStarted: 1,
   recorderAborted: 0,
-  traceCompleted: 4,
-  sideExitIntoInterpreter: 4
+  sideExitIntoInterpreter: 1
 };
-test(testStringIndexOf);
+test(testNewWithNonNativeProto);
 
-function testCallConv()
-{
-    var a = 0, b = 0, c = 0, d = 0, e = 0;
-
-    for (var i = 0; i < 20; i++) {
-        a += TestCallConv_i_idi(1,2,3);
-    }
-
-    for (var i = 0; i < 20; i++) {
-        b += TestCallConv_i_iiiiii(1,2,3,4,5,6);
-    }
-
-    for (var i = 0; i < 20; i++) {
-        c += TestCallConv_i_iidi(1,2,3,4);
-    }
-
-    for (var i = 0; i < 20; i++) {
-        d += TestCallConv_i_ididd(1,2,3,4,5);
-    }
-
-    for (var i = 0; i < 20; i++) {
-        e += TestCallConv_d_dd(1,2);
-    }
-
-    return [a, b, c, d, e].toString();
-}
-testCallConv.expected = "120,420,200,300,60";
-test(testCallConv);
 
 /*****************************************************************************
  *                                                                           *
@@ -5104,4 +5103,4 @@ test(testGlobalProtoAccess);
 if (gReportSummary) {
     print("\npassed:", passes.length && passes.join(","));
     print("\nFAILED:", fails.length && fails.join(","));
- }
+}

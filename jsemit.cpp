@@ -46,6 +46,7 @@
 #endif
 #include <string.h>
 #include "jstypes.h"
+#include "jsstdint.h"
 #include "jsarena.h" /* Added by JSIFY */
 #include "jsutil.h" /* Added by JSIFY */
 #include "jsbit.h"
@@ -156,8 +157,8 @@ UpdateDepth(JSContext *cx, JSCodeGenerator *cg, ptrdiff_t target)
     jsbytecode *pc;
     JSOp op;
     const JSCodeSpec *cs;
-    uintN extra, depth;
-    intN nuses, ndefs;
+    uintN extra, depth, nuses;
+    intN ndefs;
 
     pc = CG_CODE(cg, target);
     op = (JSOp) *pc;
@@ -176,9 +177,7 @@ UpdateDepth(JSContext *cx, JSCodeGenerator *cg, ptrdiff_t target)
             cg->maxStackDepth = depth;
     }
 
-    nuses = cs->nuses;
-    if (nuses < 0)
-        nuses = js_GetVariableStackUseLength(op, pc);
+    nuses = js_GetStackUses(cs, op, pc);
     cg->stackDepth -= nuses;
     JS_ASSERT(cg->stackDepth >= 0);
     if (cg->stackDepth < 0) {
@@ -6282,8 +6281,8 @@ js_EmitTree(JSContext *cx, JSCodeGenerator *cg, JSParseNode *pn)
             break;
         }
 
-        JS_ASSERT(pn->pn_type == TOK_XMLLIST || pn->pn_count != 0);
-        switch (pn->pn_head ? pn->pn_head->pn_type : TOK_XMLLIST) {
+        JS_ASSERT(PN_TYPE(pn) == TOK_XMLLIST || pn->pn_count != 0);
+        switch (pn->pn_head ? PN_TYPE(pn->pn_head) : TOK_XMLLIST) {
           case TOK_XMLETAGO:
             JS_ASSERT(0);
             /* FALL THROUGH */

@@ -46,6 +46,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "jstypes.h"
+#include "jsstdint.h"
 #include "jsarena.h" /* Added by JSIFY */
 #include "jsutil.h" /* Added by JSIFY */
 #include "jsclist.h"
@@ -3236,6 +3237,8 @@ LookupResult(JSContext *cx, JSObject *obj, JSObject *obj2, JSProperty *prop)
         rval = SPROP_HAS_VALID_SLOT(sprop, OBJ_SCOPE(obj2))
                ? LOCKED_OBJ_GET_SLOT(obj2, sprop->slot)
                : JSVAL_TRUE;
+    } else if (OBJ_IS_DENSE_ARRAY(cx, obj2)) {
+        rval = js_GetDenseArrayElementValue(obj2, prop);
     } else {
         /* XXX bad API: no way to return "defined but value unknown" */
         rval = JSVAL_TRUE;
@@ -3544,7 +3547,7 @@ JS_GetPropertyDescriptorById(JSContext *cx, JSObject *obj, jsid id, uintN flags,
 {
     CHECK_REQUEST(cx);
 
-    return GetPropertyAttributesById(cx, obj, id, flags, JS_TRUE, desc);
+    return GetPropertyAttributesById(cx, obj, id, flags, JS_FALSE, desc);
 }
 
 JS_PUBLIC_API(JSBool)

@@ -45,6 +45,7 @@
 #include <string.h>
 #include <math.h>
 #include "jstypes.h"
+#include "jsstdint.h"
 #include "jsarena.h" /* Added by JSIFY */
 #include "jsutil.h" /* Added by JSIFY */
 #include "jsprf.h"
@@ -1131,9 +1132,8 @@ js_Invoke(JSContext *cx, uintN argc, jsval *vp, uintN flags)
          * XXX better to call that hook without converting
          * XXX the only thing that needs fixing is liveconnect
          *
-         * Try converting to function, for closure and API compatibility.
-         * We attempt the conversion under all circumstances for 1.2, but
-         * only if there is a call op defined otherwise.
+         * FIXME bug 408416: try converting to function, for API compatibility
+         * if there is a call op defined.
          */
         if ((ops == &js_ObjectOps) ? clasp->call : ops->call) {
             ok = clasp->convert(cx, funobj, JSTYPE_FUNCTION, &v);
@@ -1174,8 +1174,18 @@ have_fun:
         if (FUN_INTERPRETED(fun)) {
             native = NULL;
             script = fun->u.i.script;
+            JS_ASSERT(script);
         } else {
             native = fun->u.n.native;
+            if (!native) {
+                /*
+                 * FIXME bug 485905: we should disallow native functions with
+                 * null fun->u.n.native.
+                 */
+                *vp = (flags & JSINVOKE_CONSTRUCT) ? vp[1] : JSVAL_VOID;
+                ok = JS_TRUE;
+                goto out2;
+            }
             script = NULL;
             nslots += fun->u.n.extra;
         }
@@ -1298,6 +1308,7 @@ have_fun:
     frame.down = cx->fp;
     frame.annotation = NULL;
     frame.scopeChain = NULL;    /* set below for real, after cx->fp is set */
+    frame.blockChain = NULL;
     frame.regs = NULL;
     frame.imacpc = NULL;
     frame.slots = NULL;
@@ -1306,7 +1317,7 @@ have_fun:
     frame.flags = flags | rootedArgsFlag;
     frame.dormantNext = NULL;
     frame.xmlNamespace = NULL;
-    frame.blockChain = NULL;
+    frame.displaySave = NULL;
 
     MUST_FLOW_THROUGH("out");
     cx->fp = &frame;
@@ -1315,8 +1326,33 @@ have_fun:
     hook = cx->debugHooks->callHook;
     hookData = NULL;
 
-    /* call the hook if present */
-    if (hook && (native || script))
+    if (native) {
+        /* If native, use caller varobj and scopeChain for eval. */
+        JS_ASSERT(!frame.varobj);
+        JS_ASSERT(!frame.scopeChain);
+        if (frame.down) {
+            frame.varobj = frame.down->varobj;
+            frame.scopeChain = frame.down->scopeChain;
+        }
+
+        /* But ensure that we have a scope chain. */
+        if (!frame.scopeChain)
+            frame.scopeChain = parent;
+    } else {
+        /* Use parent scope so js_GetCallObject can find the right "Call". */
+        frame.scopeChain = parent;
+        if (JSFUN_HEAVYWEIGHT_TEST(fun->flags)) {
+            /* Scope with a call object parented by the callee's parent. */
+            if (!js_GetCallObject(cx, &frame)) {
+                ok = JS_FALSE;
+                goto out;
+            }
+        }
+        frame.slots = sp - fun->u.i.nvars;
+    }
+
+    /* Call the hook if present after we fully initialized the frame. */
+    if (hook)
         hookData = hook(cx, &frame, JS_TRUE, 0, cx->debugHooks->callHookData);
 
     /* Call the function, either a native method or an interpreted script. */
@@ -1329,44 +1365,15 @@ have_fun:
         /* Set by JS_SetCallReturnValue2, used to return reference types. */
         cx->rval2set = JS_FALSE;
 #endif
-
-        /* If native, use caller varobj and scopeChain for eval. */
-        JS_ASSERT(!frame.varobj);
-        JS_ASSERT(!frame.scopeChain);
-        if (frame.down) {
-            frame.varobj = frame.down->varobj;
-            frame.scopeChain = frame.down->scopeChain;
-        }
-
-        /* But ensure that we have a scope chain. */
-        if (!frame.scopeChain)
-            frame.scopeChain = parent;
-
-        frame.displaySave = NULL;
         ok = native(cx, frame.thisp, argc, frame.argv, &frame.rval);
         JS_RUNTIME_METER(cx->runtime, nativeCalls);
 #ifdef DEBUG_NOT_THROWING
         if (ok && !alreadyThrowing)
             ASSERT_NOT_THROWING(cx);
 #endif
-    } else if (script) {
-        /* Use parent scope so js_GetCallObject can find the right "Call". */
-        frame.scopeChain = parent;
-        if (JSFUN_HEAVYWEIGHT_TEST(fun->flags)) {
-            /* Scope with a call object parented by the callee's parent. */
-            if (!js_GetCallObject(cx, &frame)) {
-                ok = JS_FALSE;
-                goto out;
-            }
-        }
-        frame.slots = sp - fun->u.i.nvars;
-
-        ok = js_Interpret(cx);
     } else {
-        /* fun might be onerror trying to report a syntax error in itself. */
-        frame.scopeChain = NULL;
-        frame.displaySave = NULL;
-        ok = JS_TRUE;
+        JS_ASSERT(script);
+        ok = js_Interpret(cx);
     }
 
 out:
@@ -2038,12 +2045,11 @@ js_DoIncDec(JSContext *cx, const JSCodeSpec *cs, jsval *vp, jsval *vp2)
 #ifdef DEBUG
 
 JS_STATIC_INTERPRET JS_REQUIRES_STACK void
-js_TraceOpcode(JSContext *cx, jsint len)
+js_TraceOpcode(JSContext *cx)
 {
     FILE *tracefp;
     JSStackFrame *fp;
     JSFrameRegs *regs;
-    JSOp prevop;
     intN ndefs, n, nuses;
     jsval *siter;
     JSString *str;
@@ -2053,10 +2059,22 @@ js_TraceOpcode(JSContext *cx, jsint len)
     JS_ASSERT(tracefp);
     fp = cx->fp;
     regs = fp->regs;
-    if (len != 0) {
-        prevop = (JSOp) regs->pc[-len];
-        ndefs = js_CodeSpec[prevop].ndefs;
-        if (ndefs != 0) {
+
+    /*
+     * Operations in prologues don't produce interesting values, and
+     * js_DecompileValueGenerator isn't set up to handle them anyway.
+     */
+    if (cx->tracePrevOp != JSOP_LIMIT && regs->pc >= fp->script->main) {
+        ndefs = js_GetStackDefs(cx, &js_CodeSpec[cx->tracePrevOp],
+                                cx->tracePrevOp, fp->script, regs->pc);
+
+        /*
+         * If there aren't that many elements on the stack, then 
+         * we have probably entered a new frame, and printing output
+         * would just be misleading.
+         */
+        if (ndefs != 0 &&
+            ndefs < regs->sp - fp->slots) {
             for (n = -ndefs; n < 0; n++) {
                 char *bytes = js_DecompileValueGenerator(cx, n, regs->sp[n],
                                                          NULL);
@@ -2087,7 +2105,7 @@ js_TraceOpcode(JSContext *cx, jsint len)
                     regs->pc - fp->script->code,
                     JS_FALSE, tracefp);
     op = (JSOp) *regs->pc;
-    nuses = js_CodeSpec[op].nuses;
+    nuses = js_GetStackUses(&js_CodeSpec[op], op, regs->pc);
     if (nuses != 0) {
         for (n = -nuses; n < 0; n++) {
             char *bytes = js_DecompileValueGenerator(cx, n, regs->sp[n],
@@ -2101,6 +2119,10 @@ js_TraceOpcode(JSContext *cx, jsint len)
         }
         fprintf(tracefp, " @ %u\n", (uintN) (regs->sp - StackBase(fp)));
     }
+    cx->tracePrevOp = op;
+
+    /* It's nice to have complete traces when debugging a crash.  */
+    fflush(tracefp);
 }
 
 #endif /* DEBUG */
@@ -2527,6 +2549,30 @@ js_Interpret(JSContext *cx)
 # define JS_EXTENSION_(s) s
 #endif
 
+# ifdef DEBUG
+    /*
+     * We call this macro from BEGIN_CASE in threaded interpreters,
+     * and before entering the switch in non-threaded interpreters.
+     * However, reaching such points doesn't mean we've actually
+     * fetched an OP from the instruction stream: some opcodes use
+     * 'op=x; DO_OP()' to let another opcode's implementation finish
+     * their work, and many opcodes share entry points with a run of
+     * consecutive BEGIN_CASEs.
+     * 
+     * Take care to trace OP only when it is the opcode fetched from
+     * the instruction stream, so the trace matches what one would
+     * expect from looking at the code.  (We do omit POPs after SETs;
+     * unfortunate, but not worth fixing.)
+     */
+#  define TRACE_OPCODE(OP)  JS_BEGIN_MACRO                                    \
+                                if (JS_UNLIKELY(cx->tracefp != NULL) &&       \
+                                    (OP) == *regs.pc)                         \
+                                    js_TraceOpcode(cx);                       \
+                            JS_END_MACRO
+# else
+#  define TRACE_OPCODE(OP)  ((void) 0)
+# endif
+
 #if JS_THREADED_INTERP
     static void *const normalJumpTable[] = {
 # define OPDEF(op,val,name,token,length,nuses,ndefs,prec,format) \
@@ -2564,15 +2610,6 @@ js_Interpret(JSContext *cx)
                                 op = (JSOp) *(regs.pc += (n));                \
                                 DO_OP();                                      \
                             JS_END_MACRO
-
-# ifdef DEBUG
-#  define TRACE_OPCODE(OP)  JS_BEGIN_MACRO                                    \
-                                if (cx->tracefp)                              \
-                                    js_TraceOpcode(cx, len);                  \
-                            JS_END_MACRO
-# else
-#  define TRACE_OPCODE(OP)  (void)0
-# endif
 
 # define BEGIN_CASE(OP)     L_##OP: TRACE_OPCODE(OP); CHECK_RECORDER();
 # define END_CASE(OP)       DO_NEXT_OP(OP##_LENGTH);
@@ -2839,13 +2876,10 @@ js_Interpret(JSContext *cx)
       advance_pc:
         regs.pc += len;
         op = (JSOp) *regs.pc;
-# ifdef DEBUG
-        if (cx->tracefp)
-            js_TraceOpcode(cx, len);
-# endif
 
       do_op:
         CHECK_RECORDER();
+        TRACE_OPCODE(op);
         switchOp = intN(op) | switchMask;
       do_switch:
         switch (switchOp) {
@@ -5029,8 +5063,23 @@ js_Interpret(JSContext *cx)
                     }
 #endif
                     regs.sp = vp + 1;
-                    if (!ok)
-                        goto error;
+                    if (!ok) {
+                        /*
+                         * If we are executing the JSOP_NEXTITER imacro and a Stopiteration
+                         * exception is raised, transform it into a JSVAL_HOLE return value.
+                         * The tracer generates equivalent code by calling CatchStopIteration_tn.
+                         */
+                        if (fp->imacpc && *fp->imacpc == JSOP_NEXTITER &&
+                            cx->throwing && js_ValueIsStopIteration(cx->exception)) {
+                            // pc may point to JSOP_DUP here due to bug 474854.
+                            JS_ASSERT(*regs.pc == JSOP_CALL || *regs.pc == JSOP_DUP);
+                            cx->throwing = JS_FALSE;
+                            cx->exception = JSVAL_VOID;
+                            regs.sp[-1] = JSVAL_HOLE;
+                        } else {
+                            goto error;
+                        }
+                    }
                     TRACE_0(FastNativeCallComplete);
                     goto end_call;
                 }

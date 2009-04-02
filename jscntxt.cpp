@@ -45,6 +45,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "jstypes.h"
+#include "jsstdint.h"
 #include "jsarena.h" /* Added by JSIFY */
 #include "jsutil.h" /* Added by JSIFY */
 #include "jsclist.h"
@@ -1556,7 +1557,7 @@ js_ReportValueErrorFlags(JSContext *cx, uintN flags, const uintN errorNumber,
 
 #if defined DEBUG && defined XP_UNIX
 /* For gdb usage. */
-void js_traceon(JSContext *cx)  { cx->tracefp = stderr; }
+void js_traceon(JSContext *cx)  { cx->tracefp = stderr; cx->tracePrevOp = JSOP_LIMIT; }
 void js_traceoff(JSContext *cx) { cx->tracefp = NULL; }
 #endif
 

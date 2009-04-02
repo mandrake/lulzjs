@@ -45,6 +45,7 @@
 #include <string.h>
 #include <stdarg.h>
 #include "jstypes.h"
+#include "jsstdint.h"
 #include "jsarena.h" /* Added by JSIFY */
 #include "jsutil.h" /* Added by JSIFY */
 #include "jsapi.h"
@@ -70,6 +71,9 @@
 #include "jstracer.h"
 using namespace avmplus;
 using namespace nanojit;
+
+/* Amount of memory in the RE fragmento before flushing. */
+#define MAX_MEM_IN_RE_FRAGMENTO (1 << 20)
 #endif
 
 typedef enum REOp {
@@ -2437,7 +2441,8 @@ class RegExpNativeCompiler {
 #endif
         return JS_TRUE;
     fail:
-        if (lirbuf->outOMem() || oom) {
+        if (lirbuf->outOMem() || oom || 
+            js_OverfullFragmento(fragmento, MAX_MEM_IN_RE_FRAGMENTO)) {
             fragmento->clearFrags();
             lirbuf->rewind();
         } else {

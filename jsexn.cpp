@@ -45,6 +45,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "jstypes.h"
+#include "jsstdint.h"
 #include "jsbit.h"
 #include "jsutil.h" /* Added by JSIFY */
 #include "jsprf.h"
@@ -65,9 +66,6 @@
 /* Forward declarations for js_ErrorClass's initializer. */
 static JSBool
 Exception(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval);
-
-static void
-exn_finalize(JSContext *cx, JSObject *obj);
 
 static void
 exn_trace(JSTracer *trc, JSObject *obj);

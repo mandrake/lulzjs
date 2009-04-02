@@ -1859,13 +1859,8 @@ DisassWithSrc(JSContext *cx, JSObject *obj, uintN argc, jsval *argv,
 static JSBool
 Tracing(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-    JSBool bval;
-    JSString *str;
+    FILE *file;
 
-#if JS_THREADED_INTERP
-    JS_ReportError(cx, "tracing not supported in JS_THREADED_INTERP builds");
-    return JS_FALSE;
-#else
     if (argc == 0) {
         *rval = BOOLEAN_TO_JSVAL(cx->tracefp != 0);
         return JS_TRUE;
@@ -1873,24 +1868,39 @@ Tracing(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 
     switch (JS_TypeOfValue(cx, argv[0])) {
       case JSTYPE_NUMBER:
-        bval = JSVAL_IS_INT(argv[0])
-               ? JSVAL_TO_INT(argv[0])
-               : (jsint) *JSVAL_TO_DOUBLE(argv[0]);
+      case JSTYPE_BOOLEAN: {
+        JSBool bval;
+        if (!JS_ValueToBoolean(cx, argv[0], &bval))
+            goto bad_argument;
+        file = bval ? stderr : NULL;
         break;
-      case JSTYPE_BOOLEAN:
-        bval = JSVAL_TO_BOOLEAN(argv[0]);
-        break;
-      default:
-        str = JS_ValueToString(cx, argv[0]);
-        if (!str)
+      }
+      case JSTYPE_STRING: {
+        char *name = JS_GetStringBytes(JSVAL_TO_STRING(argv[0]));
+        file = fopen(name, "w");
+        if (!file) {
+            JS_ReportError(cx, "tracing: couldn't open output file %s: %s", 
+                           name, strerror(errno));
             return JS_FALSE;
-        JS_ReportError(cx, "tracing: illegal argument %s",
-                       JS_GetStringBytes(str));
-        return JS_FALSE;
+        }
+        break;
+      }
+      default:
+          goto bad_argument;
     }
-    cx->tracefp = bval ? stderr : NULL;
+    if (cx->tracefp && cx->tracefp != stderr)
+      fclose((FILE *)cx->tracefp);
+    cx->tracefp = file;
+    cx->tracePrevOp = JSOP_LIMIT;
     return JS_TRUE;
-#endif
+
+ bad_argument:
+    JSString *str = JS_ValueToString(cx, argv[0]);
+    if (!str)
+        return JS_FALSE;
+    JS_ReportError(cx, "tracing: illegal argument %s",
+                   JS_GetStringBytes(str));
+    return JS_FALSE;
 }
 
 static void
@@ -3559,48 +3569,6 @@ Snarf(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return JS_TRUE;
 }
 
-#ifdef JS_TRACER
-#define MAKE_TCC_FN(_x)                                                 \
-static JSBool                                                           \
-_x(JSContext *cx, uintN argc, jsval *vp) {                              \
-    jsdouble dv = 0;                                                    \
-    for (uintN i = 0; i < argc; i++) {                                  \
-        jsdouble d;                                                     \
-        if (!JS_ValueToNumber(cx, JS_ARGV(cx, vp)[i], &d))              \
-            return JS_FALSE;                                            \
-        dv += d;                                                        \
-    }                                                                   \
-    return JS_NewNumberValue(cx, dv, vp);                               \
-}
-
-MAKE_TCC_FN(TestCallConv_i_idi)
-MAKE_TCC_FN(TestCallConv_i_iiiiii)
-MAKE_TCC_FN(TestCallConv_i_iidi)
-MAKE_TCC_FN(TestCallConv_i_ididd)
-MAKE_TCC_FN(TestCallConv_d_dd)
-
-static int32 JS_FASTCALL TestCallConv_i_idi_tn(int32 a, jsdouble b, int32 c)
-{ return a + b + c; }
-
-static int32 JS_FASTCALL TestCallConv_i_iiiiii_tn(int32 a, int32 b, int32 c, int32 d, int32 e, int32 f)
-{ return a + b + c + d + e + f; }
-
-static int32 JS_FASTCALL TestCallConv_i_iidi_tn(int32 a, int32 b, jsdouble c, int32 d)
-{ return a + b + c + d; }
-
-static int32 JS_FASTCALL TestCallConv_i_ididd_tn(int32 a, jsdouble c, int32 d, double e, double f)
-{ return a + c + d + e + f; }
-
-static jsdouble JS_FASTCALL TestCallConv_d_dd_tn(jsdouble a, jsdouble b)
-{ return a + b; }
-
-JS_DEFINE_TRCINFO_1(TestCallConv_i_idi, (3, (static, INT32, TestCallConv_i_idi_tn, INT32, DOUBLE, INT32, 0, 0)))
-JS_DEFINE_TRCINFO_1(TestCallConv_i_iiiiii, (6, (static, INT32, TestCallConv_i_iiiiii_tn, INT32, INT32, INT32, INT32, INT32, INT32, 0, 0)))
-JS_DEFINE_TRCINFO_1(TestCallConv_i_iidi, (4, (static, INT32, TestCallConv_i_iidi_tn, INT32, INT32, DOUBLE, INT32, 0, 0)))
-JS_DEFINE_TRCINFO_1(TestCallConv_i_ididd, (5, (static, INT32, TestCallConv_i_ididd_tn, INT32, DOUBLE, INT32, DOUBLE, DOUBLE, 0, 0)))
-JS_DEFINE_TRCINFO_1(TestCallConv_d_dd, (2, (static, DOUBLE, TestCallConv_d_dd_tn, DOUBLE, DOUBLE, 0, 0)))
-#endif
-
 /* We use a mix of JS_FS and JS_FN to test both kinds of natives. */
 static JSFunctionSpec shell_functions[] = {
     JS_FS("version",        Version,        0,0,0),
@@ -3674,13 +3642,6 @@ static JSFunctionSpec shell_functions[] = {
     JS_FS("snarf",          Snarf,        0,0,0),
     JS_FN("timeout",        Timeout,        1,0),
     JS_FN("elapsed",        Elapsed,        0,0),
-#ifdef JS_TRACER
-    JS_TN("TestCallConv_i_idi", TestCallConv_i_idi_tn, 3, 0, TestCallConv_i_idi_trcinfo),
-    JS_TN("TestCallConv_i_iiiiii", TestCallConv_i_iiiiii_tn, 3, 0, TestCallConv_i_iiiiii_trcinfo),
-    JS_TN("TestCallConv_i_iidi", TestCallConv_i_iidi_tn, 3, 0, TestCallConv_i_iidi_trcinfo),
-    JS_TN("TestCallConv_i_ididd", TestCallConv_i_ididd_tn, 3, 0, TestCallConv_i_ididd_trcinfo),
-    JS_TN("TestCallConv_d_dd", TestCallConv_d_dd_tn, 3, 0, TestCallConv_d_dd_trcinfo),
-#endif
     JS_FS_END
 };
 
@@ -3725,7 +3686,8 @@ static const char *const shell_help_messages[] = {
 "dumpHeap([fileName[, start[, toFind[, maxDepth[, toIgnore]]]]])\n"
 "  Interface to JS_DumpHeap with output sent to file",
 "notes([fun])             Show source notes for functions",
-"tracing([toggle])        Turn tracing on or off",
+"tracing([true|false|filename]) Turn bytecode execution tracing on/off.\n"
+"                         With filename, send to file.\n",
 "stats([string ...])      Dump 'arena', 'atom', 'global' stats",
 #endif
 #ifdef TEST_CVTARGS
@@ -3775,13 +3737,6 @@ static const char *const shell_help_messages[] = {
 "  Get/Set the limit in seconds for the execution time for the current context.\n"
 "  A negative value (default) means that the execution time is unlimited.",
 "elapsed()                Execution time elapsed for the current context.\n",
-#ifdef JS_TRACER
-"TestCallConv_i_idi(a,b,c) Sum arguments",
-"TestCallConv_i_iiiiii(a,b,c,d,e,f) Sum arguments",
-"TestCallConv_i_iidi(a,b,c,d) Sum arguments",
-"TestCallConv_i_ididd(a,b,c,d,e) Sum arguments",
-"TestCallConv_d_dd(a,b) Sum arguments",
-#endif
 };
 
 /* Help messages must match shell functions. */

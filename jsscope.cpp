@@ -44,6 +44,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "jstypes.h"
+#include "jsstdint.h"
 #include "jsarena.h"
 #include "jsbit.h"
 #include "jsclist.h"
@@ -1067,13 +1068,12 @@ js_AddScopeProperty(JSContext *cx, JSScope *scope, jsid id,
         }
 
         /*
-         * If we are clearing sprop to force an existing property to be
-         * overwritten (apart from a duplicate formal parameter), we must
-         * unlink it from the ancestor line at scope->lastProp, lazily if
-         * sprop is not lastProp.  And we must remove the entry at *spp,
-         * precisely so the lazy "middle delete" fixup code further below
-         * won't find sprop in scope->table, in spite of sprop being on
-         * the ancestor line.
+         * If we are clearing sprop to force the existing property that it
+         * describes to be overwritten, then we have to unlink sprop from the
+         * ancestor line at scope->lastProp, lazily if sprop is not lastProp.
+         * And we must remove the entry at *spp, precisely so the lazy "middle
+         * delete" fixup code further below won't find sprop in scope->table,
+         * in spite of sprop being on the ancestor line.
          *
          * When we finally succeed in finding or creating a new sprop
          * and storing its pointer at *spp, we'll use the |overwriting|
@@ -1129,15 +1129,37 @@ js_AddScopeProperty(JSContext *cx, JSScope *scope, jsid id,
             JS_ASSERT(scope->table);
             CHECK_ANCESTOR_LINE(scope, JS_TRUE);
 
-            splen = scope->entryCount;
-            if (splen == 0) {
-                JS_ASSERT(scope->lastProp == NULL);
-            } else {
+            /*
+             * Our forking heuristic tries to balance the desire to avoid
+             * over-compacting (over-forking) against the desire to
+             * *periodically* fork anyways, in order to prevent paying scan
+             * penalties on each insert indefinitely, on a lineage with only
+             * a few old middle-deletions. So we fork if either:
+             *
+             *  - A quick scan finds a true conflict.
+             *  - We are passing through a doubling-threshold in size and
+             *    have accumulated a nonzero count of uncompacted deletions.
+             */
+
+            bool conflicts = false;
+            uint32 count = 0;
+            uint32 threshold = JS_BIT(JS_CeilingLog2(scope->entryCount));
+            for (sprop = SCOPE_LAST_PROP(scope); sprop; sprop = sprop->parent) {
+                ++count;
+                if (sprop->id == id) {
+                    conflicts = true;
+                    break;
+                }
+            }
+
+            if (conflicts || count > threshold) {
                 /*
                  * Enumerate live entries in scope->table using a temporary
                  * vector, by walking the (possibly sparse, due to deletions)
                  * ancestor line from scope->lastProp.
                  */
+                splen = scope->entryCount;
+                JS_ASSERT(splen != 0);
                 spvec = (JSScopeProperty **)
                         JS_malloc(cx, SCOPE_TABLE_NBYTES(splen));
                 if (!spvec)
@@ -1147,41 +1169,16 @@ js_AddScopeProperty(JSContext *cx, JSScope *scope, jsid id,
                 JS_ASSERT(sprop);
                 do {
                     /*
-                     * NB: test SCOPE_GET_PROPERTY, not SCOPE_HAS_PROPERTY --
-                     * the latter insists that sprop->id maps to sprop, while
-                     * the former simply tests whether sprop->id is bound in
-                     * scope.  We must allow for duplicate formal parameters
-                     * along the ancestor line, and fork them as needed.
+                     * NB: test SCOPE_GET_PROPERTY, not SCOPE_HAS_PROPERTY,
+                     * as the latter macro insists that sprop->id maps to
+                     * sprop, while the former simply tests whether sprop->id
+                     * is bound in scope.
                      */
                     if (!SCOPE_GET_PROPERTY(scope, sprop->id))
                         continue;
 
                     JS_ASSERT(sprop != overwriting);
-                    if (i == 0) {
-                        /*
-                         * If our original splen estimate, scope->entryCount,
-                         * is less than the ancestor line height, there must
-                         * be duplicate formal parameters in this (function
-                         * object) scope.  Count remaining ancestors in order
-                         * to realloc spvec.
-                         */
-                        JSScopeProperty *tmp = sprop;
-                        do {
-                            if (SCOPE_GET_PROPERTY(scope, tmp->id))
-                                i++;
-                        } while ((tmp = tmp->parent) != NULL);
-                        spp2 = (JSScopeProperty **)
-                             JS_realloc(cx, spvec, SCOPE_TABLE_NBYTES(splen+i));
-                        if (!spp2) {
-                            JS_free(cx, spvec);
-                            goto fail_overwrite;
-                        }
-
-                        spvec = spp2;
-                        memmove(spvec + i, spvec, SCOPE_TABLE_NBYTES(splen));
-                        splen += i;
-                    }
-
+                    JS_ASSERT(i != 0);
                     spvec[--i] = sprop;
                 } while ((sprop = sprop->parent) != NULL);
                 JS_ASSERT(i == 0);
@@ -1211,15 +1208,13 @@ js_AddScopeProperty(JSContext *cx, JSScope *scope, jsid id,
                 /*
                  * Now sprop points to the last property in scope, where the
                  * ancestor line from sprop to the root is dense w.r.t. scope:
-                 * it contains no nodes not mapped by scope->table, apart from
-                 * any stinking ECMA-mandated duplicate formal parameters.
+                 * it contains no nodes not mapped by scope->table.
                  */
                 scope->lastProp = sprop;
                 CHECK_ANCESTOR_LINE(scope, JS_FALSE);
                 JS_RUNTIME_METER(cx->runtime, middleDeleteFixups);
+                SCOPE_CLR_MIDDLE_DELETE(scope);
             }
-
-            SCOPE_CLR_MIDDLE_DELETE(scope);
         }
 
         /*
@@ -1488,6 +1483,8 @@ js_RemoveScopeProperty(JSContext *cx, JSScope *scope, jsid id)
                 break;
             sprop = SCOPE_LAST_PROP(scope);
         } while (sprop && !SCOPE_HAS_PROPERTY(scope, sprop));
+        if (!SCOPE_LAST_PROP(scope))
+            SCOPE_CLR_MIDDLE_DELETE(scope);
     } else if (!SCOPE_HAD_MIDDLE_DELETE(scope)) {
         SCOPE_SET_MIDDLE_DELETE(scope);
     }
