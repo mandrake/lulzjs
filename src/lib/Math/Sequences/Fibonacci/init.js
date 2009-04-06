@@ -1,6 +1,6 @@
 /****************************************************************************
 * This file is part of lulzJS                                               *
-* Copyleft meh.                                                  |          *
+* Copyleft meh. [http://meh.doesntexist.org | meh.ffff@gmail.com]           *
 *                                                                           *
 * lulzJS is free software: you can redistribute it and/or modify            *
 * it under the terms of the GNU General Public License as published by      *
