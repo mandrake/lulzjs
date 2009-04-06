@@ -16,3 +16,62 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
+Math.Sequences.Fibonacci = Class.create({
+    constructor: function (limit) {
+        this.limit     = limit;
+        this.generator = new Math.Sequences.Fibonacci.Generator(limit);
+    },
+
+    methods: {
+        last: function () {
+            if (!this.limit) {
+                throw new Error("Do you want to kill the CPU?");
+            }
+            
+            for (var n in this.generator);
+            this.generator = new Math.Sequences.Fibonacci.Generator(this.limit)
+            return n;
+        },
+
+        at: function (index) {
+            if (index < 1) {
+                throw new Error("The sequence starts from 1.")
+            }
+
+            var count = 0;
+
+            for (var n in this.generator) {
+                count++;
+
+                if (count > index-1) {
+                    return n;
+                }
+            }
+
+            return null;
+        },
+    },
+    
+    static: {
+        Generator: function (limit) {
+            var a = 1;
+            var b = 1;
+        
+            while (true) {
+                var current = b;
+                b           = a;
+                a           = a + current;
+        
+                if (limit && current > limit) {
+                    return;
+                }
+        
+                yield current;
+            }
+        },
+    }
+});
+
+Math.Sequences.Fibonacci.prototype.__iterator__ = function () {
+    return this.generator;
+};
