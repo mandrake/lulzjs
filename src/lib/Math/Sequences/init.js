@@ -17,14 +17,10 @@
 ****************************************************************************/
 
 require([
-    "Math.so",
-        "Cryptography/Cryptography.so", "Cryptography/Cryptography.js",
-            "Cryptography/Hashing/Hashing.so", "Cryptography/Hashing/Hashing.js",
-                "Cryptography/Hashing/SHA1/SHA1.so", "Cryptography/Hashing/SHA1/SHA1.js",
-
-            "Cryptography/Crypting/Crypting.so", "Cryptography/Crypting/Crypting.js",
-
-        "Sequences/Sequences.so", "Sequences/Sequences.js",
-            "Sequences/Fibonacci/Fibonacci.js",
+    "Math/Math.so",
+        "Sequences.so", "Sequences.js",
+            "Fibonacci/Fibonacci.js",
 ]);
+
+Program.Sequences = Program.Math.Sequences;
 

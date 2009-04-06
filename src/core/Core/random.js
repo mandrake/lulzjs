@@ -25,7 +25,7 @@ function float (num) {
 };
 
 function range (begin, end) {
-    return $R(begin, end).toArray();
+    return $R(begin, end);
 };
 
 function ord (str) {

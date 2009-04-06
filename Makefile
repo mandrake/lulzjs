@@ -56,7 +56,8 @@ LIB_MATH = \
 	${LIB_MATH_DIR}/Math.o \
 	${LIB_MATH_DIR}/Cryptography/Cryptography.o \
 	${LIB_MATH_DIR}/Cryptography/Hashing/Hashing.o ${LIB_MATH_DIR}/Cryptography/Hashing/SHA1/SHA1.o \
-	${LIB_MATH_DIR}/Cryptography/Crypting/Crypting.o
+	${LIB_MATH_DIR}/Cryptography/Crypting/Crypting.o \
+	${LIB_MATH_DIR}/Sequences/Sequences.o 
 
 LIB_MATH_CFLAGS  = ${CFLAGS}
 LIB_MATH_LDFLAGS = ${LDFLAGS}
@@ -195,6 +196,8 @@ libmath_install: libmath
 	mkdir -p ${LJS_LIBDIR}/Math/Cryptography/Hashing
 	mkdir -p ${LJS_LIBDIR}/Math/Cryptography/Hashing/SHA1
 	mkdir -p ${LJS_LIBDIR}/Math/Cryptography/Crypting
+	mkdir -p ${LJS_LIBDIR}/Math/Sequences/
+	mkdir -p ${LJS_LIBDIR}/Math/Sequences/Fibonacci
 ########
 	cp -f ${LIB_MATH_DIR}/init.js									${LJS_LIBDIR}/Math/init.js
 	cp -f ${LIB_MATH_DIR}/Math.o									${LJS_LIBDIR}/Math/Math.so
@@ -214,6 +217,14 @@ libmath_install: libmath
 	cp -f ${LIB_MATH_DIR}/Cryptography/Crypting/init.js				${LJS_LIBDIR}/Math/Cryptography/Crypting/init.js
 	cp -f ${LIB_MATH_DIR}/Cryptography/Crypting/Crypting.o			${LJS_LIBDIR}/Math/Cryptography/Crypting/Crypting.so
 	cp -f ${LIB_MATH_DIR}/Cryptography/Crypting/Crypting.js			${LJS_LIBDIR}/Math/Cryptography/Crypting/Crypting.js
+########
+	cp -f ${LIB_MATH_DIR}/Sequences/init.js							${LJS_LIBDIR}/Math/Sequences/init.js
+	cp -f ${LIB_MATH_DIR}/Sequences/Sequences.o						${LJS_LIBDIR}/Math/Sequences/Sequences.so
+	cp -f ${LIB_MATH_DIR}/Sequences/Sequences.js					${LJS_LIBDIR}/Math/Sequences/Sequences.js
+########
+	cp -f ${LIB_MATH_DIR}/Sequences/Fibonacci/init.js				${LJS_LIBDIR}/Math/Sequences/Fibonacci/init.js
+	cp -f ${LIB_MATH_DIR}/Sequences/Fibonacci/Fibonacci.js			${LJS_LIBDIR}/Math/Sequences/Fibonacci/Fibonacci.js
+
 
 libmath_uninstall:
 

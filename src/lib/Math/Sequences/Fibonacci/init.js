@@ -1,6 +1,6 @@
 /****************************************************************************
 * This file is part of lulzJS                                               *
-* Copyleft meh.                                                             *
+* Copyleft meh.                                                  |          *
 *                                                                           *
 * lulzJS is free software: you can redistribute it and/or modify            *
 * it under the terms of the GNU General Public License as published by      *
@@ -17,14 +17,10 @@
 ****************************************************************************/
 
 require([
-    "Math.so",
-        "Cryptography/Cryptography.so", "Cryptography/Cryptography.js",
-            "Cryptography/Hashing/Hashing.so", "Cryptography/Hashing/Hashing.js",
-                "Cryptography/Hashing/SHA1/SHA1.so", "Cryptography/Hashing/SHA1/SHA1.js",
-
-            "Cryptography/Crypting/Crypting.so", "Cryptography/Crypting/Crypting.js",
-
-        "Sequences/Sequences.so", "Sequences/Sequences.js",
-            "Sequences/Fibonacci/Fibonacci.js",
+    "Math/Math.so",
+        "Math/Sequences/Sequences.so", "Math/Sequences/Sequences.js",
+            "Fibonacci.js",
 ]);
+
+Program.Fibonacci = Program.Math.Sequences.Fibonacci;
 

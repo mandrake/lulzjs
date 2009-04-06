@@ -16,15 +16,26 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require([
-    "Math.so",
-        "Cryptography/Cryptography.so", "Cryptography/Cryptography.js",
-            "Cryptography/Hashing/Hashing.so", "Cryptography/Hashing/Hashing.js",
-                "Cryptography/Hashing/SHA1/SHA1.so", "Cryptography/Hashing/SHA1/SHA1.js",
+#include "Sequences.h"
 
-            "Cryptography/Crypting/Crypting.so", "Cryptography/Crypting/Crypting.js",
+JSBool exec (JSContext* cx) { return Sequences_initialize(cx); }
 
-        "Sequences/Sequences.so", "Sequences/Sequences.js",
-            "Sequences/Fibonacci/Fibonacci.js",
-]);
+JSBool
+Sequences_initialize (JSContext* cx)
+{
+    JSObject* parent = JSVAL_TO_OBJECT(JS_EVAL(cx, "Math"));
+
+    JSObject* object = JS_DefineObject(
+        cx, parent,
+        Sequences_class.name, &Sequences_class, NULL, 
+        JSPROP_PERMANENT|JSPROP_READONLY|JSPROP_ENUMERATE);
+
+    if (object) {
+        JS_DefineFunctions(cx, object, Sequences_methods);
+
+        return JS_TRUE;
+    }
+
+    return JS_FALSE;
+}
 

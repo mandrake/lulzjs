@@ -131,3 +131,8 @@ Array.addAttributes((function() {
     };
 })(), Object.Flags.None);
 
+Array.prototype.__iterator__ = function () {
+    for (var i = 0; i < this.length; i++) {
+        yield i;
+    }
+}

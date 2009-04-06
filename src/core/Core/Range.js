@@ -55,7 +55,14 @@ Range = Class.create(Enumerable, (function() {
 
         methods: {
             _each:   _each,
-            include: include
+            include: include,
         }
     };
 })());
+
+Range.prototype.__iterator__ = function () {
+    for (var i = this.start; i <= this.end; i++) {
+        yield i;
+    }
+};
+
