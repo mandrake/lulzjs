@@ -84,7 +84,7 @@ Sockets_connect (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval
 
     SocketsInformation* data = (SocketsInformation*) JS_GetPrivate(cx, object);
     PRNetAddr addr; 
-    
+
     if (__Sockets_initAddr(&addr, host, port) == PR_FAILURE) {
         *rval = JSVAL_FALSE;
         JS_EndRequest(cx);
@@ -98,6 +98,9 @@ Sockets_connect (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval
         PR_THROW_ERROR(cx);
         JS_EndRequest(cx);
     }
+
+    jsval jsConnected = JSVAL_TRUE;
+    JS_SetProperty(cx, object, "connected", &jsConnected);
 
     JS_EndRequest(cx);
     return JS_TRUE;
@@ -239,6 +242,8 @@ Sockets_write (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* 
         if (sent < 0) {
             break;
         }
+
+        offset += sent;
     }
     JS_ResumeRequest(cx, req);
     JS_LeaveLocalRootScope(cx);
@@ -421,7 +426,7 @@ Sockets_readFrom (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsva
         received = PR_Recv(data->socket, (string+offset), (size-offset)*sizeof(char), flags,
             (timeout == -1) ? PR_INTERVAL_NO_TIMEOUT : PR_MicrosecondsToInterval(timeout*1000000));
 
-        if (received == -1) {
+        if (received <= 0) {
             break;
         }
         
@@ -429,7 +434,10 @@ Sockets_readFrom (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsva
     }
     JS_ResumeRequest(cx, req);
 
-    if (received < 0) {
+    if (received <= 0) {
+        jsval jsConnected = JSVAL_FALSE;
+        JS_SetProperty(cx, object, "connected", &jsConnected);
+
         PR_THROW_ERROR(cx);
         JS_LeaveLocalRootScope(cx);
         JS_EndRequest(cx);
@@ -577,9 +585,6 @@ __Sockets_initAddr (PRNetAddr* addr, const char* host, int port)
             port = atoi(sPort.c_str());
         }
     }
-    else {
-        return PR_FAILURE;
-    }
 
     if (port >= 0) {
         PR_InitializeNetAddr(PR_IpAddrNull, port, addr);
@@ -587,5 +592,4 @@ __Sockets_initAddr (PRNetAddr* addr, const char* host, int port)
 
     return PR_SUCCESS;
 }
-
 

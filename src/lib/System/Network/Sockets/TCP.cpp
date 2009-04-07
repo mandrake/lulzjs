@@ -29,7 +29,7 @@ TCP_initialize (JSContext* cx)
     JSObject* parent = JSVAL_TO_OBJECT(JS_EVAL(cx, "System.Network.Sockets"));
 
     JSObject* object = JS_InitClass(
-        cx, parent, parent, &TCP_class,
+        cx, parent, JSVAL_TO_OBJECT(JS_EVAL(cx, "System.Network.Sockets.prototype")), &TCP_class,
         TCP_constructor, 1, TCP_attributes, TCP_methods, NULL, TCP_static_methods
     );
 
@@ -47,7 +47,10 @@ TCP_constructor (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval
 {
     TCPInformation* data = new TCPInformation;
     JS_SetPrivate(cx, object, data);
-    data->socket = NULL;
+    data->socket = PR_NewTCPSocket();
+
+    jsval jsConnected = JSVAL_FALSE;
+    JS_SetProperty(cx, object, "connected", &jsConnected);
 
     return JS_TRUE;
 }

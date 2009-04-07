@@ -160,6 +160,7 @@ libsystem_install: libsystem
 	cp -f ${LIB_SYSTEM_DIR}/Network/Sockets/TCP.o						${LJS_LIBDIR}/System/Network/Sockets/TCP.so
 	cp -f ${LIB_SYSTEM_DIR}/Network/Sockets/TCP.js						${LJS_LIBDIR}/System/Network/Sockets/TCP.js
 	cp -f ${LIB_SYSTEM_DIR}/Network/Sockets/UDP.o						${LJS_LIBDIR}/System/Network/Sockets/UDP.so
+	cp -f ${LIB_SYSTEM_DIR}/Network/Sockets/UDP.js						${LJS_LIBDIR}/System/Network/Sockets/UDP.js
 	cp -f ${LIB_SYSTEM_DIR}/Network/Sockets/ICMP.o						${LJS_LIBDIR}/System/Network/Sockets/ICMP.so
 	cp -f ${LIB_SYSTEM_DIR}/Network/Sockets/ICMP.js						${LJS_LIBDIR}/System/Network/Sockets/ICMP.js
 	cp -f ${LIB_SYSTEM_DIR}/Network/Sockets/RAW.o						${LJS_LIBDIR}/System/Network/Sockets/RAW.so

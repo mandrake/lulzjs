@@ -376,8 +376,10 @@ __Core_include (JSContext* cx, std::string path)
 
         if (stat(path.c_str(), &pathStat) == -1) {
             #ifdef DEBUG
-            std::cerr << "(javascript) " << path << " not found." << std::endl;
+            std::cerr << "(javascript) ";
             #endif
+ 
+            std::cerr << path << " not found." << std::endl;
             return JS_FALSE;
         }
         
@@ -426,8 +428,10 @@ __Core_include (JSContext* cx, std::string path)
         struct stat test;
         if (stat(path.c_str(), &test)) {
             #ifdef DEBUG
-            std::cerr << "(object) " << path << " not found." << std::endl;
+            std::cerr << "(object) ";
             #endif
+
+            std::cerr << path << " not found." << std::endl;
             return JS_FALSE;
         }
 
@@ -456,6 +460,16 @@ __Core_include (JSContext* cx, std::string path)
         #ifdef DEBUG
         std::cerr << "(module) path: " << path << std::endl;
         #endif
+
+        struct stat test;
+        if (stat(path.c_str(), &test)) {
+            #ifdef DEBUG
+            std::cerr << "(module) ";
+            #endif
+
+            std::cerr << path << " not found." << std::endl;
+            return JS_FALSE;
+        }
 
         if (!__Core_include(cx, path + "/init.js")) {
             return JS_FALSE;

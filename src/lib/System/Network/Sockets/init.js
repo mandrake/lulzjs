@@ -19,10 +19,10 @@
 require([
     "System/System.so",
         "System/Network/Network.so",
-            "Socket.so", "Socket.js",
+            "Sockets.so", "Sockets.js",
                 "TCP.so",  "TCP.js",
                 "UDP.so",  "UDP.js",
-                "ICMP.so", "ICMP.js";
+                "ICMP.so", "ICMP.js",
                 "RAW.so",  "RAW.js",
 ]);
 
