@@ -746,10 +746,9 @@ js_GetDenseArrayElementValue(JSObject *obj, JSProperty *prop)
     JS_ASSERT(OBJ_IS_DENSE_ARRAY(cx, obj));
     JS_ASSERT((void *) prop ==
               (void *) &(obj->fslots[JSSLOT_ARRAY_LOOKUP_HOLDER]));
-    JS_ASSERT((jsval) prop->id == obj->fslots[JSSLOT_ARRAY_LOOKUP_HOLDER]);
-    JS_ASSERT(JSVAL_IS_INT(prop->id));
+    JS_ASSERT(JSVAL_IS_INT(obj->fslots[JSSLOT_ARRAY_LOOKUP_HOLDER]));
 
-    jsint i = JSID_TO_INT(prop->id);
+    jsint i = JSVAL_TO_INT(obj->fslots[JSSLOT_ARRAY_LOOKUP_HOLDER]);
     JS_ASSERT(i >= 0);
     jsval v = obj->dslots[i];
     JS_ASSERT(v != JSVAL_HOLE);
@@ -3278,7 +3277,7 @@ js_FastNewArrayWithLength(JSContext* cx, JSObject* proto, uint32 i)
 JSObject* FASTCALL
 js_NewUninitializedArray(JSContext* cx, JSObject* proto, uint32 len)
 {
-    JSObject *obj = js_FastNewArrayWithLength(cx, proto, len);
+    JSObject* obj = js_FastNewArrayWithLength(cx, proto, len);
     if (!obj || !ResizeSlots(cx, obj, 0, JS_MAX(len, ARRAY_CAPACITY_MIN)))
         return NULL;
     return obj;

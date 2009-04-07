@@ -62,6 +62,7 @@
 #include "jsemit.h"
 #include "jsfun.h"
 #include "jsgc.h"
+#include "jsiter.h"
 #include "jslock.h"
 #include "jsnum.h"
 #include "jsobj.h"
@@ -985,22 +986,6 @@ ReadLine(JSContext *cx, uintN argc, jsval *vp)
     return JS_TRUE;
 }
 
-#ifdef JS_TRACER
-static jsval JS_FASTCALL
-Print_tn(JSContext *cx, JSString *str)
-{
-    char *bytes = JS_EncodeString(cx, str);
-    if (!bytes) {
-        cx->builtinStatus |= JSBUILTIN_ERROR;
-        return JSVAL_VOID;
-    }
-    fprintf(gOutFile, "%s\n", bytes);
-    JS_free(cx, bytes);
-    fflush(gOutFile);
-    return JSVAL_VOID;
-}
-#endif
-
 static JSBool
 Print(JSContext *cx, uintN argc, jsval *vp)
 {
@@ -1077,14 +1062,6 @@ AssertEq(JSContext *cx, uintN argc, jsval *vp)
     JS_SET_RVAL(cx, vp, JSVAL_VOID);
     return JS_TRUE;
 }
-
-#ifdef JS_TRACER
-static jsval JS_FASTCALL
-AssertEq_tn(JSContext *cx, jsval v1, jsval v2)
-{
-    return (js_StrictlyEqual(cx, v1, v2)) ? JSVAL_VOID : JSVAL_ERROR_COOKIE;
-}
-#endif
 
 static JSBool
 GC(JSContext *cx, uintN argc, jsval *vp)
@@ -1348,22 +1325,31 @@ CountHeap(JSContext *cx, uintN argc, jsval *vp)
 static JSScript *
 ValueToScript(JSContext *cx, jsval v)
 {
-    JSScript *script;
+    JSScript *script = NULL;
     JSFunction *fun;
 
-    if (!JSVAL_IS_PRIMITIVE(v) &&
-        JS_GET_CLASS(cx, JSVAL_TO_OBJECT(v)) == &js_ScriptClass) {
-        script = (JSScript *) JS_GetPrivate(cx, JSVAL_TO_OBJECT(v));
-    } else {
+    if (!JSVAL_IS_PRIMITIVE(v)) {
+        JSObject *obj = JSVAL_TO_OBJECT(v);
+        JSClass *clasp = JS_GET_CLASS(cx, obj);
+
+        if (clasp == &js_ScriptClass) {
+            script = (JSScript *) JS_GetPrivate(cx, obj);
+        } else if (clasp == &js_GeneratorClass) {
+            JSGenerator *gen = (JSGenerator *) JS_GetPrivate(cx, obj);
+            fun = gen->frame.fun;
+            script = FUN_SCRIPT(fun);
+        }
+    }
+
+    if (!script) {
         fun = JS_ValueToFunction(cx, v);
         if (!fun)
             return NULL;
         script = FUN_SCRIPT(fun);
-    }
-
-    if (!script) {
-        JS_ReportErrorNumber(cx, my_GetErrorMessage, NULL,
-                             JSSMSG_SCRIPTS_ONLY);
+        if (!script) {
+            JS_ReportErrorNumber(cx, my_GetErrorMessage, NULL,
+                                 JSSMSG_SCRIPTS_ONLY);
+        }
     }
 
     return script;
@@ -1706,7 +1692,7 @@ Disassemble(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
             return JS_FALSE;
         if (VALUE_IS_FUNCTION(cx, argv[i])) {
             JSFunction *fun = JS_ValueToFunction(cx, argv[i]);
-            if (fun && (fun->flags & JSFUN_FLAGS_MASK)) {
+            if (fun && (fun->flags & ~7U)) {
                 uint16 flags = fun->flags;
                 fputs("flags:", stdout);
 
@@ -1721,9 +1707,14 @@ Disassemble(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
                 SHOW_FLAG(THISP_NUMBER);
                 SHOW_FLAG(THISP_BOOLEAN);
                 SHOW_FLAG(EXPR_CLOSURE);
-                SHOW_FLAG(INTERPRETED);
+                SHOW_FLAG(TRACEABLE);
 
 #undef SHOW_FLAG
+
+                if (FUN_NULL_CLOSURE(fun))
+                    fputs(" NULL_CLOSURE", stdout);
+                else if (FUN_FLAT_CLOSURE(fun))
+                    fputs(" FLAT_CLOSURE", stdout);
                 putchar('\n');
             }
         }
@@ -2251,13 +2242,16 @@ Intern(JSContext *cx, uintN argc, jsval *vp)
 static JSBool
 Clone(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
-    JSFunction *fun;
     JSObject *funobj, *parent, *clone;
 
-    fun = JS_ValueToFunction(cx, argv[0]);
-    if (!fun)
-        return JS_FALSE;
-    funobj = JS_GetFunctionObject(fun);
+    if (VALUE_IS_FUNCTION(cx, argv[0])) {
+        funobj = JSVAL_TO_OBJECT(argv[0]);
+    } else {
+        JSFunction *fun = JS_ValueToFunction(cx, argv[0]);
+        if (!fun)
+            return JS_FALSE;
+        funobj = JS_GetFunctionObject(fun);
+    }
     if (argc > 1) {
         if (!JS_ValueToObject(cx, argv[1], &parent))
             return JS_FALSE;
@@ -2885,16 +2879,6 @@ out:
     return ok;
 }
 
-static int32 JS_FASTCALL
-ShapeOf_tn(JSObject *obj)
-{
-    if (!obj)
-        return 0;
-    if (!OBJ_IS_NATIVE(obj))
-        return -1;
-    return OBJ_SHAPE(obj);
-}
-
 static JSBool
 ShapeOf(JSContext *cx, uintN argc, jsval *vp)
 {
@@ -2903,7 +2887,16 @@ ShapeOf(JSContext *cx, uintN argc, jsval *vp)
         JS_ReportError(cx, "shapeOf: object expected");
         return JS_FALSE;
     }
-    return JS_NewNumberValue(cx, ShapeOf_tn(JSVAL_TO_OBJECT(v)), vp);
+    JSObject *obj = JSVAL_TO_OBJECT(v);
+    if (!obj) {
+        JS_SET_RVAL(cx, vp, JSVAL_ZERO);
+        return JSVAL_TRUE;
+    }
+    if (!OBJ_IS_NATIVE(obj)) {
+        JS_SET_RVAL(cx, vp, INT_TO_JSVAL(-1));
+        return JSVAL_TRUE;
+    }
+    return JS_NewNumberValue(cx, OBJ_SHAPE(obj), vp);
 }
 
 #ifdef JS_THREADSAFE
@@ -3445,10 +3438,6 @@ Elapsed(JSContext *cx, uintN argc, jsval *vp)
     return JS_FALSE;
 }
 
-JS_DEFINE_TRCINFO_1(AssertEq, (3, (static, JSVAL_RETRY, AssertEq_tn, CONTEXT, JSVAL, JSVAL, 0, 0)))
-JS_DEFINE_TRCINFO_1(Print, (2, (static, JSVAL_FAIL, Print_tn, CONTEXT, STRING, 0, 0)))
-JS_DEFINE_TRCINFO_1(ShapeOf, (1, (static, INT32, ShapeOf_tn, OBJECT, 0, 0)))
-
 #ifdef XP_UNIX
 
 #include <fcntl.h>
@@ -3575,10 +3564,10 @@ static JSFunctionSpec shell_functions[] = {
     JS_FS("options",        Options,        0,0,0),
     JS_FS("load",           Load,           1,0,0),
     JS_FN("readline",       ReadLine,       0,0),
-    JS_TN("print",          Print,          0,0, Print_trcinfo),
+    JS_FN("print",          Print,          0,0),
     JS_FS("help",           Help,           0,0,0),
     JS_FS("quit",           Quit,           0,0,0),
-    JS_TN("assertEq",       AssertEq,       2,0, AssertEq_trcinfo),
+    JS_FN("assertEq",       AssertEq,       2,0),
     JS_FN("gc",             GC,             0,0),
     JS_FN("gcparam",        GCParameter,    2,0),
     JS_FN("countHeap",      CountHeap,      0,0),
@@ -3614,7 +3603,7 @@ static JSFunctionSpec shell_functions[] = {
     JS_FN("getslx",         GetSLX,         1,0),
     JS_FN("toint32",        ToInt32,        1,0),
     JS_FS("evalcx",         EvalInContext,  1,0,0),
-    JS_TN("shapeOf",        ShapeOf,        1,0, ShapeOf_trcinfo),
+    JS_FN("shapeOf",        ShapeOf,        1,0),
 #ifdef MOZ_SHARK
     JS_FS("startShark",     js_StartShark,      0,0,0),
     JS_FS("stopShark",      js_StopShark,       0,0,0),
