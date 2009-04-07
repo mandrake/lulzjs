@@ -416,11 +416,11 @@ File_write (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rva
     }
 
     char*  string = JS_GetStringBytes(stringObject);
-    size_t offset = 0;
-    size_t length = JS_GetStringLength(stringObject);
+    jsdouble offset = 0;
+    jsdouble length = JS_GetStringLength(stringObject);
 
     while (offset < length) {
-        offset += fwrite((string+offset), sizeof(char), length-offset, data->descriptor);
+        offset += fwrite((string+((long)offset)), sizeof(char), length-((long)offset), data->descriptor);
     }
 
     return JS_TRUE;
@@ -431,10 +431,15 @@ File_read (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval *rval
 {
     JS_BeginRequest(cx);
 
-    unsigned size;
+    jsdouble size;
 
-    if (argc != 1 || !JS_ConvertArguments(cx, argc, argv, "u", &size)) {
+    if (argc != 1 || !JS_ConvertArguments(cx, argc, argv, "I", &size)) {
         JS_ReportError(cx, "Not enough parameters.");
+        return JS_FALSE;
+    }
+
+    if (size < 0) {
+        JS_ReportError(cx, "size is less than 0.");
         return JS_FALSE;
     }
 
@@ -455,14 +460,14 @@ File_read (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval *rval
     JS_EnterLocalRootScope(cx);
     char* string = (char*) JS_malloc(cx, (size+1)*sizeof(char));
 
-    size_t offset = 0;
+    jsdouble offset = 0;
     while (offset < size) {
         if (feof(data->descriptor)) {
             data->position = EOF;
             break;
         }   
 
-        offset += fread((string+offset), sizeof(char), size-offset, data->descriptor);
+        offset += fread((string+((long)offset)), sizeof(char), size-((long)offset), data->descriptor);
     }
     string = (char*) JS_realloc(cx, string, offset*sizeof(char));
     *rval = STRING_TO_JSVAL(JS_NewString(cx, string, offset));

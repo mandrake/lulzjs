@@ -487,15 +487,16 @@ __Sockets_getHostByName (const char* host)
     if (PR_GetHostByName(host, buf, PR_NETDB_BUF_SIZE, &hp) == PR_FAILURE) {
         return NULL;
     }
-    delete [] buf;
 
     char* ip = new char[INET6_ADDRSTRLEN];
     int offset = 0;
 
-    offset += sprintf(&ip[offset], "%u.", (unsigned char) hp.h_name[0]);
-    offset += sprintf(&ip[offset], "%u.", (unsigned char) hp.h_name[1]);
-    offset += sprintf(&ip[offset], "%u.", (unsigned char) hp.h_name[2]);
-    offset += sprintf(&ip[offset], "%u",  (unsigned char) hp.h_name[3]);
+    offset += sprintf(&ip[offset], "%u.", (unsigned char) hp.h_addr_list[0][0]);
+    offset += sprintf(&ip[offset], "%u.", (unsigned char) hp.h_addr_list[0][1]);
+    offset += sprintf(&ip[offset], "%u.", (unsigned char) hp.h_addr_list[0][2]);
+    offset += sprintf(&ip[offset], "%u",  (unsigned char) hp.h_addr_list[0][3]);
+
+    delete [] buf;
 
     return ip;
 }

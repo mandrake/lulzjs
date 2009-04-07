@@ -44,6 +44,17 @@ Object.extend(Number.prototype, (function() {
         return this % 2 != 0;
     };
 
+    function factorize () {
+        var current = this;
+        var result  = 1;
+
+        while (current--) {
+            result *= current+1;
+        }
+
+        return result;
+    };
+
     function abs () {
         return Math.abs(this);
     };
@@ -111,6 +122,7 @@ Object.extend(Number.prototype, (function() {
         toPaddedString: toPaddedString,
         isEven:         isEven,
         isOdd:          isOdd,
+        factorize:      factorize,
         abs:            abs,
         round:          round,
         ceil:           ceil,
