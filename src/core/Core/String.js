@@ -134,7 +134,13 @@ Object.extend(String.prototype, (function() {
     };
 
     function times (count) {
-        return count < 1 ? '' : new Array(count + 1).join(this);
+        var result = this;
+
+        for (let i = 1; i < count; i++) {
+            result += this;
+        }
+
+        return result;
     };
 
     function count (string) {

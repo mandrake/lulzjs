@@ -39,7 +39,7 @@ require([
         "Class.js", "Function.js", "Date.js", "RegExp.js",
         "Enumerable.js", "String.js", "Template.js", "Array.js",
         "Bytes.js", "Hash.js", "Number.js", "Range.js",
-        "JSON.js", "XML.js", "random.js"
+        "JSON.js", "XML.js", "python.js"
 ]);
 
 [Function, Array, String, Number, RegExp, Date, XML].each(function (obj) {

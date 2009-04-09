@@ -468,8 +468,9 @@ File_read (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval *rval
         }   
 
         offset += fread((string+((long)offset)), sizeof(char), size-((long)offset), data->descriptor);
-    }
+    } offset++;
     string = (char*) JS_realloc(cx, string, offset*sizeof(char));
+    string[(long)size] = '\0';
     *rval = STRING_TO_JSVAL(JS_NewString(cx, string, offset));
 
     JS_LeaveLocalRootScope(cx);
