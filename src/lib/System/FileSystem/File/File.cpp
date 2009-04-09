@@ -55,6 +55,9 @@ File_initialize (JSContext* cx)
             property = INT_TO_JSVAL(MODE_APPEND);
             JS_SetProperty(cx, Mode, "Append", &property);
 
+        property = INT_TO_JSVAL(-1);
+        JS_SetProperty(cx, File, "End", &property);
+
         JS_DefineProperty(cx, File, "End", INT_TO_JSVAL(EOF), NULL, NULL, JSPROP_READONLY);
 
         JS_LeaveLocalRootScope(cx);
@@ -174,8 +177,13 @@ File_position_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
         *vp = JSVAL_NULL;
     }
     else {
-        data->position = ftello(data->descriptor);
-        JS_NewNumberValue(cx, data->position, vp);
+        if (feof(data->descriptor)) {
+            *vp = INT_TO_JSVAL(-1);
+        }
+        else {
+            data->position = ftello(data->descriptor);
+            JS_NewNumberValue(cx, data->position, vp);
+        }
     }
 
     return JS_TRUE;
@@ -470,8 +478,7 @@ File_read (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval *rval
         offset += fread((string+((long)offset)), sizeof(char), size-((long)offset), data->descriptor);
     } offset++;
     string = (char*) JS_realloc(cx, string, offset*sizeof(char));
-    string[(long)size] = '\0';
-    *rval = STRING_TO_JSVAL(JS_NewString(cx, string, offset));
+    *rval = STRING_TO_JSVAL(JS_NewString(cx, string, offset-1));
 
     JS_LeaveLocalRootScope(cx);
     JS_EndRequest(cx);

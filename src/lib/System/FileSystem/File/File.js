@@ -26,12 +26,12 @@ File.addMethods((function() {
     };
 
     function readLine () {
-        if (this.position == System.FileSystem.File.EndOfFile)
+        if (this.position == File.End)
             return null;
 
         var str = "";
         var ch;
-        while ((ch = this.read(1)) != '\n' && !this.isEnd()) {
+        while ((ch = this.read(1)) != '\n' && this.position != File.End) {
             str += ch;
         }
 
@@ -40,6 +40,7 @@ File.addMethods((function() {
 
     function readToEnd () {
         var tmp       = this.position;
+        this.position = 0;
         var ret       = this.read(this.size);
         this.position = tmp;
 
