@@ -35,7 +35,7 @@ Directory_initialize (JSContext* cx)
     JSObject* parent = JSVAL_TO_OBJECT(jsParent);
 
     JSObject* object = JS_InitClass(
-        cx, parent, JSVAL_TO_OBJECT(JS_EVAL(cx, "Object.extend({}, Enumerable)")), &Directory_class,
+        cx, parent, JSVAL_TO_OBJECT(JS_EVAL(cx, "Object.extend({}, Enumerable, Object.Flags.None)")), &Directory_class,
         Directory_constructor, 1, Directory_attributes, Directory_methods, NULL, Directory_static_methods
     );
 
