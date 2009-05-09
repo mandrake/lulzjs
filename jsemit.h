@@ -183,7 +183,6 @@ struct JSTreeContext {              /* tree context for semantic checks */
     };
 
     JSAtomList      lexdeps;        /* unresolved lexical name dependencies */
-    JSAtomList      upvars;         /* resolved lexical name dependencies */
     JSTreeContext   *parent;        /* enclosing function or global context */
     uintN           staticLevel;    /* static compilation unit nesting level */
 
@@ -261,7 +260,7 @@ struct JSTreeContext {              /* tree context for semantic checks */
 #define TCF_HAS_SHARPS        0x8000 /* source contains sharp defs or uses */
 
 /*
- * Flags to propagate from FunctionBody.
+ * Sticky deoptimization flags to propagate from FunctionBody.
  */
 #define TCF_FUN_FLAGS           (TCF_FUN_SETS_OUTER_NAME |                    \
                                  TCF_FUN_USES_ARGUMENTS  |                    \
@@ -557,7 +556,8 @@ js_DefineCompileTimeConstant(JSContext *cx, JSCodeGenerator *cg, JSAtom *atom,
  * found. Otherwise return null.
  */
 extern JSStmtInfo *
-js_LexicalLookup(JSTreeContext *tc, JSAtom *atom, jsint *slotp);
+js_LexicalLookup(JSTreeContext *tc, JSAtom *atom, jsint *slotp,
+                 JSStmtInfo *stmt = NULL);
 
 /*
  * Emit code into cg for the tree rooted at pn.

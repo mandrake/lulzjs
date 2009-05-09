@@ -435,6 +435,7 @@ struct JSParseNode {
                                            2. the first child of function body
                                               is code evaluating destructuring
                                               arguments */
+#define PNX_HOLEY      0x400            /* array initialiser has holes */
 
     uintN frameLevel() const {
         JS_ASSERT(pn_arity == PN_FUNC || pn_arity == PN_NAME);
@@ -462,6 +463,7 @@ struct JSParseNode {
     /* Defined below, see after struct JSDefinition. */
     bool isAssigned() const;
     bool isFunArg() const;
+    void setFunArg();
 
     void become(JSParseNode *pn2);
     void clear();
@@ -725,6 +727,25 @@ JSParseNode::isFunArg() const
     return test(PND_FUNARG);
 }
 
+inline void
+JSParseNode::setFunArg()
+{
+    /*
+     * pn_defn NAND pn_used must be true, per this chart:
+     *
+     *   pn_defn pn_used
+     *         0       0        anonymous function used implicitly, e.g. by
+     *                          hidden yield in a genexp
+     *         0       1        a use of a definition or placeholder
+     *         1       0        a definition or placeholder
+     *         1       1        error: this case must not be possible
+     */
+    JS_ASSERT(!(pn_defn & pn_used));
+    if (pn_used)
+        pn_lexdef->pn_dflags |= PND_FUNARG;
+    pn_dflags |= PND_FUNARG;
+}
+
 struct JSObjectBox {
     JSObjectBox         *traceLink;
     JSObjectBox         *emitLink;
@@ -772,7 +793,7 @@ struct JSFunctionBoxQueue {
     JSFunctionBox *pull() {
         if (tail == head)
             return NULL;
-        JS_ASSERT(tail != head);
+        JS_ASSERT(tail < head);
         JSFunctionBox *funbox = vector[tail++ & lengthMask];
         funbox->queued = false;
         return funbox;

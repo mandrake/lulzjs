@@ -1073,18 +1073,19 @@ GC(JSContext *cx, uintN argc, jsval *vp)
     preBytes = rt->gcBytes;
     JS_GC(cx);
 
-    fprintf(gOutFile, "before %lu, after %lu, break %08lx\n",
-            (unsigned long)preBytes, (unsigned long)rt->gcBytes,
+    char buf[256];
+    JS_snprintf(buf, sizeof(buf), "before %lu, after %lu, break %08lx\n",
+                (unsigned long)preBytes, (unsigned long)rt->gcBytes,
 #ifdef XP_UNIX
-            (unsigned long)sbrk(0)
+                (unsigned long)sbrk(0)
 #else
-            0
+                0
 #endif
-            );
+                );
 #ifdef JS_GCMETER
     js_DumpGCStats(rt, stdout);
 #endif
-    *vp = JSVAL_VOID;
+    *vp = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, buf));
     return JS_TRUE;
 }
 
@@ -1882,7 +1883,7 @@ Tracing(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     if (cx->tracefp && cx->tracefp != stderr)
       fclose((FILE *)cx->tracefp);
     cx->tracefp = file;
-    cx->tracePrevOp = JSOP_LIMIT;
+    cx->tracePrevPc = NULL;
     return JS_TRUE;
 
  bad_argument:
@@ -2889,12 +2890,12 @@ ShapeOf(JSContext *cx, uintN argc, jsval *vp)
     }
     JSObject *obj = JSVAL_TO_OBJECT(v);
     if (!obj) {
-        JS_SET_RVAL(cx, vp, JSVAL_ZERO);
-        return JSVAL_TRUE;
+        *vp = JSVAL_ZERO;
+        return JS_TRUE;
     }
     if (!OBJ_IS_NATIVE(obj)) {
-        JS_SET_RVAL(cx, vp, INT_TO_JSVAL(-1));
-        return JSVAL_TRUE;
+        *vp = INT_TO_JSVAL(-1);
+        return JS_TRUE;
     }
     return JS_NewNumberValue(cx, OBJ_SHAPE(obj), vp);
 }
@@ -4632,6 +4633,8 @@ main(int argc, char **argv, char **envp)
     );
     if (!cx)
         return 1;
+
+    JS_SetGCParameterForThread(cx, JSGC_MAX_CODE_CACHE_BYTES, 16 * 1024 * 1024);
 
     JS_BeginRequest(cx);
 

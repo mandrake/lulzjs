@@ -1979,6 +1979,26 @@ date_toString(JSContext *cx, uintN argc, jsval *vp)
     return date_format(cx, utctime, FORMATSPEC_FULL, vp);
 }
 
+#ifdef JS_TRACER
+static jsval FASTCALL
+date_valueOf_tn(JSContext* cx, JSObject* obj, JSString* str)
+{
+    JS_ASSERT(JS_InstanceOf(cx, obj, &js_DateClass, NULL));
+    jsdouble t = *JSVAL_TO_DOUBLE(obj->fslots[JSSLOT_UTC_TIME]);
+
+    JSString* number_str = ATOM_TO_STRING(cx->runtime->atomState.typeAtoms[JSTYPE_NUMBER]);
+    jsval v;
+    if (js_EqualStrings(str, number_str)) {
+        if (!js_NewNumberInRootedValue(cx, t, &v))
+            return JSVAL_ERROR_COOKIE;
+    } else {
+        if (!date_format(cx, t, FORMATSPEC_FULL, &v))
+            return JSVAL_ERROR_COOKIE;
+    }
+    return v;
+}
+#endif
+
 static JSBool
 date_valueOf(JSContext *cx, uintN argc, jsval *vp)
 {
@@ -2013,6 +2033,9 @@ static JSFunctionSpec date_static_methods[] = {
     JS_TN("now",                 date_now,                0,0, date_now_trcinfo),
     JS_FS_END
 };
+
+JS_DEFINE_TRCINFO_1(date_valueOf,
+    (3, (static, JSVAL_RETRY, date_valueOf_tn, CONTEXT, THIS, STRING, 0, 0)))
 
 static JSFunctionSpec date_methods[] = {
     JS_FN("getTime",             date_getTime,            0,0),
@@ -2064,7 +2087,7 @@ static JSFunctionSpec date_methods[] = {
     JS_FN(js_toSource_str,       date_toSource,           0,0),
 #endif
     JS_FN(js_toString_str,       date_toString,           0,0),
-    JS_FN(js_valueOf_str,        date_valueOf,            0,0),
+    JS_TN(js_valueOf_str,        date_valueOf,            0,0, date_valueOf_trcinfo),
     JS_FS_END
 };
 
@@ -2144,38 +2167,6 @@ js_Date(JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return JS_TRUE;
 }
 
-JS_STATIC_ASSERT(JSSLOT_PRIVATE == JSSLOT_UTC_TIME);
-JS_STATIC_ASSERT(JSSLOT_UTC_TIME + 1 == JSSLOT_LOCAL_TIME);
-
-#ifdef JS_TRACER
-
-static JSObject* FASTCALL
-Date_tn(JSContext* cx, JSObject* proto)
-{
-    JS_ASSERT(JS_ON_TRACE(cx));
-    JSObject* obj = js_NewNativeObject(cx, &js_DateClass, proto, JSSLOT_LOCAL_TIME + 1);
-    if (!obj)
-        return NULL;
-
-    jsdouble* date = js_NewWeaklyRootedDouble(cx, 0.0);
-    if (!date)
-        return NULL;
-    *date = date_now_tn(cx);
-
-    obj->fslots[JSSLOT_UTC_TIME] = DOUBLE_TO_JSVAL(date);
-    obj->fslots[JSSLOT_LOCAL_TIME] = DOUBLE_TO_JSVAL(cx->runtime->jsNaN);
-    return obj;    
-}
-
-JS_DEFINE_TRCINFO_1(js_Date,
-    (2, (static, CONSTRUCTOR_RETRY, Date_tn, CONTEXT, CALLEE_PROTOTYPE, 0, 0)))
-
-#else  /* !JS_TRACER */
-
-# define js_Date_trcinfo NULL
-
-#endif /* !JS_TRACER */
-
 JSObject *
 js_InitDateClass(JSContext *cx, JSObject *obj)
 {
@@ -2185,8 +2176,7 @@ js_InitDateClass(JSContext *cx, JSObject *obj)
     /* set static LocalTZA */
     LocalTZA = -(PRMJ_LocalGMTDifference() * msPerSecond);
     proto = js_InitClass(cx, obj, NULL, &js_DateClass, js_Date, MAXARGS,
-                         NULL, date_methods, NULL, date_static_methods,
-                         js_Date_trcinfo);
+                         NULL, date_methods, NULL, date_static_methods);
     if (!proto)
         return NULL;
 
@@ -2459,16 +2449,16 @@ js_DateGetMsecSinceEpoch(JSContext *cx, JSObject *obj)
 #ifdef JS_THREADSAFE
 #include "prinrval.h"
 
-uint32 
-js_IntervalNow() 
+JS_FRIEND_API(uint32)
+js_IntervalNow()
 {
     return uint32(PR_IntervalToMilliseconds(PR_IntervalNow()));
 }
 
 #else /* !JS_THREADSAFE */
 
-uint32 
-js_IntervalNow() 
+JS_FRIEND_API(uint32)
+js_IntervalNow()
 {
     return uint32(PRMJ_Now() / PRMJ_USEC_PER_MSEC);
 }
