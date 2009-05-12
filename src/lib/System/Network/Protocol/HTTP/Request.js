@@ -51,13 +51,11 @@ System.Network.Protocol.HTTP.Request = Class.create({
         var data;
         if (data = /^(http(s)?:\/\/)?([^:\/]*)(:\d+)?(\/.*)?$/.exec(url)) {
             this.options.host = data[3];
-            this.options.page = data[5] || "/";
+            this.options.page = ((data[5] || "").replace(/\/$/, '')) + "/";
         }
         else {
             throw new Error("The url isn't a valid url, probably.");
         }
-
-        print(this.options.host+":"+this.options.port);
 
         this.socket = new System.Network.Sockets.TCP;
 
