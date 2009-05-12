@@ -26,7 +26,7 @@ System.Network.Protocol.HTTP.Request = Class.create({
             method :        "GET",
             partial:        false,
             contentType:    "application/x-www-form-urlencoded",
-            port   :        System.Net.Ports.HTTP,
+            port   :        System.Network.Ports.HTTP,
             timeout:        10,
             ssl    :        false,
             requestHeaders: {},
@@ -54,16 +54,18 @@ System.Network.Protocol.HTTP.Request = Class.create({
             this.options.page = data[5] || "/";
         }
         else {
-            throw "The url isn't a valid url, probably.";
+            throw new Error("The url isn't a valid url, probably.");
         }
 
-        this.socket = new System.Net.Socket;
-        if (!this.socket.connect(this.options.host, this.options.port)) {
-            throw "Couldn't connect to the host.";
-        }
+        print(this.options.host+":"+this.options.port);
+
+        this.socket = new System.Network.Sockets.TCP;
+
+        try { this.socket.connect(this.options.host, this.options.port) }
+        catch (e) { throw new Error("Couldn't connect to the host."); }
 
         if (!this.options.partial) {
-            this.response = System.Net.Protocol.HTTP.Request
+            this.response = System.Network.Protocol.HTTP.Request
                 ._initializeConnection[this.options.method.toUpperCase()].apply(this);
         }
     },
@@ -87,7 +89,7 @@ System.Network.Protocol.HTTP.Request = Class.create({
             }
 
             if (!this.socket.connected) {
-                this.socket = new System.Net.Socket;
+                this.socket = new System.Network.Sockets.TCP;
                 this.socket.connect(this.options.host, this.options.port);
             }
 
@@ -98,7 +100,7 @@ System.Network.Protocol.HTTP.Request = Class.create({
             this.options.requestHeaders["Connection"] = "keep-alive";
             this.options.requestHeaders["Keep-Alive"] = "300";
 
-            this.response = System.Net.Protocol.HTTP.Request
+            this.response = System.Network.Protocol.HTTP.Request
                 ._initializeConnection[this.options.method.toUpperCase()].apply(this);
 
             return this._normalRead(this.response.getHeader("Content-Length").toNumber());
@@ -136,7 +138,7 @@ System.Network.Protocol.HTTP.Request = Class.create({
 
         readToEnd: function () {
             if (this.options.partial) {
-                this.response = System.Net.Protocol.HTTP.Request
+                this.response = System.Network.Protocol.HTTP.Request
                     ._initializeConnection[this.options.method.toUpperCase()].apply(this);
             }
 
@@ -152,7 +154,7 @@ System.Network.Protocol.HTTP.Request = Class.create({
         setDefaultHeaders: function (headers) {
             if (Object.is(headers, Array)) {
                 if (headers.length % 2) {
-                    throw "The array has a odd length.";
+                    throw new Error("The array has a odd length.");
                 }
     
                 var headerz = headers;
@@ -236,44 +238,44 @@ System.Network.Protocol.HTTP.Request = Class.create({
                     "Host: {0}".format([this.options.host]),
                 ].concat(this.getRequestHeadersArray()).concat([""]));
             
-                var answer = System.Net.Protocol.HTTP.parseResponse(this.socket.readLine());
+                var answer = System.Network.Protocol.HTTP.parseResponse(this.socket.readLine());
     
                 var headers = '';
                 var line;
                 while (line = this.socket.readLine()) {
                     headers += line+"\n";
                 }
-                headers = System.Net.Protocol.HTTP.parseHeaders(headers);
+                headers = System.Network.Protocol.HTTP.parseHeaders(headers);
 
                 if (!headers["Content-Type"]) {
                     headers["Content-Type"] = "text/plain";
                 }
 
-                return new System.Net.Protocol.HTTP.Response(answer, headers, "");
+                return new System.Network.Protocol.HTTP.Response(answer, headers, "");
             },
     
             POST: function () {
-                var params = System.Net.Protocol.HTTP.getTextParams(this.options.params);
+                var params = System.Network.Protocol.HTTP.getTextParams(this.options.params);
         
                 this.socket.writeLine([
                     "POST {0} HTTP/1.1".format([this.options.page]),
                     "Host: {0}".format([this.options.host]),
                 ].concat(this.getRequestHeadersArray()).concat(["Content-Length: "+params.length, "", params]));
         
-                var answer = System.Net.Protocol.HTTP.parseResponse(this.socket.readLine());
+                var answer = System.Network.Protocol.HTTP.parseResponse(this.socket.readLine());
         
                 var headers = '';
                 var line;
                 while (line = this.socket.readLine()) {
                     headers += line+"\n";
                 }
-                headers = System.Net.Protocol.HTTP.parseHeaders(headers);
+                headers = System.Network.Protocol.HTTP.parseHeaders(headers);
 
                 if (!headers["Content-Type"]) {
                     headers["Content-Type"] = "text/plain";
                 }
 
-                return new System.Net.Protocol.HTTP.Response(answer, headers, "");
+                return new System.Network.Protocol.HTTP.Response(answer, headers, "");
             },
         
             HEAD: function () {
@@ -282,16 +284,16 @@ System.Network.Protocol.HTTP.Request = Class.create({
                     "Host: {0}".format([this.options.host]),
                 ].concat(this.getRequestHeadersArray()).concat([""]));
         
-                var answer = System.Net.Protocol.HTTP.parseResponse(this.socket.readLine());
+                var answer = System.Network.Protocol.HTTP.parseResponse(this.socket.readLine());
         
                 var headers = '';
                 var line;
                 while (line = this.socket.readLine()) {
                     headers += line+"\n";
                 }
-                headers = System.Net.Protocol.HTTP.parseHeaders(headers);
+                headers = System.Network.Protocol.HTTP.parseHeaders(headers);
         
-                return new System.Net.Protocol.HTTP.Response(answer, headers);
+                return new System.Network.Protocol.HTTP.Response(answer, headers);
             }
         },
     }

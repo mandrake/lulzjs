@@ -1,9 +1,9 @@
 #! /usr/bin/env ljs
 require("System/Console");
-require("System/Net/Socket");
+require("System/Network/Sockets");
 
-var socket = new Socket;
-socket.connect("localhost", 2707);
+var socket = new Sockets.TCP;
+socket.connect("localhost:2707");
 
-socket.sendLine("NIGGER");
-Console.writeLine("Server: "+(socket.receiveLine()));
+socket.writeLine("NIGGER");
+Console.writeLine("Server: "+socket.readLine());

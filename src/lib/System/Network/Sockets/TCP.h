@@ -19,7 +19,7 @@
 #ifndef _SYSTEM_NETWORK_SOCKETS_TCP_H
 #define _SYSTEM_NETWORK_SOCKETS_TCP_H
 
-#include "Sockets.h"
+#include "lulzjs.h"
 
 extern "C" JSBool exec (JSContext* cx);
 JSBool TCP_initialize (JSContext* cx);
@@ -35,11 +35,25 @@ static JSClass TCP_class = {
 
 #include "TCP_private.h"
 
+JSBool TCP_connect (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool TCP_listen (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool TCP_accept (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+
+JSBool TCP_write (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+JSBool TCP_read (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+
 static JSPropertySpec TCP_attributes[] = {
     {NULL}
 };
 
 static JSFunctionSpec TCP_methods[] = {
+    {"connect", TCP_connect, 0, 0, 0},
+    {"listen",  TCP_listen,  0, 0, 0},
+    {"accept",  TCP_accept,  0, 0, 0},
+
+    {"write", TCP_write, 0, 0, 0},
+    {"read",  TCP_read,  0, 0, 0},
+
     JS_FS_END
 };
 

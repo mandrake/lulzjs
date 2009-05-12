@@ -1,4 +1,6 @@
-A cool javascript interpreter that embeds Tracemonkey.
+ljs - lulz Jargon Script
+
+A cool ecmascript interpreter that embeds Tracemonkey.
 
 You have to compile and install the tracemonkey branch first.
 

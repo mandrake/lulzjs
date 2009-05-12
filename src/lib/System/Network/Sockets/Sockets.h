@@ -27,20 +27,12 @@ extern "C" JSBool exec (JSContext* cx);
 JSBool Sockets_initialize (JSContext* cx);
 
 static JSClass Sockets_class = {
-    "Sockets", 0,
+    "Sockets", JSCLASS_HAS_PRIVATE,
     JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
     JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub
 };
 
 #include "private.h"
-
-JSBool Sockets_connect (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-
-JSBool Sockets_listen (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-JSBool Sockets_accept (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-
-JSBool Sockets_write (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-JSBool Sockets_read (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
 JSBool Sockets_writeTo (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 JSBool Sockets_readFrom (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
@@ -50,14 +42,6 @@ JSBool Sockets_static_getHostByName (JSContext* cx, JSObject* object, uintN argc
 JSBool Sockets_static_isIPv4 (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
 
 static JSFunctionSpec Sockets_methods[] = {
-    {"connect", Sockets_connect, 0, 0, 0},
-
-    {"listen", Sockets_listen, 0, 0, 0},
-    {"accept", Sockets_accept, 0, 0, 0},
-
-    {"write", Sockets_write,    0, 0, 0},
-    {"read",  Sockets_read,     0, 0, 0},
- 
     {NULL}
 };
 

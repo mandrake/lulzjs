@@ -18,13 +18,13 @@
 
 System.Network.Protocol.HTTP.Simple = {
     Get: function (url, options) {
-        return new System.Net.Protocol.HTTP.Request(url, options).readToEnd();
+        return new System.Network.Protocol.HTTP.Request(url, options).readToEnd();
     },
 
     Post: function (url, params, options) {
         options = options || { method: "POST" };
 
-        return new System.Net.Protocol.HTTP.Request(url, Object.extend({
+        return new System.Network.Protocol.HTTP.Request(url, Object.extend({
             params: params
         }, options)).readToEnd();
     }

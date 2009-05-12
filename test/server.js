@@ -1,10 +1,10 @@
 #! /usr/bin/env ljs
 require("System/Console");
-require("System/Net/Socket");
+require("System/Network/Sockets");
 
-var socket = new Socket;
+var socket = new Sockets.TCP;
 socket.listen(null, 2707);
 var client = socket.accept();
 
-Console.writeLine("Client: "+(client.receiveLine()));
-client.sendLine("NO U");
+Console.writeLine("Client: "+client.readLine());
+client.writeLine("NO U");
