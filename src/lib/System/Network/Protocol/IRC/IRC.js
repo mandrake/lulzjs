@@ -16,16 +16,8 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require([
-    "System/System.so",
-        "System/Network/Network.so",
-            "System/Network/Sockets/Sockets.so", "System/Network/Sockets/Sockets.js",
-                "System/Network/Sockets/TCP.so", "System/Network/Sockets/TCP.js",
+Object.extend(System.Network.Protocol.IRC, {
+    parseCommand: function (text) {
 
-        "Protocol.so",
-            "HTTP/HTTP.so", "HTTP/HTTP.js", "HTTP/Request.js", "HTTP/Response.js", "HTTP/Client.js",
-            "IRC/IRC.so", "IRC/IRC.js", "IRC/Client.js",
-]);
-
-Program.Protocol = Program.System.Network.Protocol;
-
+    },
+});

@@ -31,7 +31,7 @@ Bytes = Class.create(Enumerable, {
             }
             else {
                 this.array = new Array;
-                for each (let ch in base) {
+                for (let ch in base) {
                     this.array.push(ch.toCode());
                 }
             }

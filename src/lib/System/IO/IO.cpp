@@ -16,16 +16,56 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require([
-    "System/System.so",
-        "System/Network/Network.so",
-            "System/Network/Sockets/Sockets.so", "System/Network/Sockets/Sockets.js",
-                "System/Network/Sockets/TCP.so", "System/Network/Sockets/TCP.js",
+#include "IO.h"
 
-        "Protocol.so",
-            "HTTP/HTTP.so", "HTTP/HTTP.js", "HTTP/Request.js", "HTTP/Response.js", "HTTP/Client.js",
-            "IRC/IRC.so", "IRC/IRC.js", "IRC/Client.js",
-]);
+JSBool exec (JSContext* cx) { return IO_initialize(cx); }
 
-Program.Protocol = Program.System.Network.Protocol;
+JSBool
+IO_initialize (JSContext* cx)
+{
+    JS_BeginRequest(cx);
+
+    jsval jsParent   = JS_EVAL(cx, "System");
+    JSObject* parent = JSVAL_TO_OBJECT(jsParent);
+
+    JSObject* object = JS_DefineObject(
+        cx, parent,
+        IO_class.name, &IO_class, NULL, 
+        JSPROP_PERMANENT|JSPROP_READONLY|JSPROP_ENUMERATE);
+
+    if (object) {
+        JS_DefineFunctions(cx, object, IO_methods);
+        JS_DefineProperties(cx, object, IO_attributes);
+
+        JS_EndRequest(cx);
+        return JS_TRUE;
+    }
+
+    return JS_FALSE;
+}
+
+#define MAX(n,m) ((n > m) ? n : m)
+JSBool
+IO_select (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
+{
+    fd_set rd, wr, er;
+    JSObject* read;
+    JSObject* write;
+    JSObject* exception;
+
+    JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
+
+    if (argc < 3 || !JS_ConvertArguments(cx, argc, argv, "ooo", &read, &write, &exception)) {
+        JS_ReportError(cx, "Not enough parameters.");
+        JS_LeaveLocalRootScope(cx);
+        JS_EndRequest(cx);
+        return JS_FALSE;
+    }
+
+    if (!(JS_IsArrayObject(cx, read) && JS_IsArrayObject(cx, write) && JS_IsArrayObject(cx, exception))) {
+        JS_ReportError(cx, "You have to pass 3 Arrays.");
+        return JS_FALSE;
+    }
+}
 

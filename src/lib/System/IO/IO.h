@@ -16,16 +16,29 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require([
-    "System/System.so",
-        "System/Network/Network.so",
-            "System/Network/Sockets/Sockets.so", "System/Network/Sockets/Sockets.js",
-                "System/Network/Sockets/TCP.so", "System/Network/Sockets/TCP.js",
+#ifndef _SYSTEM_IO_H
+#define _SYSTEM_IO_H
 
-        "Protocol.so",
-            "HTTP/HTTP.so", "HTTP/HTTP.js", "HTTP/Request.js", "HTTP/Response.js", "HTTP/Client.js",
-            "IRC/IRC.so", "IRC/IRC.js", "IRC/Client.js",
-]);
+#include "lulzjs.h"
 
-Program.Protocol = Program.System.Network.Protocol;
+extern "C" JSBool exec (JSContext* cx);
+JSBool IO_initialize (JSContext* cx);
 
+static JSClass IO_class = {
+    "IO", 0,
+    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
+    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub
+};
+
+static JSPropertySpec IO_attributes[] = {
+    {NULL}
+};
+
+JSBool IO_select (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
+
+static JSFunctionSpec IO_methods[] = {
+    {"select", IO_select, 0, 0, 0},
+    {NULL}
+};
+
+#endif

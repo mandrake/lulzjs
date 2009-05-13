@@ -59,7 +59,7 @@
 
         flags = (typeof flags == 'number'
             ? flags
-            : Object.Flags.Default);
+            : Object.Flags.None);
 
         overwrite = (overwrite === undefined)
             ? true
@@ -142,11 +142,26 @@
         return returnValue;
     };
 
+    function without (obj, exceptions) {
+        var result = Object.extend({}, this);
+
+        if (exceptions.is(Array)) {
+            for each (let exception in exceptions) {
+                delete result[exception];
+            }
+        }
+        else {
+            delete result[exceptions];
+        }
+
+        return result;
+    };
+
     function is (obj, type) {
         try {
             if (typeof type == 'string') {
                 if (type.trim().match(/;|\(.*\)$/)) {
-                    throw "LOL HAX";
+                    throw new Error("LOL HAX");
                 }
 
                 type = eval(type);
@@ -187,8 +202,9 @@
         keys:             keys,
         values:           values,
         clone:            clone,
+        without:          without,
         is:               is,
-        toArray:          toArray
+        toArray:          toArray,
     }, Object.Flags.None);
 })();
 
@@ -229,14 +245,8 @@ Object.extend(Object.prototype, (function() {
         return Object.clone(this, deep);
     };
 
-    function exclude (names) {
-        var obj = this.clone();
-
-        for each (let name in names) {
-            delete obj[name];
-        }
-
-        return obj;
+    function without (names) {
+        return Object.without(this, names);
     };
 
     return {
@@ -246,7 +256,7 @@ Object.extend(Object.prototype, (function() {
         keys   :          keys,
         values :          values,
         clone  :          clone,
-        exclude:          exclude,
+        without:          without,
         is     :          is,
         toArray:          toArray,
         inspect:          inspect,

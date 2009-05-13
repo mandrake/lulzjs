@@ -90,12 +90,8 @@ __Sockets_initAddr (PRNetAddr* addr, const char* host, int port = -1)
             sPort = sHost.substr(sHost.find_last_of(":")+1);
         }
 
-        if (!sPort.empty()) {
-            int tmp = atoi(sPort.c_str());
-
-            if (tmp >= 1 && tmp <= 65536) {
-                port = tmp;
-            }
+        if (port == -1) {
+            port = atoi(sPort.c_str());
         }
  
         if (PR_StringToNetAddr(sIp.c_str(), addr) == PR_FAILURE) {

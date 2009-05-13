@@ -35,8 +35,6 @@ Object.extend(String, {
     }
 }, Object.Flags.None);
 
-Object.extend(String.prototype, Enumerable, true);
-
 Object.extend(String.prototype, (function() {
     function prepareReplacement (replacement) {
         if (Object.is(replacement, Function)) return replacement;

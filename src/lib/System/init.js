@@ -20,7 +20,10 @@ require([
     "System.so",
         "Environment/Environment.so",
 
-        "FileSystem/FileSystem.so",
+        "IO/IO.so",
+            "IO/Pipe/Pipe.so", "IO/Pipe/Pipe.js",
+
+        "FileSystem/FileSystem.so", "FileSystem/FileSystem.js",
             "FileSystem/File/File.so", "FileSystem/File/File.js",
             "FileSystem/Directory/Directory.so", "FileSystem/Directory/Directory.js",
 

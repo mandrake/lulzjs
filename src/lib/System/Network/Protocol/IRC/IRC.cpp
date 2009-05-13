@@ -16,16 +16,27 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require([
-    "System/System.so",
-        "System/Network/Network.so",
-            "System/Network/Sockets/Sockets.so", "System/Network/Sockets/Sockets.js",
-                "System/Network/Sockets/TCP.so", "System/Network/Sockets/TCP.js",
+#include "IRC.h"
 
-        "Protocol.so",
-            "HTTP/HTTP.so", "HTTP/HTTP.js", "HTTP/Request.js", "HTTP/Response.js", "HTTP/Client.js",
-            "IRC/IRC.so", "IRC/IRC.js", "IRC/Client.js",
-]);
+JSBool exec (JSContext* cx) { return IRC_initialize(cx); }
 
-Program.Protocol = Program.System.Network.Protocol;
+JSBool
+IRC_initialize (JSContext* cx)
+{
+    JSObject* parent = JSVAL_TO_OBJECT(JS_EVAL(cx, "System.Network.Protocol"));
+
+    JSObject* object = JS_DefineObject(
+        cx, parent,
+        IRC_class.name, &IRC_class, NULL, 
+        JSPROP_PERMANENT|JSPROP_READONLY|JSPROP_ENUMERATE
+    );
+
+    if (object) {
+        JS_DefineFunctions(cx, object, IRC_methods);
+
+        return JS_TRUE;
+    }
+
+    return JS_FALSE;
+}
 

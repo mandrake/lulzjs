@@ -68,12 +68,15 @@ Class = {
         klass.__defineProperty__("__type__",           properties.type || Class.Normal);
         klass.prototype.__defineProperty__("__type__", properties.type || Class.Normal);
 
-        klass.addMethods({initialize: (properties.constructor.is(Function)
+        klass.addMethods({initialize: (Object.is(properties.constructor, Function)
             ? properties.constructor
-            : Function.empty.clone())
+            : Object.is(properties.initialize, Function)
+                ? properties.initialize
+                : Function.empty.clone())
         });
 
         klass.addMethods(properties.methods);
+        klass.addMethods(properties.without(["constructor", "initialize", "methods", "static", "attributes"]));
 
         klass.addStatic(properties.static);
         klass.addAttributes(properties.attributes);

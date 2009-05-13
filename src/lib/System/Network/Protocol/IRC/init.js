@@ -21,11 +21,11 @@ require([
         "System/Network/Network.so",
             "System/Network/Sockets/Sockets.so", "System/Network/Sockets/Sockets.js",
                 "System/Network/Sockets/TCP.so", "System/Network/Sockets/TCP.js",
+                
+            "System/Network/Ports/Ports.js",
 
-        "Protocol.so",
-            "HTTP/HTTP.so", "HTTP/HTTP.js", "HTTP/Request.js", "HTTP/Response.js", "HTTP/Client.js",
-            "IRC/IRC.so", "IRC/IRC.js", "IRC/Client.js",
+            "System/Network/Protocol/Protocol.so",
+                "IRC.so", "IRC.js", "Client.js",
 ]);
 
-Program.Protocol = Program.System.Network.Protocol;
-
+Program.IRC = Program.System.Network.Protocol.IRC;
