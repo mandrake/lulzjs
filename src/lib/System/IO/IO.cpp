@@ -44,28 +44,47 @@ IO_initialize (JSContext* cx)
     return JS_FALSE;
 }
 
+#undef  MAX
 #define MAX(n,m) ((n > m) ? n : m)
+#define READ      0
+#define WRITE     1
+#define EXCEPTION 2
 JSBool
 IO_select (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval)
 {
-    fd_set rd, wr, er;
-    JSObject* read;
-    JSObject* write;
-    JSObject* exception;
+    fd_set fds[3];
+    JSObject* arrays[3];
 
     JS_BeginRequest(cx);
     JS_EnterLocalRootScope(cx);
 
-    if (argc < 3 || !JS_ConvertArguments(cx, argc, argv, "ooo", &read, &write, &exception)) {
+    if (argc < 3 || !JS_ConvertArguments(cx, argc, argv, "ooo", &arrays[READ], &arrays[WRITE], &arrays[EXCEPTION])) {
         JS_ReportError(cx, "Not enough parameters.");
         JS_LeaveLocalRootScope(cx);
         JS_EndRequest(cx);
         return JS_FALSE;
     }
 
-    if (!(JS_IsArrayObject(cx, read) && JS_IsArrayObject(cx, write) && JS_IsArrayObject(cx, exception))) {
+    if (!(JS_IsArrayObject(cx, arrays[READ]) && JS_IsArrayObject(cx, arrays[WRITE]) && JS_IsArrayObject(cx, arrays[EXCEPTION]))) {
         JS_ReportError(cx, "You have to pass 3 Arrays.");
         return JS_FALSE;
     }
+
+    FD_ZERO(&fds[READ]); FD_ZERO(&fds[WRITE]); FD_ZERO(&fds[EXCEPTION]);
+
+    jsuint length, i, h;
+    jsval  element;
+    int32  fd, nfds = 0;
+
+    for (i = 0; i < 3; i++) {
+        JS_GetArrayLength(cx, arrays[i], &length);
+
+        for (h = 0; h < length; h++) {
+            JS_GetElement(cx, array[i], h, &element);
+            JS_ValueToInt32(cx, element, &fd);
+            FD_SET(fd, &fds[i]);
+        }
+    }
 }
+#undef  MAX
 

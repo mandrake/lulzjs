@@ -81,6 +81,11 @@ Core_include (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
         return JS_FALSE;
     }
 
+    if (files == NULL) {
+        JS_EndRequest(cx);
+        return JS_TRUE;
+    }
+
     if (JS_IsArrayObject(cx, files)) {
         JSObject* retArray = JS_NewArrayObject(cx, 0, NULL);
 
@@ -122,7 +127,10 @@ Core_require (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
         return JS_FALSE;
     }
 
-    short ok;
+    if (files == NULL) {
+        JS_EndRequest(cx);
+        return JS_TRUE;
+    }
 
     if (JS_IsArrayObject(cx, files)) {
         jsuint length;
@@ -143,7 +151,7 @@ Core_require (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
     }
     else {
         std::string path = __Core_getPath(cx, JS_GetStringBytes(JS_ValueToString(cx, OBJECT_TO_JSVAL(files))));
-        ok = __Core_include(cx, path);
+        JSBool ok = __Core_include(cx, path);
 
         if (!ok) {
             JS_ReportError(cx, "%s couldn't be included.", path.c_str());

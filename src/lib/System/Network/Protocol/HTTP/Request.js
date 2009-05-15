@@ -168,7 +168,7 @@ System.Network.Protocol.HTTP.Request = Class.create({
                 'Content-Type': this.options.contentType
             };
     
-            Object.extend(this.options.requestHeaders, headers);
+            return Object.extend(this.options.requestHeaders, headers);
         },
     
         getRequestHeadersArray: function () {
@@ -198,7 +198,7 @@ System.Network.Protocol.HTTP.Request = Class.create({
                 }
                 return ret;
             }
-    
+   
             if (!this.chunk) {
                 this.chunk = {
                     length: 0,
@@ -235,7 +235,9 @@ System.Network.Protocol.HTTP.Request = Class.create({
                     "GET {0} HTTP/1.1".format([this.options.page+(this.options.params ? "?"+this.options.params : '')]),
                     "Host: {0}".format([this.options.host]),
                 ].concat(this.getRequestHeadersArray()).concat([""]));
-            
+
+                print(("GET {0} HTTP/1.1".format([this.options.page+(this.options.params ? "?"+this.options.params : '')])).inspect());
+
                 var answer = System.Network.Protocol.HTTP.parseResponse(this.socket.readLine());
     
                 var headers = '';

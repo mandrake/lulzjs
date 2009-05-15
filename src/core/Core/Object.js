@@ -59,7 +59,7 @@
 
         flags = (typeof flags == 'number'
             ? flags
-            : Object.Flags.None);
+            : Object.Flags.Default);
 
         overwrite = (overwrite === undefined)
             ? true
