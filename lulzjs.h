@@ -5,7 +5,6 @@
 #include "private/prpriv.h"
 #include "prerror.h"
 #define PR_GET_FD(fd) PR_FileDesc2NativeHandle(fd)
-#define PR_THROW_ERROR(cx) char* error = new char[PR_GetErrorTextLength()]; PR_GetErrorText(error); JS_ReportError(cx, error); delete error;
 
 /* JAVASCRIPT */
 #include "jsapi.h"
@@ -160,7 +159,7 @@ class Script
         }
     };
 
-    bool  save (std::string path, int mode)
+    bool save (std::string path, int mode)
     {
         switch (mode) {
             case Text: {
@@ -187,7 +186,7 @@ class Script
         return false;
     };
 
-    bool  load (std::string path, int mode)
+    bool load (std::string path, int mode)
     {
         if (_loaded) {
             return false;
@@ -200,6 +199,10 @@ class Script
                 struct stat fileStat;
                 if (!stat(path.c_str(), &fileStat)) {
                     std::ifstream file(path.c_str());
+
+                    if (!file.is_open()) {
+                        return false;
+                    }
     
                     char* source = new char[fileStat.st_size+1];
                     file.read(source, fileStat.st_size);
@@ -252,7 +255,7 @@ class Script
         return false;
     };
 
-    void  compile (void)
+    void compile (void)
     {
         if (_compiled) {
             return;
@@ -277,7 +280,7 @@ class Script
         JS_EndRequest(_cx);
     };
 
-    void  decompile (void)
+    void decompile (void)
     {
         JS_BeginRequest(_cx);
         JS_EnterLocalRootScope(_cx);
@@ -327,6 +330,62 @@ class Script
         JS_EndRequest(_cx);
         return ret;
     };
+
+    static jsval executeLineByLine (JSContext* cx, std::string path)
+    {
+        std::ifstream file(path.c_str());
+        bool   executing = true;
+        char*  source    = NULL;
+        size_t length    = 0;
+        size_t line      = 0;
+
+        if (!file.is_open()) {
+            return JS_FALSE;
+        }
+
+        while (executing) {
+            do {
+                if ((length+1) % 128) {
+                    source = (char*) realloc(source, (length+128+1)*sizeof(char));
+                }
+                
+                file.read(source+length, 1);
+            } while (source[(++length)-1] != '\n' && file.good());
+            source[length-1] = '\0';
+            source = (char*) realloc(source, length*sizeof(char));
+            line++;
+
+            if (lulzJS::Script::isCompilable(cx, source)) {
+                try {
+                    lulzJS::Script script(cx, source, path, line);
+                    script.execute();
+
+                    free(source);
+                    length = 0;
+
+                    if (JS_IsExceptionPending(cx)) {
+                        return JS_FALSE;
+                    }
+                }
+                catch (std::exception e) {
+                    free(source);
+                    return JS_FALSE;
+                }
+                
+                if (!file.good()) {
+                    executing = false;
+                }
+            }
+            else {
+                if (!file.good()) {
+                    free(source);
+                    return JS_FALSE;
+                }
+            }
+        }
+
+        return JS_TRUE;
+    }
 
     static JSBool isBytecode (const char* bytecode)
     {
