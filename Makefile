@@ -57,7 +57,8 @@ LIB_MATH = \
 	${LIB_MATH_DIR}/Cryptography/Cryptography.o \
 	${LIB_MATH_DIR}/Cryptography/Hashing/Hashing.o ${LIB_MATH_DIR}/Cryptography/Hashing/SHA1/SHA1.o \
 	${LIB_MATH_DIR}/Cryptography/Crypting/Crypting.o \
-	${LIB_MATH_DIR}/Sequences/Sequences.o 
+	${LIB_MATH_DIR}/Sequences/Sequences.o \
+	${LIB_MATH_DIR}/Economy/Economy.o
 
 LIB_MATH_CFLAGS  = ${CFLAGS}
 LIB_MATH_LDFLAGS = ${LDFLAGS}
@@ -203,8 +204,10 @@ libmath_install: libmath
 	mkdir -p ${LJS_LIBDIR}/Math/Cryptography/Hashing
 	mkdir -p ${LJS_LIBDIR}/Math/Cryptography/Hashing/SHA1
 	mkdir -p ${LJS_LIBDIR}/Math/Cryptography/Crypting
-	mkdir -p ${LJS_LIBDIR}/Math/Sequences/
+	mkdir -p ${LJS_LIBDIR}/Math/Sequences
 	mkdir -p ${LJS_LIBDIR}/Math/Sequences/Fibonacci
+	mkdir -p ${LJS_LIBDIR}/Math/Economy
+	mkdir -p ${LJS_LIBDIR}/Math/Economy/VAT
 ########
 	cp -f ${LIB_MATH_DIR}/init.js									${LJS_LIBDIR}/Math/init.js
 	cp -f ${LIB_MATH_DIR}/Math.o									${LJS_LIBDIR}/Math/Math.so
@@ -231,7 +234,13 @@ libmath_install: libmath
 ########
 	cp -f ${LIB_MATH_DIR}/Sequences/Fibonacci/init.js				${LJS_LIBDIR}/Math/Sequences/Fibonacci/init.js
 	cp -f ${LIB_MATH_DIR}/Sequences/Fibonacci/Fibonacci.js			${LJS_LIBDIR}/Math/Sequences/Fibonacci/Fibonacci.js
-
+########
+	cp -f ${LIB_MATH_DIR}/Economy/init.js							${LJS_LIBDIR}/Math/Economy/init.js
+	cp -f ${LIB_MATH_DIR}/Economy/Economy.o							${LJS_LIBDIR}/Math/Economy/Economy.so
+	cp -f ${LIB_MATH_DIR}/Economy/Economy.js						${LJS_LIBDIR}/Math/Economy/Economy.js
+########
+	cp -f ${LIB_MATH_DIR}/Economy/VAT/init.js						${LJS_LIBDIR}/Math/Economy/VAT/init.js
+	cp -f ${LIB_MATH_DIR}/Economy/VAT/VAT.js						${LJS_LIBDIR}/Math/Economy/VAT/VAT.js
 
 libmath_uninstall:
 

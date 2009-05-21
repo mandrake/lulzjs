@@ -16,18 +16,36 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require([
-    "Math.so",
-        "Cryptography/Cryptography.so", "Cryptography/Cryptography.js",
-            "Cryptography/Hashing/Hashing.so", "Cryptography/Hashing/Hashing.js",
-                "Cryptography/Hashing/SHA1/SHA1.so", "Cryptography/Hashing/SHA1/SHA1.js",
+Math.Economy.VAT = Class.create({
+    constructor: function (vat) {
+        this._vat = vat;
+    },
 
-            "Cryptography/Crypting/Crypting.so", "Cryptography/Crypting/Crypting.js",
+    methods: {
+        get: function (value) {
+            return Math.Economy.VAT.get(value, this._vat);
+        },
 
-        "Sequences/Sequences.so", "Sequences/Sequences.js",
-            "Sequences/Fibonacci/Fibonacci.js",
+        apply: function (value) {
+            return Math.Economy.VAT.apply(value, this._vat);
+        }
+    },
 
-        "Economy/Economy.so", "Economy/Economy.js",
-            "Economy/VAT/VAT.js",
-]);
+    static: {
+        get: function (value, vat) {
+            return value / 100 * vat;
+        },
+
+        apply: function (value, vat) {
+            return value + Math.Economy.VAT.get(value, vat);
+        },
+    },
+});
+
+/* States */
+Math.Economy.VAT.Italy = {
+    Standard: 20,
+    Reduced:  12,
+};
+
 

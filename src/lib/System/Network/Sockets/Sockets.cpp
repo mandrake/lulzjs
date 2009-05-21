@@ -113,7 +113,10 @@ Sockets_writeTo (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval
     JS_LeaveLocalRootScope(cx);
 
     if (sent < 0) {
-        PR_THROW_ERROR(cx);
+        switch (PR_GetError()) {
+            default: JS_ReportError(cx, "Something went wrong."); break;
+        }
+
         JS_EndRequest(cx);
         return JS_FALSE;
     }
@@ -178,7 +181,10 @@ Sockets_readFrom (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsva
         jsval jsConnected = JSVAL_FALSE;
         JS_SetProperty(cx, object, "connected", &jsConnected);
 
-        PR_THROW_ERROR(cx);
+        switch (PR_GetError()) {
+            default: JS_ReportError(cx, "Something went wrong."); break;
+        }
+
         JS_LeaveLocalRootScope(cx);
         JS_EndRequest(cx);
         return JS_FALSE;

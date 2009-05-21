@@ -17,17 +17,10 @@
 ****************************************************************************/
 
 require([
-    "Math.so",
-        "Cryptography/Cryptography.so", "Cryptography/Cryptography.js",
-            "Cryptography/Hashing/Hashing.so", "Cryptography/Hashing/Hashing.js",
-                "Cryptography/Hashing/SHA1/SHA1.so", "Cryptography/Hashing/SHA1/SHA1.js",
-
-            "Cryptography/Crypting/Crypting.so", "Cryptography/Crypting/Crypting.js",
-
-        "Sequences/Sequences.so", "Sequences/Sequences.js",
-            "Sequences/Fibonacci/Fibonacci.js",
-
-        "Economy/Economy.so", "Economy/Economy.js",
-            "Economy/VAT/VAT.js",
+    "Math/Math.so",
+        "Economy.so", "Economy.js",
+            "VAT/VAT.js",
 ]);
+
+Program.Economy = Program.Math.Economy;
 

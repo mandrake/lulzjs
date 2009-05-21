@@ -295,7 +295,10 @@ TCP_write (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval
     JS_LeaveLocalRootScope(cx);
 
     if (sent < 0) {
-        PR_THROW_ERROR(cx);
+        switch (PR_GetError()) {
+            default: JS_ReportError(cx, "Something went wrong."); break;
+        }
+
         JS_EndRequest(cx);
         return JS_FALSE;
     }
@@ -355,7 +358,10 @@ TCP_read (JSContext *cx, JSObject *object, uintN argc, jsval *argv, jsval *rval)
     JS_ResumeRequest(cx, req);
 
     if (received < 0) {
-        PR_THROW_ERROR(cx);
+        switch (PR_GetError()) {
+            default: JS_ReportError(cx, "Something went wrong."); break;
+        }
+
         JS_EndRequest(cx);
         return JS_FALSE;
     }

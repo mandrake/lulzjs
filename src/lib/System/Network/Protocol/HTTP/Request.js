@@ -51,7 +51,7 @@ System.Network.Protocol.HTTP.Request = Class.create({
         var data;
         if (data = /^(http(s)?:\/\/)?([^:\/]*)(:\d+)?(\/.*)?$/.exec(url)) {
             this.options.host = data[3];
-            this.options.page = ((data[5] || "").replace(/\/$/, '')) + "/";
+            this.options.page = data[5] || "/";
         }
         else {
             throw new Error("The url isn't a valid url, probably.");
@@ -235,8 +235,6 @@ System.Network.Protocol.HTTP.Request = Class.create({
                     "GET {0} HTTP/1.1".format([this.options.page+(this.options.params ? "?"+this.options.params : '')]),
                     "Host: {0}".format([this.options.host]),
                 ].concat(this.getRequestHeadersArray()).concat([""]));
-
-                print(("GET {0} HTTP/1.1".format([this.options.page+(this.options.params ? "?"+this.options.params : '')])).inspect());
 
                 var answer = System.Network.Protocol.HTTP.parseResponse(this.socket.readLine());
     

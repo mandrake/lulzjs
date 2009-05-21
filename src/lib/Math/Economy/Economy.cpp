@@ -16,18 +16,26 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-require([
-    "Math.so",
-        "Cryptography/Cryptography.so", "Cryptography/Cryptography.js",
-            "Cryptography/Hashing/Hashing.so", "Cryptography/Hashing/Hashing.js",
-                "Cryptography/Hashing/SHA1/SHA1.so", "Cryptography/Hashing/SHA1/SHA1.js",
+#include "Economy.h"
 
-            "Cryptography/Crypting/Crypting.so", "Cryptography/Crypting/Crypting.js",
+JSBool exec (JSContext* cx) { return Economy_initialize(cx); }
 
-        "Sequences/Sequences.so", "Sequences/Sequences.js",
-            "Sequences/Fibonacci/Fibonacci.js",
+JSBool
+Economy_initialize (JSContext* cx)
+{
+    JSObject* parent = JSVAL_TO_OBJECT(JS_EVAL(cx, "Math"));
 
-        "Economy/Economy.so", "Economy/Economy.js",
-            "Economy/VAT/VAT.js",
-]);
+    JSObject* object = JS_DefineObject(
+        cx, parent,
+        Economy_class.name, &Economy_class, NULL, 
+        JSPROP_PERMANENT|JSPROP_READONLY|JSPROP_ENUMERATE);
+
+    if (object) {
+        JS_DefineFunctions(cx, object, Economy_methods);
+
+        return JS_TRUE;
+    }
+
+    return JS_FALSE;
+}
 
