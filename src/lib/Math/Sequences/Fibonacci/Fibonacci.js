@@ -33,26 +33,17 @@ Math.Sequences.Fibonacci = Class.create({
             return n;
         },
 
+    },
+    
+    static: {
         at: function (index) {
             if (index < 1) {
                 throw new Error("The sequence starts from 1.")
             }
 
-            var count = 0;
-
-            for (var n in this.generator) {
-                count++;
-
-                if (count > index-1) {
-                    return n;
-                }
-            }
-
-            return null;
+            return (1/(5).sqrt())*((1+(5).sqrt())/2).pow(index) - (1/(5).sqrt()) * ((1-(5).sqrt())/2).pow(index);
         },
-    },
-    
-    static: {
+
         Generator: function (limit) {
             var a = 1;
             var b = 1;
