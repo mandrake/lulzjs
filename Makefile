@@ -45,6 +45,7 @@ LIB_SYSTEM = \
 	${LIB_SYSTEM_DIR}/Network/Network.o \
 	${LIB_SYSTEM_DIR}/Network/Sockets/Sockets.o ${LIB_SYSTEM_DIR}/Network/Sockets/TCP.o ${LIB_SYSTEM_DIR}/Network/Sockets/UDP.o ${LIB_SYSTEM_DIR}/Network/Sockets/ICMP.o ${LIB_SYSTEM_DIR}/Network/Sockets/RAW.o \
 	${LIB_SYSTEM_DIR}/Network/Protocol/Protocol.o ${LIB_SYSTEM_DIR}/Network/Protocol/HTTP/HTTP.o ${LIB_SYSTEM_DIR}/Network/Protocol/IRC/IRC.o \
+	${LIB_SYSTEM_DIR}/IO/IO.o 
 
 LIB_SYSTEM_CFLAGS  = ${CFLAGS}
 LIB_SYSTEM_LDFLAGS = ${LDFLAGS}
@@ -118,8 +119,7 @@ libsystem_install: libsystem
 	mkdir -p ${LJS_LIBDIR}/System/Network/Protocol/HTTP
 	mkdir -p ${LJS_LIBDIR}/System/Network/Protocol/HTTP/Simple
 	mkdir -p ${LJS_LIBDIR}/System/Network/Protocol/IRC
-	mkdir -p ${LJS_LIBDIR}/System/Crypt
-	mkdir -p ${LJS_LIBDIR}/System/Crypt/SHA1
+	mkdir -p ${LJS_LIBDIR}/System/IO
 ########
 	cp -f ${LIB_SYSTEM_DIR}/init.js										${LJS_LIBDIR}/System/init.js
 	cp -f ${LIB_SYSTEM_DIR}/System.o									${LJS_LIBDIR}/System/System.so
@@ -188,6 +188,9 @@ libsystem_install: libsystem
 	cp -f ${LIB_SYSTEM_DIR}/Network/Protocol/IRC/IRC.o					${LJS_LIBDIR}/System/Network/Protocol/IRC/IRC.so
 	cp -f ${LIB_SYSTEM_DIR}/Network/Protocol/IRC/IRC.js					${LJS_LIBDIR}/System/Network/Protocol/IRC/IRC.js
 	cp -f ${LIB_SYSTEM_DIR}/Network/Protocol/IRC/Client.js				${LJS_LIBDIR}/System/Network/Protocol/IRC/Client.js
+#######
+	cp -f ${LIB_SYSTEM_DIR}/IO/init.js									${LJS_LIBDIR}/System/IO/init.js
+	cp -f ${LIB_SYSTEM_DIR}/IO/IO.o										${LJS_LIBDIR}/System/IO/IO.so
 
 libsystem_uninstall:
 

@@ -44,6 +44,7 @@ IO_initialize (JSContext* cx)
     return JS_FALSE;
 }
 
+/*
 #undef  MAX
 #define MAX(n,m) ((n > m) ? n : m)
 #define READ      0
@@ -87,4 +88,4 @@ IO_select (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval
     }
 }
 #undef  MAX
-
+*/

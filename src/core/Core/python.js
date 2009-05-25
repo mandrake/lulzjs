@@ -17,7 +17,12 @@
 ****************************************************************************/
 
 function int (num) {
-    return parseInt(num);
+    if (num.is(Number)) {
+        return num.floor();
+    }
+    else {
+        return parseInt(num);
+    }
 };
 
 function float (num) {

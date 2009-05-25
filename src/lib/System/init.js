@@ -21,14 +21,14 @@ require([
         "Environment/Environment.so",
 
         "IO/IO.so",
-            "IO/Pipe/Pipe.so", "IO/Pipe/Pipe.js",
+//            "IO/ipe/Pipe.so", "IO/Pipe/Pipe.js",
 
         "FileSystem/FileSystem.so", "FileSystem/FileSystem.js",
             "FileSystem/File/File.so", "FileSystem/File/File.js",
             "FileSystem/Directory/Directory.so", "FileSystem/Directory/Directory.js",
 
         "Network/Network.so",
-            "Network/Sockets/Sockets.so", "Network/Sockets/Socket.js",
+            "Network/Sockets/Sockets.so", "Network/Sockets/Sockets.js",
                 "Network/Sockets/TCP.so",  "Network/Sockets/TCP.js",
                 "Network/Sockets/UDP.so",  "Network/Sockets/UDP.js",
                 "Network/Sockets/ICMP.so", "Network/Sockets/ICMP.js",
@@ -40,10 +40,6 @@ require([
                 "Network/Protocol/HTTP/HTTP.so", "Network/Protocol/HTTP/HTTP.js",
                     "Network/Protocol/HTTP/Request.js", "Network/Protocol/HTTP/Response.js",
                     "Network/Protocol/HTTP/Client.js", "Network/Protocol/HTTP/Simple/Simple.js",
-
-        "Math/Math.so",
-            "Math/Crypt/Crypt.so",
-                "Crypt/SHA1/SHA1.so", "Crypt/SHA1/SHA1.js",
 
         "Console/Console.so", "Console/Console.js",
 ]);

@@ -41,7 +41,7 @@ Math.Sequences.Fibonacci = Class.create({
                 throw new Error("The sequence starts from 1.")
             }
 
-            return (1/(5).sqrt())*((1+(5).sqrt())/2).pow(index) - (1/(5).sqrt()) * ((1-(5).sqrt())/2).pow(index);
+            return ((1/(5).sqrt())*((1+(5).sqrt())/2).pow(index) - (1/(5).sqrt()) * ((1-(5).sqrt())/2).pow(index)).ceil();
         },
 
         Generator: function (limit) {

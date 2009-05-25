@@ -34,10 +34,7 @@ static JSPropertySpec IO_attributes[] = {
     {NULL}
 };
 
-JSBool IO_select (JSContext* cx, JSObject* object, uintN argc, jsval* argv, jsval* rval);
-
 static JSFunctionSpec IO_methods[] = {
-    {"select", IO_select, 0, 0, 0},
     {NULL}
 };
 

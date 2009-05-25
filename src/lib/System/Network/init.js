@@ -20,7 +20,7 @@ require([
     "System/System.so",
         "Network.so",
 
-        "Sockets/Sockets.so", "Sockets/Socket.js",
+        "Sockets/Sockets.so", "Sockets/Sockets.js",
             "Sockets/TCP.so",  "Sockets/TCP.js",
             "Sockets/UDP.so",  "Sockets/UDP.js",
             "Sockets/ICMP.so", "Sockets/ICMP.js",

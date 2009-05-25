@@ -19,7 +19,7 @@
 require([
     "System/System.so",
         "IO.so",
-            "Pipe/Pipe.so", "Pipe/Pipe.js",
+//            "Pipe/Pipe.so", "Pipe/Pipe.js",
 ]);
 
 Program.IO = Program.System.IO;

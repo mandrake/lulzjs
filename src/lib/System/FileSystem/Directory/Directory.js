@@ -16,19 +16,14 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-(function() {
-
-var File      = System.FileSystem.File;
-var Directory = System.FileSystem.Directory;
-
-Directory.addMethods((function() {
-    function _init () {
+System.FileSystem.Directory.extend({
+    _init: function () {
         for (let i = 0; i < this.length; i++) {
             this.__defineGetter__(i, new Function("return this.fileAt("+i+")"));
         }
-    };
+    },
 
-    function inspect () {
+    inspect: function () {
         try {
             return '#<Directory: path="{0}", permission={1}, length={2}, position={3}>'.format([
                 this.path, this.permission, this.length, this.position
@@ -37,15 +32,10 @@ Directory.addMethods((function() {
         catch (e) {
             return '#<Directory: null>';
         }
-    };
+    },
+});
 
-    return {
-        _init:   _init,
-        inspect: inspect,
-    };
-})());
-
-Directory.addAttributes({
+System.FileSystem.Directory.extendAttributes({
     next: { get: function () {
         return (this.position == this.length-1)
             ? null
@@ -67,4 +57,3 @@ Directory.addAttributes({
     }},
 });
 
-})();
