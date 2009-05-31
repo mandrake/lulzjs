@@ -25,6 +25,12 @@ CORE         = ${CORE_DIR}/main.o ${CORE_DIR}/Interactive.o
 CORE_CFLAGS  = ${CFLAGS}
 CORE_LDFLAGS = ${LDFLAGS} -lreadline -lncurses
 
+## FCGI ##
+FCGI_DIR     = src/core
+FCGI         = ${FCGI_DIR}/fcgi_main.o
+FCGI_CFLAGS  = ${CFLAGS} -I/usr/include
+FCGI_LDFLAGS = ${LDFLAGS} -lfcgi -L/usr/lib
+
 ## LIB_CORE ##
 LIB_CORE_DIR = src/core/Core
 LIB_CORE = \
@@ -34,7 +40,6 @@ LIB_CORE_CFLAGS  = ${CFLAGS}
 LIB_CORE_LDFLAGS = ${LDFLAGS}
 
 ## LIB_SYSTEM ##
-
 LIB_SYSTEM_DIR = src/lib/System
 LIB_SYSTEM = \
 	${LIB_SYSTEM_DIR}/System.o \
@@ -51,7 +56,6 @@ LIB_SYSTEM_CFLAGS  = ${CFLAGS}
 LIB_SYSTEM_LDFLAGS = ${LDFLAGS}
 
 ## LIB_MATH ##
-
 LIB_MATH_DIR = src/lib/Math
 LIB_MATH = \
 	${LIB_MATH_DIR}/Math.o \
@@ -263,4 +267,10 @@ uninstall:
 clean:
 	rm -f ljs;
 	find src|egrep "\.l?o"|xargs rm -f
+
+fcgi:
+	${CXX} ${FCGI_LDFLAGS} ${FCGI_CFLAGS} $(FCGI:.o=.cpp) -o ljs-cgi
+
+fcgi-install: install
+	cp -f ljs-cgi ${BINDIR}/
 

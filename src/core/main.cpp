@@ -32,8 +32,6 @@
 #include <iostream>
 #include <fstream>
 
-#include "prlink.h"
-
 // *nix only
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -61,16 +59,126 @@ void
 reportError (JSContext *cx, const char *message, JSErrorReport *report)
 {
     fprintf(stderr, "%s:%u > %s\n",
-
         report->filename ? report->filename : "lulzJS",
         (unsigned int) report->lineno,
         message
     );
 }
 
+Engine
+initEngine (int argc, int offset, char *argv[])
+{
+    Engine engine;
+    engine.error = JS_TRUE;
 
-Engine initEngine (int argc, int optind, char *argv[]);
-JSBool executeScript (JSContext* cx, std::string file);
+    JS_SetCStringsAreUTF8();
+
+    if ((engine.runtime = JS_NewRuntime(8L * 1024L * 1024L))) {
+        if ((engine.context = JS_NewContext(engine.runtime, 8192))) {
+            JS_BeginRequest(engine.context);
+            JS_EnterLocalRootScope(engine.context);
+            JS_SetErrorReporter(engine.context, reportError);
+
+            struct stat check;
+            if (stat(__LJS_LIBRARY_PATH__"/Core/Core.so", &check) != 0) {
+                return engine;
+            }
+
+            PRLibrary* lib = PR_LoadLibrary(__LJS_LIBRARY_PATH__"/Core/Core.so");
+            JSBool (*coreInitialize)(JSContext*, const char*)
+                = (JSBool (*)(JSContext*, const char*)) PR_FindSymbol(lib, "Core_initialize");
+
+            if (coreInitialize == NULL || !(*coreInitialize)(engine.context, argv[offset])) {
+                return engine;
+            }
+
+            engine.core = JS_GetGlobalObject(engine.context);
+            jsval property;
+            
+            std::string full = argv[offset];
+            std::string name;
+            std::string path;
+
+            size_t slashPosition = full.find_last_of("/\\");
+            if (slashPosition != std::string::npos) {
+                name = full.substr(slashPosition+1);
+                path = full.substr(0, slashPosition+1);
+            }
+            else {
+                name = full;
+                path = "./";
+            }
+
+            property = STRING_TO_JSVAL(
+                JS_NewString(engine.context, JS_strdup(engine.context, name.c_str()), name.length())
+            );
+            JS_DefineProperty(engine.context, engine.core, "name", property, NULL, NULL, JSPROP_READONLY);
+
+            property = STRING_TO_JSVAL(
+                JS_NewString(engine.context, JS_strdup(engine.context, path.c_str()), path.length())
+            );
+            JS_DefineProperty(engine.context, engine.core, "path", property, NULL, NULL, JSPROP_READONLY);
+
+            property = INT_TO_JSVAL(getpid());
+            JS_DefineProperty(engine.context, engine.core, "PID", property, NULL, NULL, JSPROP_READONLY);
+
+            JSObject* arguments = JS_NewArrayObject(engine.context, 0, NULL);
+            property = OBJECT_TO_JSVAL(arguments);
+            JS_SetProperty(engine.context, engine.core, "arguments", &property);
+
+            if (offset+1 < argc) {
+                int i;
+                jsval rval;
+                for (i = offset+1; i < argc; i++) {
+                    property = STRING_TO_JSVAL(JS_NewString(engine.context, JS_strdup(engine.context, argv[i]), strlen(argv[i])));
+                    JS_CallFunctionName(
+                        engine.context, arguments, "push",
+                        1, &property, &rval);
+                }
+            }
+
+            lulzJS::Script script(engine.context, std::string(__LJS_LIBRARY_PATH__"/ljs_arguments.js"), lulzJS::Script::Text);
+            script.execute();
+
+            JS_LeaveLocalRootScope(engine.context);
+            JS_EndRequest(engine.context);
+
+            engine.error = JS_FALSE;
+            return engine;
+        }
+    }
+
+    return engine;
+}
+
+JSBool
+executeScript (JSContext* cx, std::string file)
+{
+    JSBool returnValue;
+
+    try {
+        if (lulzJS::Script::isBytecode(new std::ifstream(file.c_str()))) {
+            lulzJS::Script script(cx, file, lulzJS::Script::Bytecode);
+            script.execute();
+        }
+        else {
+            lulzJS::Script script(cx, file, lulzJS::Script::Text);
+            script.execute();
+        }
+
+        returnValue = JS_TRUE;
+    }
+    catch (std::exception e) {
+        returnValue = JS_FALSE;
+    }
+
+    if (JS_IsExceptionPending(cx)) {
+        JS_ReportPendingException(cx);
+        returnValue = JS_FALSE;
+    }
+
+    return returnValue;
+}
 
 int
 main (int argc, char *argv[])
@@ -190,121 +298,5 @@ main (int argc, char *argv[])
     JS_ShutDown();
 
     return EXIT_SUCCESS;
-}
-
-
-Engine
-initEngine (int argc, int offset, char *argv[])
-{
-    Engine engine;
-    engine.error = JS_TRUE;
-
-    JS_SetCStringsAreUTF8();
-
-    if ((engine.runtime = JS_NewRuntime(8L * 1024L * 1024L))) {
-        if ((engine.context = JS_NewContext(engine.runtime, 8192))) {
-            JS_BeginRequest(engine.context);
-            JS_EnterLocalRootScope(engine.context);
-            JS_SetErrorReporter(engine.context, reportError);
-
-            struct stat check;
-            if (stat(__LJS_LIBRARY_PATH__"/Core/Core.so", &check) != 0) {
-                return engine;
-            }
-
-            PRLibrary* lib = PR_LoadLibrary(__LJS_LIBRARY_PATH__"/Core/Core.so");
-            JSBool (*coreInitialize)(JSContext*, const char*)
-                = (JSBool (*)(JSContext*, const char*)) PR_FindSymbol(lib, "Core_initialize");
-
-            if (coreInitialize == NULL || !(*coreInitialize)(engine.context, argv[offset])) {
-                return engine;
-            }
-
-            engine.core = JS_GetGlobalObject(engine.context);
-            jsval property;
-            
-            std::string full = argv[offset];
-            std::string name;
-            std::string path;
-
-            size_t slashPosition = full.find_last_of("/\\");
-            if (slashPosition != std::string::npos) {
-                name = full.substr(slashPosition+1);
-                path = full.substr(0, slashPosition+1);
-            }
-            else {
-                name = full;
-                path = "./";
-            }
-
-            property = STRING_TO_JSVAL(
-                JS_NewString(engine.context, JS_strdup(engine.context, name.c_str()), name.length())
-            );
-            JS_DefineProperty(engine.context, engine.core, "name", property, NULL, NULL, JSPROP_READONLY);
-
-            property = STRING_TO_JSVAL(
-                JS_NewString(engine.context, JS_strdup(engine.context, path.c_str()), path.length())
-            );
-            JS_DefineProperty(engine.context, engine.core, "path", property, NULL, NULL, JSPROP_READONLY);
-
-            property = INT_TO_JSVAL(getpid());
-            JS_DefineProperty(engine.context, engine.core, "PID", property, NULL, NULL, JSPROP_READONLY);
-
-            JSObject* arguments = JS_NewArrayObject(engine.context, 0, NULL);
-            property = OBJECT_TO_JSVAL(arguments);
-            JS_SetProperty(engine.context, engine.core, "arguments", &property);
-
-            if (offset+1 < argc) {
-                int i;
-                jsval rval;
-                for (i = offset+1; i < argc; i++) {
-                    property = STRING_TO_JSVAL(JS_NewString(engine.context, JS_strdup(engine.context, argv[i]), strlen(argv[i])));
-                    JS_CallFunctionName(
-                        engine.context, arguments, "push",
-                        1, &property, &rval);
-                }
-            }
-
-            lulzJS::Script script(engine.context, std::string(__LJS_LIBRARY_PATH__"/ljs_arguments.js"), lulzJS::Script::Text);
-            script.execute();
-
-            JS_LeaveLocalRootScope(engine.context);
-            JS_EndRequest(engine.context);
-
-            engine.error = JS_FALSE;
-            return engine;
-        }
-    }
-
-    return engine;
-}
-
-JSBool
-executeScript (JSContext* cx, std::string file)
-{
-    JSBool returnValue;
-
-    try {
-        if (lulzJS::Script::isBytecode(new std::ifstream(file.c_str()))) {
-            lulzJS::Script script(cx, file, lulzJS::Script::Bytecode);
-            script.execute();
-        }
-        else {
-            lulzJS::Script script(cx, file, lulzJS::Script::Text);
-            script.execute();
-        }
-
-        returnValue = JS_TRUE;
-    }
-    catch (std::exception e) {
-        returnValue = JS_FALSE;
-    }
-
-    if (JS_IsExceptionPending(cx)) {
-        JS_ReportPendingException(cx);
-        returnValue = JS_FALSE;
-    }
-
-    return returnValue;
 }
 
