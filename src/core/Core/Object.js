@@ -167,6 +167,11 @@
                 type = eval(type);
             }
 
+            if (type == undefined) {
+                return typeof obj == 'undefined';
+            }
+                 
+
             return obj instanceof type;
         }
         catch (e) {

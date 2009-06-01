@@ -16,40 +16,6 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-Abstract = { };
-
-Try = {
-    these: function () {
-        var returnValue;
-
-        for each (let lambda in arguments) {
-            try {
-                returnValue = lambda();
-                break;
-            } catch (e) { }
-        }
-
-        return returnValue;
-    }
+function isset (variable) {
+    return !Object.is(variable, undefined);
 }
-
-// Standard classes stuff
-require([
-    "Object.so", "Object.js",
-        "Class.js", "Function.js", "Date.js", "RegExp.js",
-        "Enumerable.js", "String.js", "Template.js", "Array.js",
-        "Bytes.js", "Hash.js", "Number.js", "Range.js",
-        "JSON.js", "XML.js",
-        
-        "python.js", "php.js",
-]);
-
-[Function, Array, String, Number, RegExp, Date, XML].each(function (obj) {
-    obj.__defineProperty__(          "__type__", Class.Normal);
-    obj.prototype.__defineProperty__("__type__", Class.Normal);
-    Object.extend(obj, Class.Methods, Object.Flags.None);
-});
-
-//Program.GCExecution = new PeriodicalExecuter(function(){Program.GC()}, 60);
-
-require("init.so");

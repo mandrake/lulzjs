@@ -81,6 +81,11 @@ core_install:
 	cp -f ljs ${BINDIR}/
 	cp -f src/core/ljs_arguments.js ${LJS_LIBDIR}
 
+core_uninstall:
+	rm -f  ${BINDIR}/ljs
+	rm -f  ${LJS_LIBDIR}/ljs_arguments.js
+	rm -rf ${LJS_LIBDIR}/Core
+
 libcore: $(LIB_CORE)
 
 $(LIB_CORE): $(LIB_CORE:.o=.cpp)
@@ -197,6 +202,7 @@ libsystem_install: libsystem
 	cp -f ${LIB_SYSTEM_DIR}/IO/IO.o										${LJS_LIBDIR}/System/IO/IO.so
 
 libsystem_uninstall:
+	rm -rf ${LJS_LIBDIR}/System
 
 libmath: $(LIB_MATH)
 
@@ -250,20 +256,14 @@ libmath_install: libmath
 	cp -f ${LIB_MATH_DIR}/Economy/VAT/VAT.js						${LJS_LIBDIR}/Math/Economy/VAT/VAT.js
 
 libmath_uninstall:
-
+	rm -f ${LJS_LIBDIR}/Math
 
 install: all core_install libcore_install libsystem_install libmath_install
 	chmod -R a+rx ${LJS_LIBDIR}
 	chmod a+rx ${BINDIR}/ljs
 
-uninstall:
-	rm -f ${BINDIR}/ljs
-	rm -f  ${LJS_LIBDIR}/ljs_arguments.js
-	rm -rf ${LJS_LIBDIR}/Core
-	rm -rf ${LJS_LIBDIR}/System
-	rm -rf ${LJS_LIBDIR}/Math
+uninstall: ljs_uninstall libcore_uninstall libsystem_uninstall libmath_uninstall
 	
-
 clean:
 	rm -f ljs;
 	find src|egrep "\.l?o"|xargs rm -f
@@ -271,6 +271,8 @@ clean:
 fcgi:
 	${CXX} ${FCGI_LDFLAGS} ${FCGI_CFLAGS} $(FCGI:.o=.cpp) -o ljs-cgi
 
-fcgi-install: install
+fcgi_install: install
 	cp -f ljs-cgi ${BINDIR}/
 
+fcgi_uninstall: uninstall
+	rm -f  ${BINDIR}/ljs-cgi

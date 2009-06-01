@@ -28,16 +28,69 @@
 static JSRuntime* LJS_runtime = NULL;
 
 typedef struct {
+    JSBool        started;
+    FCGX_Request* cgi;
+} LCGIData;
+
+typedef struct {
     JSBool     error;
     JSRuntime* runtime;
     JSContext* context;
     JSObject*  core;
 } Engine;
 
+JSBool
+LCGI_print (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+    JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
+
+    char*        separator = " ";
+    char*        end       = "\n";
+    FCGX_Stream* fp        = ((LCGIData*)JS_GetContextPrivate(cx))->cgi->out;
+    jsval        property;
+    JSObject*    options;
+
+    if (argc > 1 && JS_TypeOfValue(cx, argv[argc-1]) == JSTYPE_OBJECT) {
+        JS_ValueToObject(cx, argv[argc-1], &options);
+        argc--;
+
+        JS_GetProperty(cx, options, "separator", &property);
+        if (JSVAL_IS_VOID(property) || JSVAL_IS_NULL(property)) {
+            JS_GetProperty(cx, options, "sep", &property);
+        }
+
+        if (JSVAL_IS_STRING(property)) {
+            separator = JS_GetStringBytes(JS_ValueToString(cx, property));
+        }
+
+        JS_GetProperty(cx, options, "end", &property);
+        if (JSVAL_IS_STRING(property)) {
+            end = JS_GetStringBytes(JS_ValueToString(cx, property));
+        }
+    }
+
+    uintN i;
+    for (i = 0; i < argc; i++) {
+        FCGX_FPrintF(fp, "%s", JS_GetStringBytes(JS_ValueToString(cx, argv[i])));
+
+        if (i != argc-1) {
+            FCGX_FPrintF(fp, "%s", separator);
+        }
+    }
+    FCGX_FPrintF(fp, "%s", end);
+
+    JS_LeaveLocalRootScope(cx);
+    JS_EndRequest(cx);
+
+    return JS_TRUE;
+}
+
+
 void
 reportError (JSContext *cx, const char *message, JSErrorReport *report)
 {
-    FCGX_Request* cgi = (FCGX_Request*) JS_GetContextPrivate(cx);
+    FCGX_Request* cgi = (FCGX_Request*) ((LCGIData*) JS_GetContextPrivate(cx))->cgi;
 
     FCGX_FPrintF(cgi->err, "%s:%u > %s\n",
         report->filename ? report->filename : "lulzJS",
@@ -58,8 +111,12 @@ initEngine (FCGX_Request* cgi)
         if ((engine.context = JS_NewContext(engine.runtime, 8192))) {
             JS_BeginRequest(engine.context);
             JS_EnterLocalRootScope(engine.context);
-            JS_SetContextPrivate(engine.context, cgi);
             JS_SetErrorReporter(engine.context, reportError);
+
+            LCGIData* data = new LCGIData;
+            data->started  = JS_FALSE;
+            data->cgi      = cgi;
+            JS_SetContextPrivate(engine.context, data);
 
             struct stat check;
             if (stat(__LJS_LIBRARY_PATH__"/Core/Core.so", &check) != 0) {
@@ -70,7 +127,7 @@ initEngine (FCGX_Request* cgi)
             JSBool (*coreInitialize)(JSContext*, const char*)
                 = (JSBool (*)(JSContext*, const char*)) PR_FindSymbol(lib, "Core_initialize");
 
-            if (coreInitialize == NULL || !(*coreInitialize)(engine.context, getenv("SCRIPT_NAME"))) {
+            if (coreInitialize == NULL || !(*coreInitialize)(engine.context, getenv("PATH_TRANSLATED"))) {
                 return engine;
             }
 
@@ -101,9 +158,6 @@ initEngine (FCGX_Request* cgi)
             );
             JS_DefineProperty(engine.context, engine.core, "path", property, NULL, NULL, JSPROP_READONLY);
 
-            property = INT_TO_JSVAL(getpid());
-            JS_DefineProperty(engine.context, engine.core, "PID", property, NULL, NULL, JSPROP_READONLY);
-
             JS_LeaveLocalRootScope(engine.context);
             JS_EndRequest(engine.context);
 
@@ -120,8 +174,43 @@ initEngine (FCGX_Request* cgi)
 }
 
 void
+sendHeaders (JSContext* cx)
+{
+    FCGX_Stream* out = ((LCGIData*)JS_GetContextPrivate(cx))->cgi->out;
+
+    JSIdArray* ids = JS_Enumerate(cx, JSVAL_TO_OBJECT(JS_EVAL(cx, "Headers")));
+
+    
+    JS_DestroyIdArray(cx, ids);
+}
+
+void
 executeScript (FCGX_Request* cgi)
 {
+    Engine engine = initEngine(cgi);
+    if (engine.error) {
+        FCGX_PutS("Couldn't initialize the engine.\n", cgi->err);
+        FCGX_Finish_r(cgi);
+        return;
+    }
+
+    JS_BeginRequest(engine.context);
+    JS_EnterLocalRootScope(engine.context);
+
+    jsval property;
+
+    JSObject* headers = JS_NewObject(NULL, NULL, NULL, NULL);
+    property          = OBJECT_TO_JSVAL(headers);
+    JS_SetProperty(engine.context, engine.core, "Headers", &property);
+        property = JSVAL_FALSE;
+        JS_SetProperty(engine.context, headers, "sent", &property);
+        property = STRING_TO_JSVAL(JS_NewStringCopyZ(engine.context, "200 OK"));
+        JS_SetProperty(engine.context, headers, "Status", &property);
+        property = STRING_TO_JSVAL(JS_NewStringCopyZ(engine.context, "text/html"));
+        JS_SetProperty(engine.context, headers, "Content-Type", &property);
+
+    JS_LeaveLocalRootScope(engine.context);
+    JS_EndRequest(engine.context);
 
     FCGX_Finish_r(cgi);
 }

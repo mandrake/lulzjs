@@ -48,8 +48,7 @@ Core_initialize (JSContext *cx, const char* path)
             STRING_TO_JSVAL(JS_NewString(cx, JS_strdup(cx, rootPath.c_str()), rootPath.length())),
             STRING_TO_JSVAL(JS_NewString(cx, JS_strdup(cx, __LJS_LIBRARY_PATH__), strlen(__LJS_LIBRARY_PATH__)))
         };
-        JSObject* path = JS_NewArrayObject(cx, 2, paths);
-        property       = OBJECT_TO_JSVAL(path);
+        property = OBJECT_TO_JSVAL(JS_NewArrayObject(cx, 2, paths));
         JS_SetProperty(cx, object, "__PATH__", &property);
 
         property = STRING_TO_JSVAL(JS_NewString(cx, JS_strdup(cx, __LJS_VERSION__), strlen(__LJS_VERSION__)));
@@ -278,13 +277,52 @@ JSBool
 Core_print (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
+
+    char*     separator = " ";
+    char*     end       = "\n";
+    int       fd        = fileno(stdout);
+    FILE*     fp        = NULL;
+    jsval     property;
+    JSObject* options;
+
+    if (argc > 1 && JS_TypeOfValue(cx, argv[argc-1]) == JSTYPE_OBJECT) {
+        JS_ValueToObject(cx, argv[argc-1], &options);
+        argc--;
+
+        JS_GetProperty(cx, options, "separator", &property);
+        if (JSVAL_IS_VOID(property) || JSVAL_IS_NULL(property)) {
+            JS_GetProperty(cx, options, "sep", &property);
+        }
+
+        if (JSVAL_IS_STRING(property)) {
+            separator = JS_GetStringBytes(JS_ValueToString(cx, property));
+        }
+
+        JS_GetProperty(cx, options, "end", &property);
+        if (JSVAL_IS_STRING(property)) {
+            end = JS_GetStringBytes(JS_ValueToString(cx, property));
+        }
+
+        JS_GetProperty(cx, options, "file", &property);
+        if (JSVAL_IS_NUMBER(property)) {
+            fd = JSVAL_TO_INT(property);
+        }
+    }
+
+    fp = fdopen(fd, "a+");
 
     uintN i;
     for (i = 0; i < argc; i++) {
-        printf("%s", JS_GetStringBytes(JS_ValueToString(cx, argv[i])));
-    }
-    puts("");
+        fprintf(fp, "%s", JS_GetStringBytes(JS_ValueToString(cx, argv[i])));
 
+        if (i != argc-1) {
+            fprintf(fp, "%s", separator);
+        }
+    }
+    fprintf(fp, "%s", end);
+
+    JS_LeaveLocalRootScope(cx);
     JS_EndRequest(cx);
 
     return JS_TRUE;
