@@ -25,6 +25,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+static JSRuntime* LJS_runtime = NULL;
+
 typedef struct {
     JSBool     error;
     JSRuntime* runtime;
@@ -35,7 +37,9 @@ typedef struct {
 void
 reportError (JSContext *cx, const char *message, JSErrorReport *report)
 {
-    fprintf(stderr, "%s:%u > %s\n",
+    FCGX_Request* cgi = (FCGX_Request*) JS_GetContextPrivate(cx);
+
+    FCGX_FPrintF(cgi->err, "%s:%u > %s\n",
         report->filename ? report->filename : "lulzJS",
         (unsigned int) report->lineno,
         message
@@ -50,10 +54,11 @@ initEngine (FCGX_Request* cgi)
 
     JS_SetCStringsAreUTF8();
 
-    if ((engine.runtime = JS_NewRuntime(8L * 1024L * 1024L))) {
+    if ((engine.runtime = LJS_runtime)) {
         if ((engine.context = JS_NewContext(engine.runtime, 8192))) {
             JS_BeginRequest(engine.context);
             JS_EnterLocalRootScope(engine.context);
+            JS_SetContextPrivate(engine.context, cgi);
             JS_SetErrorReporter(engine.context, reportError);
 
             struct stat check;
@@ -118,23 +123,27 @@ void
 executeScript (FCGX_Request* cgi)
 {
 
+    FCGX_Finish_r(cgi);
 }
 
 int
 main (int argc, char *argv[])
 {
     int error;
+    PRThread*     thread = NULL;
+    FCGX_Request* cgi    = NULL;
 
     if ((error = FCGX_Init())) {
         fprintf(stderr, "FastCGI got borked: %d\n", error);
         return 1;
     }
 
-    PRThreadState state  = (FCGX_IsCGI()) ? PR_JOINABLE_THREAD : PR_UNJOINABLE_THREAD;
-    PRThread*     thread = NULL;
-    FCGX_Request* cgi    = NULL;
+    if ((LJS_runtime = JS_NewRuntime(8L * 1024L * 1024L)) == NULL) {
+        fprintf(stderr, "Error in creating the JSRuntime.\n");
+        return -1;
+    }
 
-    while (true) {
+    if (FCGX_IsCGI()) {
         cgi   = new FCGX_Request;
         error = FCGX_InitRequest(cgi, 0, 0);
 
@@ -150,17 +159,34 @@ main (int argc, char *argv[])
             return 3;
         }
 
-        thread = PR_CreateThread(
-            PR_USER_THREAD,
-            (void (*)(void*)) executeScript, cgi,
-            PR_PRIORITY_HIGH, PR_LOCAL_THREAD, state, 0
-        );
+        executeScript(cgi);
+    }
+    else {
+        while (true) {
+            cgi   = new FCGX_Request;
+            error = FCGX_InitRequest(cgi, 0, 0);
 
-        if (state == PR_JOINABLE_THREAD) {
-            PR_JoinThread(thread);
-            break;
+            if (error) {
+                fprintf(stderr, "FastCGI got borked: %d\n", error);
+                return 2;
+            }
+
+            error = FCGX_Accept_r(cgi);
+
+            if (error) {
+                fprintf(stderr, "FastCGI got borked: %d\n", error);
+                return 3;
+            }
+
+            thread = PR_CreateThread(
+                PR_USER_THREAD,
+                (void (*)(void*)) executeScript, cgi,
+                PR_PRIORITY_HIGH, PR_LOCAL_THREAD, PR_UNJOINABLE_THREAD, 0
+            );
         }
     }
+
+    FCGX_ShutdownPending();
 
     return EXIT_SUCCESS;
 }

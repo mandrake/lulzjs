@@ -29,6 +29,7 @@
 */
 
 #include "lulzjs.h"
+#include "prlink.h"
 #include <iostream>
 #include <fstream>
 
