@@ -26,8 +26,8 @@ CORE_CFLAGS  = ${CFLAGS}
 CORE_LDFLAGS = ${LDFLAGS} -lreadline -lncurses
 
 ## FCGI ##
-FCGI_DIR     = src/core
-FCGI         = ${FCGI_DIR}/fcgi_main.o
+FCGI_DIR     = src/core/FastCGI
+FCGI         = ${FCGI_DIR}/main.o ${FCGI_DIR}/Output.o
 FCGI_CFLAGS  = ${CFLAGS} -I/usr/include
 FCGI_LDFLAGS = ${LDFLAGS} -lfcgi -L/usr/lib
 

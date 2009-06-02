@@ -30,6 +30,7 @@ static JSRuntime* LJS_runtime = NULL;
 typedef struct {
     JSBool        started;
     FCGX_Request* cgi;
+    JSObject*     global;
 } LCGIData;
 
 typedef struct {
@@ -39,15 +40,59 @@ typedef struct {
     JSObject*  core;
 } Engine;
 
+void
+sendHeaders (JSContext* cx)
+{
+    JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
+
+    int   i;
+    jsval name;
+    jsval value;
+
+    LCGIData* data = (LCGIData*) JS_GetContextPrivate(cx);
+    data->started  = JS_TRUE;
+
+    FCGX_Stream* out    = data->cgi->out;
+    JSObject*    global = data->global;
+
+    jsval headers;
+    JS_GetProperty(cx, global, "Headers", &headers);
+
+    JSIdArray* ids = JS_Enumerate(cx, JSVAL_TO_OBJECT(headers));
+
+    for (i = 0; i < ids->length; i++) {
+        JS_IdToValue(cx, ids->vector[i], &name);
+        JS_GetPropertyById(cx, global, ids->vector[i], &value);
+
+        FCGX_FPrintF(out, "%s: %s\r\n",
+            JS_GetStringBytes(JS_ValueToString(cx, name)),
+            JS_GetStringBytes(JS_ValueToString(cx, value))
+        );
+    }
+    FCGX_PutS("\r\n", out);
+    
+    JS_DestroyIdArray(cx, ids);
+
+    JS_LeaveLocalRootScope(cx);
+    JS_EndRequest(cx);
+}
+
 JSBool
 LCGI_print (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JS_BeginRequest(cx);
     JS_EnterLocalRootScope(cx);
 
+    LCGIData* data = (LCGIData*) JS_GetContextPrivate(cx);
+
+    if (!data->started) {
+        sendHeaders(cx);
+    }
+
     char*        separator = " ";
     char*        end       = "\n";
-    FCGX_Stream* fp        = ((LCGIData*)JS_GetContextPrivate(cx))->cgi->out;
+    FCGX_Stream* fp        = data->cgi->out;
     jsval        property;
     JSObject*    options;
 
@@ -90,7 +135,13 @@ LCGI_print (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 void
 reportError (JSContext *cx, const char *message, JSErrorReport *report)
 {
-    FCGX_Request* cgi = (FCGX_Request*) ((LCGIData*) JS_GetContextPrivate(cx))->cgi;
+    LCGIData* data = (LCGIData*) JS_GetContextPrivate(cx);
+
+    if (!data->started) {
+        sendHeaders(cx);
+    }
+
+    FCGX_Request* cgi = data->cgi;
 
     FCGX_FPrintF(cgi->err, "%s:%u > %s\n",
         report->filename ? report->filename : "lulzJS",
@@ -113,11 +164,6 @@ initEngine (FCGX_Request* cgi)
             JS_EnterLocalRootScope(engine.context);
             JS_SetErrorReporter(engine.context, reportError);
 
-            LCGIData* data = new LCGIData;
-            data->started  = JS_FALSE;
-            data->cgi      = cgi;
-            JS_SetContextPrivate(engine.context, data);
-
             struct stat check;
             if (stat(__LJS_LIBRARY_PATH__"/Core/Core.so", &check) != 0) {
                 return engine;
@@ -132,6 +178,13 @@ initEngine (FCGX_Request* cgi)
             }
 
             engine.core = JS_GetGlobalObject(engine.context);
+
+            LCGIData* data = new LCGIData;
+            data->started  = JS_FALSE;
+            data->cgi      = cgi;
+            data->global   = engine.core;
+            JS_SetContextPrivate(engine.context, data);
+
             jsval property;
             
             std::string full = getenv("SCRIPT_NAME");
@@ -174,17 +227,6 @@ initEngine (FCGX_Request* cgi)
 }
 
 void
-sendHeaders (JSContext* cx)
-{
-    FCGX_Stream* out = ((LCGIData*)JS_GetContextPrivate(cx))->cgi->out;
-
-    JSIdArray* ids = JS_Enumerate(cx, JSVAL_TO_OBJECT(JS_EVAL(cx, "Headers")));
-
-    
-    JS_DestroyIdArray(cx, ids);
-}
-
-void
 executeScript (FCGX_Request* cgi)
 {
     Engine engine = initEngine(cgi);
@@ -198,6 +240,7 @@ executeScript (FCGX_Request* cgi)
     JS_EnterLocalRootScope(engine.context);
 
     jsval property;
+    char* stuff;
 
     JSObject* headers = JS_NewObject(NULL, NULL, NULL, NULL);
     property          = OBJECT_TO_JSVAL(headers);
@@ -208,6 +251,18 @@ executeScript (FCGX_Request* cgi)
         JS_SetProperty(engine.context, headers, "Status", &property);
         property = STRING_TO_JSVAL(JS_NewStringCopyZ(engine.context, "text/html"));
         JS_SetProperty(engine.context, headers, "Content-Type", &property);
+        property = STRING_TO_JSVAL(JS_NewStringCopyZ(engine.context, "chunked"));
+        JS_SetProperty(engine.context, headers, "Transfer-Encoding", &property);
+        property = STRING_TO_JSVAL(JS_NewStringCopyZ(engine.context, "lulzJS/" ___VERSION___));
+        JS_SetProperty(engine.context, headers, "X-Powered-By", &property);
+        stuff = getenv("SERVER_SOFTWARE");
+        if (stuff) {
+            property = STRING_TO_JSVAL(JS_NewStringCopyZ(engine.context, stuff));
+            JS_SetProperty(engine.context, headers, "Server", &property);
+        }
+
+
+
 
     JS_LeaveLocalRootScope(engine.context);
     JS_EndRequest(engine.context);
