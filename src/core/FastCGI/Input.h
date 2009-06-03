@@ -16,44 +16,13 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-#ifndef _LULZJS_FCGI_OUTPUT_H
-#define _LULZJS_FCGI_OUTPUT_H
+#ifndef _LULZJS_FCGI_INPUT_H
+#define _LULZJS_FCGI_INPUT_H
 
 #include "lulzjs.h"
 #include "fcgiapp.h"
 #include "common.h"
 
-extern "C" void Output_initialize (JSContext* cx);
-
-static JSClass Output_class = {
-    "Output", JSCLASS_HAS_PRIVATE,
-    JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, JS_PropertyStub,
-    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub
-};
-
-JSBool Output_buffered_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
-JSBool Output_buffered_set (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
-
-JSBool Output_content_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
-JSBool Output_content_set (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
-
-static JSPropertySpec Output_attributes[] = {
-    {"buffered", 0, 0, Output_buffered_get, Output_buffered_set},
-    {"content",  0, 0, Output_content_get, Output_content_set},
-
-    {NULL}
-};
-
-JSBool Output_write (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval);
-JSBool Output_writeLine (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval);
-JSBool Output_flush (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval);
-
-static JSFunctionSpec Output_methods[] = {
-    {"write",     Output_write, 0, 0, 0},
-    {"writeLine", Output_writeLine, 0, 0, 0},
-    {"flush",     Output_flush, 0, 0, 0},
-
-    {NULL}
-};
+void Input_initialize (JSContext* cx);
 
 #endif

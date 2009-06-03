@@ -20,6 +20,10 @@
 #include "fcgiapp.h"
 #include "prthread.h"
 
+#include "common.h"
+#include "Output.h"
+#include "Input.h"
+
 // *nix only
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -28,71 +32,22 @@
 static JSRuntime* LJS_runtime = NULL;
 
 typedef struct {
-    JSBool        started;
-    FCGX_Request* cgi;
-    JSObject*     global;
-} LCGIData;
-
-typedef struct {
     JSBool     error;
     JSRuntime* runtime;
     JSContext* context;
     JSObject*  core;
 } Engine;
 
-void
-sendHeaders (JSContext* cx)
-{
-    JS_BeginRequest(cx);
-    JS_EnterLocalRootScope(cx);
-
-    int   i;
-    jsval name;
-    jsval value;
-
-    LCGIData* data = (LCGIData*) JS_GetContextPrivate(cx);
-    data->started  = JS_TRUE;
-
-    FCGX_Stream* out    = data->cgi->out;
-    JSObject*    global = data->global;
-
-    jsval headers;
-    JS_GetProperty(cx, global, "Headers", &headers);
-
-    JSIdArray* ids = JS_Enumerate(cx, JSVAL_TO_OBJECT(headers));
-
-    for (i = 0; i < ids->length; i++) {
-        JS_IdToValue(cx, ids->vector[i], &name);
-        JS_GetPropertyById(cx, global, ids->vector[i], &value);
-
-        FCGX_FPrintF(out, "%s: %s\r\n",
-            JS_GetStringBytes(JS_ValueToString(cx, name)),
-            JS_GetStringBytes(JS_ValueToString(cx, value))
-        );
-    }
-    FCGX_PutS("\r\n", out);
-    
-    JS_DestroyIdArray(cx, ids);
-
-    JS_LeaveLocalRootScope(cx);
-    JS_EndRequest(cx);
-}
-
 JSBool
-LCGI_print (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+print (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
 {
     JS_BeginRequest(cx);
     JS_EnterLocalRootScope(cx);
 
-    LCGIData* data = (LCGIData*) JS_GetContextPrivate(cx);
-
-    if (!data->started) {
-        sendHeaders(cx);
-    }
+    JSObject* global = ((LCGIData*) JS_GetContextPrivate(cx))->global;
 
     char*        separator = " ";
     char*        end       = "\n";
-    FCGX_Stream* fp        = data->cgi->out;
     jsval        property;
     JSObject*    options;
 
@@ -115,15 +70,37 @@ LCGI_print (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
         }
     }
 
+    char* string    = NULL;
+    char* tmpString = NULL;
+    int   length    = 0;
+    int   tmpLength = 0;
+
     uintN i;
     for (i = 0; i < argc; i++) {
-        FCGX_FPrintF(fp, "%s", JS_GetStringBytes(JS_ValueToString(cx, argv[i])));
+        tmpString = JS_GetStringBytes(JS_ValueToString(cx, argv[i]));
+        tmpLength = strlen(tmpString);
+        string    = (char*) JS_realloc(cx, string, (length+tmpLength+1)*sizeof(char));
+        strcat(string+length, tmpString);
+        length += tmpLength;
 
         if (i != argc-1) {
-            FCGX_FPrintF(fp, "%s", separator);
+            tmpLength = strlen(separator);
+            string    = (char*) JS_realloc(cx, string, (length+tmpLength+1)*sizeof(char));
+            strcat(string+length, separator);
+            length += tmpLength;
         }
     }
-    FCGX_FPrintF(fp, "%s", end);
+    tmpLength = strlen(end);
+    string    = (char*) JS_realloc(cx, string, (length+tmpLength+1)*sizeof(char));
+    strcat(string+length, end);
+    length += tmpLength;
+
+    jsval propery;
+    JS_GetProperty(cx, global, "Output", &property);
+    JSObject* Output = JSVAL_TO_OBJECT(property);
+
+    jsval args[] = { STRING_TO_JSVAL(JS_NewString(cx, string, length)) };
+    JS_CallFunctionName(cx, Output, "write", 1, args, rval);
 
     JS_LeaveLocalRootScope(cx);
     JS_EndRequest(cx);
@@ -131,15 +108,15 @@ LCGI_print (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
     return JS_TRUE;
 }
 
-
 void
 reportError (JSContext *cx, const char *message, JSErrorReport *report)
 {
     LCGIData* data = (LCGIData*) JS_GetContextPrivate(cx);
 
-    if (!data->started) {
-        sendHeaders(cx);
-    }
+    jsval property;
+    JS_GetProperty(cx, data->global, "Output", &property);
+    JSObject* Output = JSVAL_TO_OBJECT(property);
+    JS_CallFunctionName(cx, Output, "flush", 0, NULL, &property);
 
     FCGX_Request* cgi = data->cgi;
 
@@ -180,7 +157,6 @@ initEngine (FCGX_Request* cgi)
             engine.core = JS_GetGlobalObject(engine.context);
 
             LCGIData* data = new LCGIData;
-            data->started  = JS_FALSE;
             data->cgi      = cgi;
             data->global   = engine.core;
             JS_SetContextPrivate(engine.context, data);
@@ -236,36 +212,11 @@ executeScript (FCGX_Request* cgi)
         return;
     }
 
-    JS_BeginRequest(engine.context);
-    JS_EnterLocalRootScope(engine.context);
+    Headers_initialize(engine.context);
+    Input_initialize(engine.context);
+    Output_initialize(engine.context);
 
-    jsval property;
-    char* stuff;
-
-    JSObject* headers = JS_NewObject(NULL, NULL, NULL, NULL);
-    property          = OBJECT_TO_JSVAL(headers);
-    JS_SetProperty(engine.context, engine.core, "Headers", &property);
-        property = JSVAL_FALSE;
-        JS_SetProperty(engine.context, headers, "sent", &property);
-        property = STRING_TO_JSVAL(JS_NewStringCopyZ(engine.context, "200 OK"));
-        JS_SetProperty(engine.context, headers, "Status", &property);
-        property = STRING_TO_JSVAL(JS_NewStringCopyZ(engine.context, "text/html"));
-        JS_SetProperty(engine.context, headers, "Content-Type", &property);
-        property = STRING_TO_JSVAL(JS_NewStringCopyZ(engine.context, "chunked"));
-        JS_SetProperty(engine.context, headers, "Transfer-Encoding", &property);
-        property = STRING_TO_JSVAL(JS_NewStringCopyZ(engine.context, "lulzJS/" ___VERSION___));
-        JS_SetProperty(engine.context, headers, "X-Powered-By", &property);
-        stuff = getenv("SERVER_SOFTWARE");
-        if (stuff) {
-            property = STRING_TO_JSVAL(JS_NewStringCopyZ(engine.context, stuff));
-            JS_SetProperty(engine.context, headers, "Server", &property);
-        }
-
-
-
-
-    JS_LeaveLocalRootScope(engine.context);
-    JS_EndRequest(engine.context);
+    // Do the rest here
 
     FCGX_Finish_r(cgi);
 }
