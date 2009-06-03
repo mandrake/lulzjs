@@ -32,10 +32,6 @@ Output_write (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
 
     LCGIData* data = (LCGIData*) JS_GetContextPrivate(cx);
 
-    if (!data->started) {
-        Output_sendHeaders(cx);
-    }
-
     char*        separator = " ";
     char*        end       = "\n";
     FCGX_Stream* fp        = data->cgi->out;

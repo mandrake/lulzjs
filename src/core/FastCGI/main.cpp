@@ -21,6 +21,7 @@
 #include "prthread.h"
 
 #include "common.h"
+#include "Headers.h"
 #include "Output.h"
 #include "Input.h"
 
@@ -120,10 +121,10 @@ reportError (JSContext *cx, const char *message, JSErrorReport *report)
 
     FCGX_Request* cgi = data->cgi;
 
-    FCGX_FPrintF(cgi->err, "%s:%u > %s\n",
+    FCGX_FPrintF(cgi->err, "<p>%s <i>in</i> <b>%s</b> <i>at line</i> <b>%u</b></p>\n",
+        message,
         report->filename ? report->filename : "lulzJS",
-        (unsigned int) report->lineno,
-        message
+        (unsigned int) report->lineno
     );
 }
 
@@ -177,14 +178,9 @@ initEngine (FCGX_Request* cgi)
                 path = "./";
             }
 
-            property = STRING_TO_JSVAL(
-                JS_NewString(engine.context, JS_strdup(engine.context, name.c_str()), name.length())
-            );
+            property = STRING_TO_JSVAL(JS_NewStringCopyZ(engine.context, name.c_str()));
             JS_DefineProperty(engine.context, engine.core, "name", property, NULL, NULL, JSPROP_READONLY);
-
-            property = STRING_TO_JSVAL(
-                JS_NewString(engine.context, JS_strdup(engine.context, path.c_str()), path.length())
-            );
+            property = STRING_TO_JSVAL(JS_NewStringCopyZ(engine.context, path.c_str()));
             JS_DefineProperty(engine.context, engine.core, "path", property, NULL, NULL, JSPROP_READONLY);
 
             JS_LeaveLocalRootScope(engine.context);

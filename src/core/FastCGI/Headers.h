@@ -45,5 +45,4 @@ static JSFunctionSpec Headers_methods[] = {
     {NULL}
 };
 
-
 #endif

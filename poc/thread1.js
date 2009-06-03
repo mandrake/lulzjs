@@ -2,7 +2,7 @@
 require("System/Thread");
 
 var NewThread = Class.create({
-    initialize: function (/* params passed with start */) {
+    constructor: function (/* params passed with start */) {
         /* first thing executed with Thread.start*/
     }
 });

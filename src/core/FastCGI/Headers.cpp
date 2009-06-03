@@ -29,24 +29,43 @@ Headers_initialize (JSContext* cx)
 
     JSObject* headers = JS_NewObject(NULL, NULL, NULL, NULL);
     property          = OBJECT_TO_JSVAL(headers);
-    JS_SetProperty(engine.context, engine.core, "Headers", &property);
+    JS_SetProperty(cx, ((LCGIData*) JS_GetContextPrivate(cx))->global, "Headers", &property);
         property = JSVAL_FALSE;
-        JS_SetProperty(engine.context, headers, "sent", &property);
-        property = STRING_TO_JSVAL(JS_NewStringCopyZ(engine.context, "200 OK"));
-        JS_SetProperty(engine.context, headers, "Status", &property);
-        property = STRING_TO_JSVAL(JS_NewStringCopyZ(engine.context, "text/html"));
-        JS_SetProperty(engine.context, headers, "Content-Type", &property);
-        property = STRING_TO_JSVAL(JS_NewStringCopyZ(engine.context, "chunked"));
-        JS_SetProperty(engine.context, headers, "Transfer-Encoding", &property);
-        property = STRING_TO_JSVAL(JS_NewStringCopyZ(engine.context, "lulzJS/" __LJS_VERSION__));
-        JS_SetProperty(engine.context, headers, "X-Powered-By", &property);
+        JS_SetProperty(cx, headers, "sent", &property);
+        property = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, "200 OK"));
+        JS_SetProperty(cx, headers, "Status", &property);
+        property = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, "text/html"));
+        JS_SetProperty(cx, headers, "Content-Type", &property);
+        property = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, "chunked"));
+        JS_SetProperty(cx, headers, "Transfer-Encoding", &property);
+        property = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, "lulzJS/" __LJS_VERSION__));
+        JS_SetProperty(cx, headers, "X-Powered-By", &property);
         stuff = getenv("SERVER_SOFTWARE");
         if (stuff) {
-            property = STRING_TO_JSVAL(JS_NewStringCopyZ(engine.context, stuff));
-            JS_SetProperty(engine.context, headers, "Server", &property);
+            property = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, stuff));
+            JS_SetProperty(cx, headers, "Server", &property);
         }
-
     
+    JS_LeaveLocalRootScope(cx);
+    JS_EndRequest(cx);
+}
+
+JSBool
+Headers_set (JSContext *cx, JSObject *obj, jsval id, jsval *vp)
+{
+    JS_BeginRequest(cx);
+    
+    jsval property;
+    JS_GetProperty(cx, obj, "sent", &property);
+
+    if (property == JSVAL_TRUE) {
+        JS_ReportError(cx, "Headers have already been sent.");
+        return JS_FALSE;
+    }
+
+    JS_EndRequest(cx);
+
+    return JS_TRUE;
 }
 
 JSBool
@@ -59,11 +78,13 @@ Headers_send (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
     jsval name;
     jsval value;
 
-    HeadersInformation* data = (HeadersInformation*) JS_GetPrivate(cx, obj);
+    LCGIData*           cgi_data = (LCGIData*) JS_GetContextPrivate(cx);
+    HeadersInformation* data     = (HeadersInformation*) JS_GetPrivate(cx, obj);
+
     data->sent = JS_TRUE;
 
-    FCGX_Stream* out    = data->cgi->out;
-    JSObject*    global = data->global;
+    FCGX_Stream* out    = cgi_data->cgi->out;
+    JSObject*    global = cgi_data->global;
 
     jsval headers;
     JS_GetProperty(cx, global, "Headers", &headers);
@@ -86,3 +107,4 @@ Headers_send (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
     JS_LeaveLocalRootScope(cx);
     JS_EndRequest(cx);
 }
+
