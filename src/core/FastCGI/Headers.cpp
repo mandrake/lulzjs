@@ -45,6 +45,9 @@ Headers_initialize (JSContext* cx)
             property = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, stuff));
             JS_SetProperty(cx, headers, "Server", &property);
         }
+
+    property = JSVAL_FALSE;
+    JS_SetProperty(cx, headers, "sent", &property);
     
     JS_LeaveLocalRootScope(cx);
     JS_EndRequest(cx);
@@ -77,14 +80,19 @@ Headers_send (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
     int   i;
     jsval name;
     jsval value;
+    jsval property;
 
-    LCGIData*           cgi_data = (LCGIData*) JS_GetContextPrivate(cx);
-    HeadersInformation* data     = (HeadersInformation*) JS_GetPrivate(cx, obj);
+    JS_GetProperty(cx, obj, "sent", &property);
 
-    data->sent = JS_TRUE;
+    if (property == JSVAL_TRUE) {
+        JS_ReportError(cx, "Headers have already been sent.");
+        return JS_FALSE;
+    }
 
-    FCGX_Stream* out    = cgi_data->cgi->out;
-    JSObject*    global = cgi_data->global;
+    LCGIData* data = (LCGIData*) JS_GetContextPrivate(cx);
+
+    FCGX_Stream* out    = data->cgi->out;
+    JSObject*    global = data->global;
 
     jsval headers;
     JS_GetProperty(cx, global, "Headers", &headers);
