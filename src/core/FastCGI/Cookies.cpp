@@ -16,10 +16,10 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-#include "Input.h"
+#include "Cookies.h"
 
-void
-Input_initialize (JSContext* cx)
+JSBool
+Cookies_initialize (JSContext* cx)
 {
 
 }
