@@ -27,15 +27,14 @@ typedef struct {
     JSBool sent;
 } HeadersInformation;
 
-void Headers_initialize (JSContext* cx);
-void Headers_finalize (JSContext* cx, JSObject* object); 
+extern "C" JSBool Headers_initialize (JSContext* cx);
 
 JSBool Headers_set (JSContext *cx, JSObject *obj, jsval id, jsval *vp);
 
 static JSClass Headers_class = {
     "Headers", JSCLASS_HAS_PRIVATE,
     JS_PropertyStub, JS_PropertyStub, JS_PropertyStub, Headers_set,
-    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, Headers_finalize
+    JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub
 };
 
 JSBool Headers_send (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval);

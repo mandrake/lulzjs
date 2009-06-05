@@ -18,10 +18,80 @@
 
 #include "Output.h"
 
-void
+JSBool
 Output_initialize (JSContext* cx)
 {
+    JSBool result = JS_FALSE;
 
+    JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
+
+    jsval property;
+
+    JSObject* output = JS_DefineObject(cx, ((LCGIData*) JS_GetContextPrivate(cx))->global, 
+        "Output", &Output_class, NULL, 0
+    );
+
+    if (output) {
+        property = INT_TO_JSVAL(1024);
+        JS_SetProperty(cx, output, "limit", &property);
+        property = JSVAL_FALSE;
+        JS_SetProperty(cx, output, "buffered", &property);
+        property = JS_GetEmptyStringValue(cx);
+        JS_SetProperty(cx, output, "content", &property);
+
+        result = JS_TRUE;
+    }
+    
+    JS_LeaveLocalRootScope(cx);
+    JS_EndRequest(cx);
+
+    return result;
+}
+
+JSBool
+Output_content_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
+{
+    return JS_TRUE;
+}
+
+JSBool
+Output_content_set (JSContext *cx, JSObject *obj, jsval idval, jsval *vp)
+{
+    JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
+
+    jsval     property;
+    int       limit;
+    JSBool    buffered;
+    JSString* string;
+
+    JS_GetProperty(cx, obj, "limit", &property);
+    JS_ValueToInt32(cx, property, &limit);
+    JS_GetProperty(cx, obj, "buffered", &property);
+    JS_ValueToBoolean(cx, property, &buffered);
+    string = JS_ValueToString(cx, *vp);
+
+    if (!buffered && JS_GetStringLength(string) > limit) {
+        if (!JSVAL_TO_BOOLEAN(JS_EVAL(cx, "Headers.sent"))) {
+            JS_EVAL(cx, "Headers.send()");
+        }
+
+        FCGX_Stream* out       = ((LCGIData*) JS_GetContextPrivate(cx))->cgi->out;
+        char*        cString   = JS_GetStringBytes(string);
+        char         size[300] = {NULL};
+        sprintf(size, "%x", strlen(cString));
+
+        FCGX_FPrintF(out, "%s\r\n%s\r\n", size, cString);
+
+        property = JS_GetEmptyStringValue(cx);
+        JS_SetProperty(cx, obj, "content", &property);
+    }
+
+    JS_LeaveLocalRootScope(cx);
+    JS_EndRequest(cx);
+
+    return JS_TRUE;
 }
 
 JSBool
@@ -30,42 +100,20 @@ Output_write (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
     JS_BeginRequest(cx);
     JS_EnterLocalRootScope(cx);
 
-    LCGIData* data = (LCGIData*) JS_GetContextPrivate(cx);
+    JSString* string;
 
-    char*        separator = " ";
-    char*        end       = "\n";
-    FCGX_Stream* fp        = data->cgi->out;
-    jsval        property;
-    JSObject*    options;
-
-    if (argc > 1 && JS_TypeOfValue(cx, argv[argc-1]) == JSTYPE_OBJECT) {
-        JS_ValueToObject(cx, argv[argc-1], &options);
-        argc--;
-
-        JS_GetProperty(cx, options, "separator", &property);
-        if (JSVAL_IS_VOID(property) || JSVAL_IS_NULL(property)) {
-            JS_GetProperty(cx, options, "sep", &property);
-        }
-
-        if (JSVAL_IS_STRING(property)) {
-            separator = JS_GetStringBytes(JS_ValueToString(cx, property));
-        }
-
-        JS_GetProperty(cx, options, "end", &property);
-        if (JSVAL_IS_STRING(property)) {
-            end = JS_GetStringBytes(JS_ValueToString(cx, property));
-        }
+    if (argc < 1 || !JS_ConvertArguments(cx, argc, argv, "S", &string)) {
+        JS_ReportError(cx, "Not enough parameters.");
+        JS_LeaveLocalRootScope(cx);
+        JS_EndRequest(cx);
+        return JS_FALSE;
     }
 
-    uintN i;
-    for (i = 0; i < argc; i++) {
-        FCGX_FPrintF(fp, "%s", JS_GetStringBytes(JS_ValueToString(cx, argv[i])));
+    jsval property;
 
-        if (i != argc-1) {
-            FCGX_FPrintF(fp, "%s", separator);
-        }
-    }
-    FCGX_FPrintF(fp, "%s", end);
+    JS_GetProperty(cx, obj, "content", &property);
+    property = STRING_TO_JSVAL(JS_ConcatStrings(cx, JS_ValueToString(cx, property), string));
+    JS_SetProperty(cx, obj, "content", &property);
 
     JS_LeaveLocalRootScope(cx);
     JS_EndRequest(cx);
@@ -73,4 +121,53 @@ Output_write (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval
     return JS_TRUE;
 }
 
+JSBool
+Output_writeLine (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+    JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
+
+    JSString* string;
+    JSString* endLine = JS_NewStringCopyZ(cx, "\n");
+
+    if (argc < 1 || !JS_ConvertArguments(cx, argc, argv, "S", &string)) {
+        JS_ReportError(cx, "Not enough parameters.");
+        JS_LeaveLocalRootScope(cx);
+        JS_EndRequest(cx);
+        return JS_FALSE;
+    }
+
+    jsval property;
+
+    string = JS_ConcatStrings(cx, string, endLine);
+    JS_GetProperty(cx, obj, "content", &property);
+    property = STRING_TO_JSVAL(JS_ConcatStrings(cx, JS_ValueToString(cx, property), string));
+    JS_SetProperty(cx, obj, "content", &property);
+
+    JS_LeaveLocalRootScope(cx);
+    JS_EndRequest(cx);
+
+    return JS_TRUE;
+}
+
+
+JSBool
+Output_flush (JSContext *cx, JSObject *obj, uintN argc, jsval *argv, jsval *rval)
+{
+    JS_BeginRequest(cx);
+    JS_EnterLocalRootScope(cx);
+
+    jsval property;
+    JS_GetProperty(cx, obj, "content", &property);
+
+    FCGX_PutS(JS_GetStringBytes(JS_ValueToString(cx, property)), ((LCGIData*) JS_GetContextPrivate(cx))->cgi->out);
+
+    property = JS_GetEmptyStringValue(cx);
+    JS_SetProperty(cx, obj, "content", &property);
+
+    JS_LeaveLocalRootScope(cx);
+    JS_EndRequest(cx);
+
+    return JS_TRUE;
+}
 

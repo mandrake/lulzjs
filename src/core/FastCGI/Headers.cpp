@@ -18,18 +18,23 @@
 
 #include "Headers.h"
 
-void
+JSBool
 Headers_initialize (JSContext* cx)
 {
+    JSBool result = JS_FALSE;
+
     JS_BeginRequest(cx);
     JS_EnterLocalRootScope(cx);
 
     jsval property;
     char* stuff;
 
-    JSObject* headers = JS_NewObject(NULL, NULL, NULL, NULL);
-    property          = OBJECT_TO_JSVAL(headers);
-    JS_SetProperty(cx, ((LCGIData*) JS_GetContextPrivate(cx))->global, "Headers", &property);
+    JSObject* headers = JS_DefineObject(
+        cx, ((LCGIData*) JS_GetContextPrivate(cx))->global, 
+        "Headers", &Headers_class, NULL, 0
+    );
+
+    if (headers) {
         property = JSVAL_FALSE;
         JS_SetProperty(cx, headers, "sent", &property);
         property = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, "200 OK"));
@@ -40,17 +45,22 @@ Headers_initialize (JSContext* cx)
         JS_SetProperty(cx, headers, "Transfer-Encoding", &property);
         property = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, "lulzJS/" __LJS_VERSION__));
         JS_SetProperty(cx, headers, "X-Powered-By", &property);
-        stuff = getenv("SERVER_SOFTWARE");
-        if (stuff) {
+
+        if ((stuff = getenv("SERVER_SOFTWARE"))) {
             property = STRING_TO_JSVAL(JS_NewStringCopyZ(cx, stuff));
             JS_SetProperty(cx, headers, "Server", &property);
         }
 
-    property = JSVAL_FALSE;
-    JS_SetProperty(cx, headers, "sent", &property);
+        property = JSVAL_FALSE;
+        JS_SetProperty(cx, headers, "sent", &property);
+
+        result = JS_TRUE;
+    }
     
     JS_LeaveLocalRootScope(cx);
     JS_EndRequest(cx);
+
+    return result;
 }
 
 JSBool

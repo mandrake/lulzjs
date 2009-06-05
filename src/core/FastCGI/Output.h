@@ -23,7 +23,7 @@
 #include "fcgiapp.h"
 #include "common.h"
 
-extern "C" void Output_initialize (JSContext* cx);
+extern "C" JSBool Output_initialize (JSContext* cx);
 
 static JSClass Output_class = {
     "Output", JSCLASS_HAS_PRIVATE,
@@ -31,14 +31,10 @@ static JSClass Output_class = {
     JS_EnumerateStub, JS_ResolveStub, JS_ConvertStub, JS_FinalizeStub
 };
 
-JSBool Output_buffered_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
-JSBool Output_buffered_set (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
-
 JSBool Output_content_get (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
 JSBool Output_content_set (JSContext *cx, JSObject *obj, jsval idval, jsval *vp);
 
 static JSPropertySpec Output_attributes[] = {
-    {"buffered", 0, 0, Output_buffered_get, Output_buffered_set},
     {"content",  0, 0, Output_content_get, Output_content_set},
 
     {NULL}
