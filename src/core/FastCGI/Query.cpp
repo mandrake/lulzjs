@@ -16,13 +16,11 @@
 * along with lulzJS.  If not, see <http://www.gnu.org/licenses/>.           *
 ****************************************************************************/
 
-#ifndef _LULZJS_FCGI_INPUT_H
-#define _LULZJS_FCGI_INPUT_H
+#include "Query.h"
 
-#include "lulzjs.h"
-#include "fcgiapp.h"
-#include "common.h"
+JSBool
+Query_initialize (JSContext* cx)
+{
 
-void Input_initialize (JSContext* cx);
+}
 
-#endif

@@ -23,7 +23,7 @@
 #include "common.h"
 #include "Headers.h"
 #include "Output.h"
-#include "Input.h"
+#include "Query.h"
 
 // *nix only
 #include <sys/types.h>
@@ -209,7 +209,7 @@ executeScript (FCGX_Request* cgi)
     }
 
     Headers_initialize(engine.context);
-    Input_initialize(engine.context);
+    Query_initialize(engine.context);
     Output_initialize(engine.context);
 
     // Do the rest here
