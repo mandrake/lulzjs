@@ -221,6 +221,10 @@ libmath_install: libmath
 	mkdir -p ${LJS_LIBDIR}/Math/Sequences/Fibonacci
 	mkdir -p ${LJS_LIBDIR}/Math/Economy
 	mkdir -p ${LJS_LIBDIR}/Math/Economy/VAT
+	mkdir -p ${LJS_LIBDIR}/Math/Parser
+	mkdir -p ${LJS_LIBDIR}/Math/Parser/Equation
+	mkdir -p ${LJS_LIBDIR}/Math/Parser/Monomial
+
 ########
 	cp -f ${LIB_MATH_DIR}/init.js									${LJS_LIBDIR}/Math/init.js
 	cp -f ${LIB_MATH_DIR}/Math.o									${LJS_LIBDIR}/Math/Math.so
@@ -254,6 +258,18 @@ libmath_install: libmath
 ########
 	cp -f ${LIB_MATH_DIR}/Economy/VAT/init.js						${LJS_LIBDIR}/Math/Economy/VAT/init.js
 	cp -f ${LIB_MATH_DIR}/Economy/VAT/VAT.js						${LJS_LIBDIR}/Math/Economy/VAT/VAT.js
+########
+	cp -f ${LIB_MATH_DIR}/Parser/init.js			    			${LJS_LIBDIR}/Math/Parser/init.js
+	cp -f ${LIB_MATH_DIR}/Parser/Parser.o			    			${LJS_LIBDIR}/Math/Parser/Parser.so
+	cp -f ${LIB_MATH_DIR}/Parser/Parser.js				    		${LJS_LIBDIR}/Math/Parser/Parser.js
+########
+	cp -f ${LIB_MATH_DIR}/Parser/Equation/init.js	    			${LJS_LIBDIR}/Math/Parser/Equation/init.js
+	cp -f ${LIB_MATH_DIR}/Parser/Equation/Equation.js	    		${LJS_LIBDIR}/Math/Parser/Equation/Equation.js
+########
+	cp -f ${LIB_MATH_DIR}/Parser/init.js			    			${LJS_LIBDIR}/Math/Parser/init.js
+	cp -f ${LIB_MATH_DIR}/Parser/Monomial/Monomial.js	    		${LJS_LIBDIR}/Math/Parser/Monomial/Monomial.js
+
+
 
 libmath_uninstall:
 	rm -f ${LJS_LIBDIR}/Math
